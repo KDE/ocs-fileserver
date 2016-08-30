@@ -1,0 +1,68 @@
+section, nav, article, aside, hgroup, header, footer,
+figure, figcaption,
+embed, canvas,
+details, summary, menu {
+    display: block;
+}
+
+time, mark, ruby, rt, rp, wbr,
+datalist, keygen, progress, meter,
+command {
+    display: inline;
+}
+
+body, section, nav, article, aside,
+h1, h2, h3, h4, h5, h6, hgroup, header, footer, address,
+p, hr, pre, blockquote, ol, ul, li, dl, dt, dd, figure, figcaption, div,
+img, iframe, embed, object, video, audio, canvas,
+table, caption, tbody, thead, tfoot, tr, td, th,
+form, fieldset, legend, input, button, select, textarea,
+details, summary, menu {
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    background-color: #eeeeee;
+    color: #444444;
+    font-size: 90%;
+    text-shadow: 0 1px 1px #ffffff;
+}
+
+header, footer, article {
+    padding: 1em 6em;
+}
+
+header {
+    margin-bottom: 1em;
+    border-bottom: 1px solid #000000;
+    background-color: #444444;
+}
+    header h1 {
+        color: #ffffff;
+        text-shadow: 0 -1px 1px #000000;
+    }
+
+footer {
+    margin-top: 1em;
+}
+
+article {
+    margin-bottom: 1em;
+}
+    article h2 {
+        margin-bottom: 0.5em;
+    }
+    article p, article dl {
+        margin-bottom: 0.5em;
+        padding: 1em 2em;
+        border: 1px solid #dcdcdc;
+        background-color: #fffafa;
+        border-radius: 5px;
+    }
+    article dl dt {
+        font-weight: bold;
+    }
+    article dl dd {
+        margin-bottom: 0.5em;
+    }

@@ -1,0 +1,6 @@
+data/database/*
+data/logs/*
+data/files/*
+data/torrents/*
+data/thumbnails/*
+public/torrent/config.php

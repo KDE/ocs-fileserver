@@ -1,0 +1,1 @@
+<?=$this->jsonpCallback . '(' . $this->content . ')';?>

@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+<meta charset="<?=$this->getApplication()->getConfig('encoding');?>">
+
+<!--[if lte IE 9]>
+<script>
+<? require 'Flooer/Application/pages/html5.js'; ?>
+</script>
+<![endif]-->
+
+<style>
+<? require 'Flooer/Application/pages/style.css'; ?>
+</style>
+
+<title>Technical Information</title>
+
+</head>
+<body>
+
+<header>
+<h1>Technical Information</h1>
+</header>
+
+<? if (in_array($this->getApplication()->getConfig('environment'), array('production', 'staging'))): ?>
+
+<article>
+<h2>Exception</h2>
+<dl>
+<dt>Message</dt>
+<dd><?=$this->getApplication()->getResource('exception')->getMessage();?></dd>
+</dl>
+</article>
+
+<? if ($this->getApplication()->getResource('exception')->getPreviousException()): ?>
+<article>
+<h2>Previous Exception</h2>
+<dl>
+<dt>Message</dt>
+<dd><?=$this->getApplication()->getResource('exception')->getPreviousException()->getMessage();?></dd>
+</dl>
+</article>
+<? endif; ?>
+
+<? else: ?>
+
+<article>
+<h2>Exception</h2>
+<dl>
+<dt>Message</dt>
+<dd><?=$this->getApplication()->getResource('exception')->getMessage();?></dd>
+<dt>Code</dt>
+<dd><?=$this->getApplication()->getResource('exception')->getCode();?></dd>
+<dt>File</dt>
+<dd><?=$this->getApplication()->getResource('exception')->getFile();?></dd>
+<dt>Line</dt>
+<dd><?=$this->getApplication()->getResource('exception')->getLine();?></dd>
+<dt>Trace Log</dt>
+<dd><?=nl2br($this->getApplication()->getResource('exception')->getTraceAsString());?></dd>
+</dl>
+</article>
+
+<? if ($this->getApplication()->getResource('exception')->getPreviousException()): ?>
+<article>
+<h2>Previous Exception</h2>
+<dl>
+<dt>Message</dt>
+<dd><?=$this->getApplication()->getResource('exception')->getPreviousException()->getMessage();?></dd>
+<dt>Code</dt>
+<dd><?=$this->getApplication()->getResource('exception')->getPreviousException()->getCode();?></dd>
+<dt>File</dt>
+<dd><?=$this->getApplication()->getResource('exception')->getPreviousException()->getFile();?></dd>
+<dt>Line</dt>
+<dd><?=$this->getApplication()->getResource('exception')->getPreviousException()->getLine();?></dd>
+<dt>Trace Log</dt>
+<dd><?=nl2br($this->getApplication()->getResource('exception')->getPreviousException()->getTraceAsString());?></dd>
+</dl>
+</article>
+<? endif; ?>
+
+<? endif; ?>
+
+</body>
+</html>

@@ -191,6 +191,8 @@ class Files extends BaseController
         $contentId = null;
         $contentPage = null;
 
+        $downloadedCount = 0; // for hive files importing (Deprecated)
+
         if (!empty($this->request->client_id)) {
             $clientId = $this->request->client_id;
         }
@@ -215,6 +217,22 @@ class Files extends BaseController
                 $size = $_FILES['file']['size'];
             }
         }
+        // for hive files importing (Deprecated) ----------
+        else if (isset($this->request->local_file_path)) {
+            if (!empty($this->request->local_file_path)) {
+                $name = mb_substr(strip_tags(basename($this->request->local_file_path)), 0, 200);
+                $finfo = new finfo(FILEINFO_MIME_TYPE);
+                $type = $finfo->file($this->request->local_file_path);
+                if (!$type) {
+                    $type = 'application/octet-stream';
+                }
+                $size = filesize($this->request->local_file_path);
+            }
+            if (!empty($this->request->local_file_name)) {
+                $name = mb_substr(strip_tags(basename($this->request->local_file_name)), 0, 200);
+            }
+        }
+        // ------------------------------------------------
         if (!empty($this->request->title)) {
             $title = mb_substr(strip_tags($this->request->title), 0, 200);
         }
@@ -236,6 +254,11 @@ class Files extends BaseController
         if (!empty($this->request->content_page)) {
             $contentPage = $this->request->content_page;
         }
+        // for hive files importing (Deprecated) ----------
+        if (!empty($this->request->downloaded_count)) {
+            $downloadedCount = intval($this->request->downloaded_count);
+        }
+        // ------------------------------------------------
 
         $errors = array();
         if (!$clientId) {
@@ -244,12 +267,22 @@ class Files extends BaseController
         if (!$ownerId) {
             $errors['owner_id'] = 'Required';
         }
+        /*
         if (!isset($_FILES['file'])) {
             $errors['file'] = 'Required';
         }
         else if (!empty($_FILES['file']['error'])) { // 0 = UPLOAD_ERR_OK
             $errors['file'] = $_FILES['file']['error'];
         }
+        */
+        // for hive files importing (Deprecated) ----------
+        if (!isset($_FILES['file']) && !isset($this->request->local_file_path)) {
+            $errors['file'] = 'Required';
+        }
+        if (isset($_FILES['file']) && !empty($_FILES['file']['error'])) { // 0 = UPLOAD_ERR_OK
+            $errors['file'] = $_FILES['file']['error'];
+        }
+        // ------------------------------------------------
 
         if ($errors) {
             $this->response->setStatus(400);
@@ -350,6 +383,17 @@ class Files extends BaseController
                 throw new Flooer_Exception('Failed to save the file', LOG_ALERT);
             }
         }
+        // for hive files importing (Deprecated) ----------
+        else if (isset($this->request->local_file_path)) {
+            if (!copy(
+                $this->request->local_file_path,
+                $this->appConfig->general['filesDir'] . '/' . $collectionName . '/' . $name
+            )) {
+                $this->response->setStatus(500);
+                throw new Flooer_Exception('Failed to save the file', LOG_ALERT);
+            }
+        }
+        // ------------------------------------------------
 
         $this->models->collections->$collectionId = $collectionData;
 
@@ -367,7 +411,8 @@ class Files extends BaseController
             'tags' => $tags,
             'version' => $version,
             'content_id' => $contentId,
-            'content_page' => $contentPage
+            'content_page' => $contentPage,
+            'downloaded_count' => $downloadedCount // for hive files importing (Deprecated)
         );
 
         // Delete old torrent file

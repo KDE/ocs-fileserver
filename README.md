@@ -31,3 +31,8 @@ Copyright 2016 by pling GmbH.
     data/
 
     data/*
+
+
+## Documents
+
+Please see docs/* for more information.

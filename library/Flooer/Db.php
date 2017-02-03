@@ -199,7 +199,8 @@ class Flooer_Db extends PDO
         }
         // Common
         else {
-            $sql = "SELECT COUNT(*) FROM $tableName;";
+            //$sql = "SELECT COUNT(*) FROM $tableName;";
+            $sql = "SELECT 1 FROM $tableName LIMIT 1;";
             $this->_statementLog[] = $sql;
             $statement = parent::prepare($sql);
             $bool = $statement->execute();

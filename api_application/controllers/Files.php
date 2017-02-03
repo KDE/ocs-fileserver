@@ -548,7 +548,8 @@ class Files extends BaseController
             $category = mb_substr(strip_tags($this->request->category), 0, 64);
         }
         if (isset($this->request->tags)) {
-            $tags = mb_substr(strip_tags($this->request->tags), 0, 128);
+            //$tags = mb_substr(strip_tags($this->request->tags), 0, 128);
+            $tags = strip_tags($this->request->tags);
         }
         if (isset($this->request->version)) {
             $version = mb_substr(strip_tags($this->request->version), 0, 64);

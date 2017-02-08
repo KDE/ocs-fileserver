@@ -9,7 +9,7 @@
  * @package     Flooer_Version
  * @author      Akira Ohgaki <akiraohgaki@gmail.com>
  * @copyright   Akira Ohgaki
- * @license     http://www.freebsd.org/copyright/freebsd-license.html  BSD License (2 Clause)
+ * @license     https://opensource.org/licenses/BSD-2-Clause  BSD License (2 Clause)
  * @link        https://github.com/akiraohgaki/flooer
  */
 
@@ -34,6 +34,6 @@ final class Flooer_Version
      *
      * @var     string
      */
-    const VERSION = '0.6.2';
+    const VERSION = '0.6.3';
 
 }

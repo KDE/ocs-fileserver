@@ -8,12 +8,12 @@ require_once 'Flooer/Version.php';
 
 <!--[if lte IE 9]>
 <script>
-<? require 'Flooer/Application/pages/html5.js'; ?>
+<?php require 'Flooer/Application/pages/html5.js'; ?>
 </script>
 <![endif]-->
 
 <style>
-<? require 'Flooer/Application/pages/style.css'; ?>
+<?php require 'Flooer/Application/pages/style.css'; ?>
 </style>
 
 <title>Application Information</title>
@@ -28,30 +28,30 @@ require_once 'Flooer/Version.php';
 <article>
 <h2>Configuration Options</h2>
 <dl>
-<? foreach ($this->getApplication()->getConfigs() as $key => $value): ?>
+<?php foreach ($this->getApplication()->getConfigs() as $key => $value): ?>
 <dt><?=$key;?></dt>
-<? if (is_array($value)): ?>
-<dd><pre><? print_r($value); ?></pre></dd>
-<? elseif (is_object($value)): ?>
+<?php if (is_array($value)): ?>
+<dd><pre><?php print_r($value); ?></pre></dd>
+<?php elseif (is_object($value)): ?>
 <dd><?=get_class($value);?></dd>
-<? else: ?>
+<?php else: ?>
 <dd><?=$value;?></dd>
-<? endif; endforeach; ?>
+<?php endif; endforeach; ?>
 </dl>
 </article>
 
 <article>
 <h2>Application Resources</h2>
 <dl>
-<? foreach ($this->getApplication()->getResources() as $key => $value): ?>
+<?php foreach ($this->getApplication()->getResources() as $key => $value): ?>
 <dt><?=$key;?></dt>
-<? if (is_array($value)): ?>
-<dd><pre><? print_r($value); ?></pre></dd>
-<? elseif (is_object($value)): ?>
+<?php if (is_array($value)): ?>
+<dd><pre><?php print_r($value); ?></pre></dd>
+<?php elseif (is_object($value)): ?>
 <dd><?=get_class($value);?></dd>
-<? else: ?>
+<?php else: ?>
 <dd><?=$value;?></dd>
-<? endif; endforeach; ?>
+<?php endif; endforeach; ?>
 </dl>
 </article>
 

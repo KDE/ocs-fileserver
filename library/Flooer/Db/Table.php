@@ -10,7 +10,7 @@
  * @subpackage  Table
  * @author      Akira Ohgaki <akiraohgaki@gmail.com>
  * @copyright   Akira Ohgaki
- * @license     http://www.freebsd.org/copyright/freebsd-license.html  BSD License (2 Clause)
+ * @license     https://opensource.org/licenses/BSD-2-Clause  BSD License (2 Clause)
  * @link        https://github.com/akiraohgaki/flooer
  */
 
@@ -198,10 +198,22 @@ class Flooer_Db_Table
         if (isset($this->_rowExists[$key])) {
             return $this->_rowExists[$key];
         }
+        $driver = $this->_db->getAttribute(Flooer_Db::ATTR_DRIVER_NAME);
         $whereValue = $this->_db->quote($key);
         $sql = "SELECT COUNT(*)"
             . " FROM {$this->_config['prefix']}{$this->_config['name']}"
             . " WHERE {$this->_config['primary']} = $whereValue;";
+        if ($driver == 'sqlite' || $driver == 'mysql' || $driver == 'pgsql') {
+            $sql = "SELECT 1"
+                . " FROM {$this->_config['prefix']}{$this->_config['name']}"
+                . " WHERE {$this->_config['primary']} = $whereValue"
+                . " LIMIT 1;";
+        }
+        else if ($driver == 'sqlsrv') {
+            $sql = "SELECT TOP 1 1"
+                . " FROM {$this->_config['prefix']}{$this->_config['name']}"
+                . " WHERE {$this->_config['primary']} = $whereValue;";
+        }
         $this->_db->addStatementLog($sql);
         $statement = $this->_db->prepare($sql);
         $bool = $statement->execute();

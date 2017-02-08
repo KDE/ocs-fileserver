@@ -9,7 +9,7 @@
  * @package     Flooer_Db
  * @author      Akira Ohgaki <akiraohgaki@gmail.com>
  * @copyright   Akira Ohgaki
- * @license     http://www.freebsd.org/copyright/freebsd-license.html  BSD License (2 Clause)
+ * @license     https://opensource.org/licenses/BSD-2-Clause  BSD License (2 Clause)
  * @link        https://github.com/akiraohgaki/flooer
  */
 
@@ -178,12 +178,13 @@ class Flooer_Db extends PDO
         if (isset($this->_tableExists[$tableName])) {
             return $this->_tableExists[$tableName];
         }
-        // SQLite3
-        if (parent::getAttribute(parent::ATTR_DRIVER_NAME) == 'sqlite') {
-            $sql = "SELECT COUNT(*)"
+        $driver = parent::getAttribute(parent::ATTR_DRIVER_NAME);
+        if ($driver == 'sqlite') {
+            $sql = "SELECT 1"
                 . " FROM sqlite_master"
                 . " WHERE type = " . parent::quote('table')
-                . " AND name = " . parent::quote($tableName) . ";";
+                . " AND name = " . parent::quote($tableName)
+                . " LIMIT 1;";
             $this->_statementLog[] = $sql;
             $statement = parent::prepare($sql);
             $bool = $statement->execute();
@@ -197,9 +198,14 @@ class Flooer_Db extends PDO
                 $this->_tableExists[$tableName] = false;
             }
         }
-        // Common
         else {
             $sql = "SELECT COUNT(*) FROM $tableName;";
+            if ($driver == 'mysql' || $driver == 'pgsql') {
+                $sql = "SELECT 1 FROM $tableName LIMIT 1;";
+            }
+            else if ($driver == 'sqlsrv') {
+                $sql = "SELECT TOP 1 1 FROM $tableName;";
+            }
             $this->_statementLog[] = $sql;
             $statement = parent::prepare($sql);
             $bool = $statement->execute();

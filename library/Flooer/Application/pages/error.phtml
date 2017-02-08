@@ -6,12 +6,12 @@
 
 <!--[if lte IE 9]>
 <script>
-<? require 'Flooer/Application/pages/html5.js'; ?>
+<?php require 'Flooer/Application/pages/html5.js'; ?>
 </script>
 <![endif]-->
 
 <style>
-<? require 'Flooer/Application/pages/style.css'; ?>
+<?php require 'Flooer/Application/pages/style.css'; ?>
 </style>
 
 <title>Technical Information</title>
@@ -23,7 +23,7 @@
 <h1>Technical Information</h1>
 </header>
 
-<? if (in_array($this->getApplication()->getConfig('environment'), array('production', 'staging'))): ?>
+<?php if (in_array($this->getApplication()->getConfig('environment'), array('production', 'staging'))): ?>
 
 <article>
 <h2>Exception</h2>
@@ -33,7 +33,7 @@
 </dl>
 </article>
 
-<? if ($this->getApplication()->getResource('exception')->getPreviousException()): ?>
+<?php if ($this->getApplication()->getResource('exception')->getPreviousException()): ?>
 <article>
 <h2>Previous Exception</h2>
 <dl>
@@ -41,9 +41,9 @@
 <dd><?=$this->getApplication()->getResource('exception')->getPreviousException()->getMessage();?></dd>
 </dl>
 </article>
-<? endif; ?>
+<?php endif; ?>
 
-<? else: ?>
+<?php else: ?>
 
 <article>
 <h2>Exception</h2>
@@ -61,7 +61,7 @@
 </dl>
 </article>
 
-<? if ($this->getApplication()->getResource('exception')->getPreviousException()): ?>
+<?php if ($this->getApplication()->getResource('exception')->getPreviousException()): ?>
 <article>
 <h2>Previous Exception</h2>
 <dl>
@@ -77,9 +77,9 @@
 <dd><?=nl2br($this->getApplication()->getResource('exception')->getPreviousException()->getTraceAsString());?></dd>
 </dl>
 </article>
-<? endif; ?>
+<?php endif; ?>
 
-<? endif; ?>
+<?php endif; ?>
 
 </body>
 </html>

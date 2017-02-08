@@ -9,7 +9,7 @@
  * @package     Flooer_Utility
  * @author      Akira Ohgaki <akiraohgaki@gmail.com>
  * @copyright   Akira Ohgaki
- * @license     http://www.freebsd.org/copyright/freebsd-license.html  BSD License (2 Clause)
+ * @license     https://opensource.org/licenses/BSD-2-Clause  BSD License (2 Clause)
  * @link        https://github.com/akiraohgaki/flooer
  */
 
@@ -65,24 +65,27 @@ class Flooer_Utility_Element
     public static function convertSpecialchar($source)
     {
         // Encode a conflicted characters
-        $source = preg_replace(
-            "/\"[^\"\n]+\"\<[^\>\n]+\>/e",
-            "rawurlencode(stripslashes('$0'))",
+        $encodeConflictChars = function ($matches) {
+            return rawurlencode(stripslashes($matches[0]));
+        };
+        $source = preg_replace_callback(
+            "/\"[^\"\n]+\"\<[^\>\n]+\>/",
+            $encodeConflictChars,
             $source
         );
-        $source = preg_replace(
-            "/\"[^\"\n]+\"\{[^\}\n]+\}\<[^\>\n]+\>/e",
-            "rawurlencode(stripslashes('$0'))",
+        $source = preg_replace_callback(
+            "/\"[^\"\n]+\"\{[^\}\n]+\}\<[^\>\n]+\>/",
+            $encodeConflictChars,
             $source
         );
-        $source = preg_replace(
-            "/\"[^\"\n]+\"\{[^\}\n]+\}/e",
-            "rawurlencode(stripslashes('$0'))",
+        $source = preg_replace_callback(
+            "/\"[^\"\n]+\"\{[^\}\n]+\}/",
+            $encodeConflictChars,
             $source
         );
-        $source = preg_replace(
-            "/\"[^\"\n]+\"\([^\)\n]+\)/e",
-            "rawurlencode(stripslashes('$0'))",
+        $source = preg_replace_callback(
+            "/\"[^\"\n]+\"\([^\)\n]+\)/",
+            $encodeConflictChars,
             $source
         );
         $source = str_replace("\n>", "\n" . rawurlencode('>'), $source);

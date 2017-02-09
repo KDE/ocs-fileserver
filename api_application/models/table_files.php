@@ -87,7 +87,8 @@ class table_files extends BaseModel
         if (!isset($this->$key)) {
             $value->downloaded_timestamp = $value->updated_timestamp;
             $value->downloaded_ip = $value->updated_ip;
-            $value->downloaded_count = 0;
+            //$value->downloaded_count = 0;
+            $value->downloaded_count = $value->downloaded_count; // for hive files importing (Deprecated)
             $value->created_timestamp = $value->updated_timestamp;
             $value->created_ip = $value->updated_ip;
         }

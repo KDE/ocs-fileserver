@@ -717,6 +717,20 @@ class Files extends BaseController
             );
         }
 
+        // If external URI has set, redirect to it
+        $externalUri = '';
+        $tags = explode(',', $file->tags);
+        foreach ($tags as $tag) {
+            $tag = trim($tag);
+            if (strpos($tag, 'link##') === 0) {
+                $externalUri = urldecode(str_replace('link##', '', $tag));
+                break;
+            }
+        }
+        if ($externalUri) {
+            $this->response->redirect($externalUri);
+        }
+
         $this->_sendFile(
             $this->appConfig->general['filesDir'] . '/' . $collection->name . '/' . $file->name,
             $file->name,

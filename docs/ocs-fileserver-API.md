@@ -369,7 +369,7 @@ Parameter | Required | Value | Default | Description
 ----------|----------|-------|---------|------------
 id | Yes | File ID | - | File ID.
 
-Response: Uploaded data
+Response: Uploaded data or redirect to external URI
 
 
 ## Favorites

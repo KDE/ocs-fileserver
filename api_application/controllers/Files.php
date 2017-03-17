@@ -202,6 +202,9 @@ class Files extends BaseController
         if (!empty($this->request->collection_id)) {
             $collectionId = $this->request->collection_id;
         }
+        if (isset($this->request->tags)) {
+            $tags = mb_substr(strip_tags($this->request->tags), 0, 255);
+        }
         if (isset($_FILES['file'])) {
             if (!empty($_FILES['file']['name'])) {
                 $name = mb_substr(strip_tags(basename($_FILES['file']['name'])), 0, 200);
@@ -221,12 +224,31 @@ class Files extends BaseController
         else if (isset($this->request->local_file_path)) {
             if (!empty($this->request->local_file_path)) {
                 $name = mb_substr(strip_tags(basename($this->request->local_file_path)), 0, 200);
-                $finfo = new finfo(FILEINFO_MIME_TYPE);
-                $type = $finfo->file($this->request->local_file_path);
-                if (!$type) {
-                    $type = 'application/octet-stream';
+                
+                #if this is a external link?
+                if($name == 'empty' && str_word_count($tags, 0, 'link##')>0) {
+                    $type = null;
+                    $size = null;
+                    $link = null;
+                    $tagArray = explode(",", $tags);
+                    foreach ($tagArray as $tag) {
+                        $tag = trim($tag);
+                        if (strpos($tag, 'link##') === 0) {
+                            $link = urldecode(str_replace('link##', '', $tag));
+                            $size = $this->remote_filesize($link);
+                            $type = $this->mime_content_type($link);
+                        }
+                    }
+                } else {
+                    $finfo = new finfo(FILEINFO_MIME_TYPE);
+                    $type = $finfo->file($this->request->local_file_path);
+                    if (!$type) {
+                        $type = 'application/octet-stream';
+                    }
+                    $size = filesize($this->request->local_file_path);
                 }
-                $size = filesize($this->request->local_file_path);
+                
+                
             }
             if (!empty($this->request->local_file_name)) {
                 $name = mb_substr(strip_tags(basename($this->request->local_file_name)), 0, 200);
@@ -727,4 +749,90 @@ class Files extends BaseController
         );
     }
 
+    
+    private function remote_filesize($url) {
+        static $regex = '/^Content-Length: *+\K\d++$/im';
+        if (!$fp = @fopen($url, 'rb')) {
+            return false;
+        }
+        if (
+            isset($http_response_header) &&
+            preg_match($regex, implode("\n", $http_response_header), $matches)
+        ) {
+            return (int)$matches[0];
+        }
+        return strlen(stream_get_contents($fp));
+    }
+    
+    private function mime_content_type($url)
+
+    {
+        $mime_types = array(
+          'txt'  => 'text/plain',
+          'htm'  => 'text/html',
+          'html' => 'text/html',
+          'php'  => 'text/html',
+          'css'  => 'text/css',
+          'js'   => 'application/javascript',
+          'json' => 'application/json',
+          'xml'  => 'application/xml',
+          'swf'  => 'application/x-shockwave-flash',
+          'flv'  => 'video/x-flv',
+          // images
+          'png'  => 'image/png',
+          'jpe'  => 'image/jpeg',
+          'jpeg' => 'image/jpeg',
+          'jpg'  => 'image/jpeg',
+          'gif'  => 'image/gif',
+          'bmp'  => 'image/bmp',
+          'ico'  => 'image/vnd.microsoft.icon',
+          'tiff' => 'image/tiff',
+          'tif'  => 'image/tiff',
+          'svg'  => 'image/svg+xml',
+          'svgz' => 'image/svg+xml',
+          // archives
+          'zip'  => 'application/zip',
+          'rar'  => 'application/x-rar-compressed',
+          'exe'  => 'application/x-msdownload',
+          'msi'  => 'application/x-msdownload',
+          'cab'  => 'application/vnd.ms-cab-compressed',
+          // audio/video
+          'mp3'  => 'audio/mpeg',
+          'qt'   => 'video/quicktime',
+          'mov'  => 'video/quicktime',
+          // adobe
+          'pdf'  => 'application/pdf',
+          'psd'  => 'image/vnd.adobe.photoshop',
+          'ai'   => 'application/postscript',
+          'eps'  => 'application/postscript',
+          'ps'   => 'application/postscript',
+          // ms office
+          'doc'  => 'application/msword',
+          'rtf'  => 'application/rtf',
+          'xls'  => 'application/vnd.ms-excel',
+          'ppt'  => 'application/vnd.ms-powerpoint',
+          // open office
+          'odt'  => 'application/vnd.oasis.opendocument.text',
+          'ods'  => 'application/vnd.oasis.opendocument.spreadsheet',
+        );
+
+        $filename_parts = explode('.', $url);
+        $ext = strtolower(array_pop($filename_parts));
+        if (array_key_exists($ext, $mime_types)) {
+            return $mime_types[$ext];
+        } else {
+            
+            $ch = curl_init($url);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+            curl_setopt($ch, CURLOPT_HEADER, 1);
+            curl_setopt($ch, CURLOPT_NOBODY, 1);
+            curl_exec($ch);
+            return curl_getinfo($ch, CURLINFO_CONTENT_TYPE);           
+            
+            
+        }
+
+    }
+    
 }

@@ -224,7 +224,7 @@ class Files extends BaseController
         else if (isset($this->request->local_file_path)) {
             if (!empty($this->request->local_file_path)) {
                 $name = mb_substr(strip_tags(basename($this->request->local_file_path)), 0, 200);
-                
+
                 #if this is a external link?
                 if($name == 'empty' && str_word_count($tags, 0, 'link##')>0) {
                     $type = null;
@@ -235,8 +235,8 @@ class Files extends BaseController
                         $tag = trim($tag);
                         if (strpos($tag, 'link##') === 0) {
                             $link = urldecode(str_replace('link##', '', $tag));
-                            $size = $this->remote_filesize($link);
-                            $type = $this->mime_content_type($link);
+                            $size = $this->_remoteFilesize($link);
+                            $type = $this->_mimeContentType($link);
                         }
                     }
                 } else {
@@ -247,8 +247,6 @@ class Files extends BaseController
                     }
                     $size = filesize($this->request->local_file_path);
                 }
-                
-                
             }
             if (!empty($this->request->local_file_name)) {
                 $name = mb_substr(strip_tags(basename($this->request->local_file_name)), 0, 200);
@@ -263,9 +261,6 @@ class Files extends BaseController
         }
         if (isset($this->request->category)) {
             $category = mb_substr(strip_tags($this->request->category), 0, 64);
-        }
-        if (isset($this->request->tags)) {
-            $tags = mb_substr(strip_tags($this->request->tags), 0, 255);
         }
         if (isset($this->request->version)) {
             $version = mb_substr(strip_tags($this->request->version), 0, 64);
@@ -763,8 +758,8 @@ class Files extends BaseController
         );
     }
 
-    
-    private function remote_filesize($url) {
+    private function _remoteFilesize($url)
+    {
         static $regex = '/^Content-Length: *+\K\d++$/im';
         if (!$fp = @fopen($url, 'rb')) {
             return false;
@@ -777,9 +772,8 @@ class Files extends BaseController
         }
         return strlen(stream_get_contents($fp));
     }
-    
-    private function mime_content_type($url)
 
+    private function _mimeContentType($url)
     {
         $mime_types = array(
           'txt'  => 'text/plain',
@@ -835,18 +829,13 @@ class Files extends BaseController
         if (array_key_exists($ext, $mime_types)) {
             return $mime_types[$ext];
         } else {
-            
             $ch = curl_init($url);
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
             curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
             curl_setopt($ch, CURLOPT_HEADER, 1);
             curl_setopt($ch, CURLOPT_NOBODY, 1);
             curl_exec($ch);
-            return curl_getinfo($ch, CURLINFO_CONTENT_TYPE);           
-            
-            
+            return curl_getinfo($ch, CURLINFO_CONTENT_TYPE);
         }
-
     }
-    
 }

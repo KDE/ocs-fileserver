@@ -150,7 +150,7 @@ class Profiles extends BaseController
             $image = $this->request->image;
         }
         if (isset($this->request->description)) {
-            $description = mb_substr(strip_tags($this->request->description), 0, 255);
+            $description = strip_tags($this->request->description);
         }
 
         $errors = array();
@@ -243,7 +243,7 @@ class Profiles extends BaseController
             $image = $this->request->image;
         }
         if (isset($this->request->description)) {
-            $description = mb_substr(strip_tags($this->request->description), 0, 255);
+            $description = strip_tags($this->request->description);
         }
 
         $profile = $this->models->profiles->$id;

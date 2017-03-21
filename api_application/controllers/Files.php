@@ -257,7 +257,7 @@ class Files extends BaseController
             $title = mb_substr(strip_tags($this->request->title), 0, 200);
         }
         if (isset($this->request->description)) {
-            $description = mb_substr(strip_tags($this->request->description), 0, 255);
+            $description = strip_tags($this->request->description);
         }
         if (isset($this->request->category)) {
             $category = mb_substr(strip_tags($this->request->category), 0, 64);
@@ -559,7 +559,7 @@ class Files extends BaseController
             $title = mb_substr(strip_tags($this->request->title), 0, 200);
         }
         if (isset($this->request->description)) {
-            $description = mb_substr(strip_tags($this->request->description), 0, 255);
+            $description = strip_tags($this->request->description);
         }
         if (isset($this->request->category)) {
             $category = mb_substr(strip_tags($this->request->category), 0, 64);

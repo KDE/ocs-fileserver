@@ -112,7 +112,7 @@ class ModelContainer
                 'email' => 'VARCHAR(255)',
                 'homepage' => 'VARCHAR(255)',
                 'image' => 'VARCHAR(255)',
-                'description' => 'VARCHAR(255)'
+                'description' => 'TEXT'
             );
         }
 
@@ -125,7 +125,7 @@ class ModelContainer
                 'files' => 'INTEGER NOT NULL',
                 'size' => 'BIGINT UNSIGNED NOT NULL',
                 'title' => 'VARCHAR(200)',
-                'description' => 'VARCHAR(255)',
+                'description' => 'TEXT',
                 'category' => 'VARCHAR(64)',
                 'tags' => 'VARCHAR(255)',
                 'version' => 'VARCHAR(64)',
@@ -164,7 +164,7 @@ class ModelContainer
                 'type' => 'VARCHAR(255) NOT NULL',
                 'size' => 'BIGINT UNSIGNED NOT NULL',
                 'title' => 'VARCHAR(200)',
-                'description' => 'VARCHAR(255)',
+                'description' => 'TEXT',
                 'category' => 'VARCHAR(64)',
                 'tags' => 'VARCHAR(255)',
                 'version' => 'VARCHAR(64)',

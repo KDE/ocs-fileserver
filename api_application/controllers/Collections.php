@@ -370,9 +370,9 @@ class Collections extends BaseController
         );
 
         unset($this->models->collections->$id);
-        $this->models->collections_downloaded->deleteByCollectionId($id);
+        //$this->models->collections_downloaded->deleteByCollectionId($id);
         $this->models->files->deleteByCollectionId($id);
-        $this->models->files_downloaded->deleteByCollectionId($id);
+        //$this->models->files_downloaded->deleteByCollectionId($id);
         $this->models->favorites->deleteByCollectionId($id);
         $this->models->media->deleteByCollectionId($id);
         $this->models->media_played->deleteByCollectionId($id);

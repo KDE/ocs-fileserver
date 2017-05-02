@@ -667,7 +667,6 @@ class Files extends BaseController
         }
 
         $this->models->files->$id = array('active' => 0);
-        //ronald 20170502 We need this information, so no delete in table files_downloaded
         //$this->models->files_downloaded->deleteByFileId($id);
         $this->models->favorites->deleteByFileId($id);
         $this->models->media->deleteByFileId($id);

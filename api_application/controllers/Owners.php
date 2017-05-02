@@ -77,9 +77,9 @@ class Owners extends BaseController
                 );
 
                 unset($this->models->collections->{$collection->id});
-                $this->models->collections_downloaded->deleteByCollectionId($collection->id);
+                //$this->models->collections_downloaded->deleteByCollectionId($collection->id);
                 $this->models->files->deleteByCollectionId($collection->id);
-                $this->models->files_downloaded->deleteByCollectionId($collection->id);
+                //$this->models->files_downloaded->deleteByCollectionId($collection->id);
                 $this->models->favorites->deleteByCollectionId($collection->id);
                 $this->models->media->deleteByCollectionId($collection->id);
                 $this->models->media_played->deleteByCollectionId($collection->id);

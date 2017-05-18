@@ -56,6 +56,15 @@ class BaseModel extends Flooer_Db_Table
         return $_SERVER['REMOTE_ADDR'];
     }
 
+    protected function _getReferer()
+    {
+        $referer = null;
+        if (!empty($_SERVER['HTTP_REFERER'])) {
+            $referer = $_SERVER['HTTP_REFERER'];
+        }
+        return $referer;
+    }
+
     protected function _convertArrayToObject($values)
     {
         if (is_array($values)) {

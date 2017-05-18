@@ -148,6 +148,7 @@ class ModelContainer
                 'owner_id' => 'VARCHAR(255) NOT NULL',
                 'collection_id' => 'INTEGER NOT NULL',
                 'user_id' => 'VARCHAR(255)',
+                'referer' => 'VARCHAR(255)',
                 'downloaded_timestamp' => $timestampDifinition,
                 'downloaded_ip' => 'VARCHAR(39)'
             );
@@ -188,6 +189,7 @@ class ModelContainer
                 'collection_id' => 'INTEGER NOT NULL',
                 'file_id' => 'INTEGER NOT NULL',
                 'user_id' => 'VARCHAR(255)',
+                'referer' => 'VARCHAR(255)',
                 'downloaded_timestamp' => $timestampDifinition,
                 'downloaded_ip' => 'VARCHAR(39)'
             );

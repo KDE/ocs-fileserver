@@ -35,6 +35,7 @@ class table_collections_downloaded extends BaseModel
     {
         $value = $this->_convertArrayToObject($value);
         unset($value->id);
+        $value->referer = $this->_getReferer();
         $value->downloaded_timestamp = $this->_getTimestamp();
         $value->downloaded_ip = $this->_getIp();
         parent::__set($key, $value);

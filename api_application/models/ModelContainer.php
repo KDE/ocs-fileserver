@@ -169,6 +169,7 @@ class ModelContainer
                 'category' => 'VARCHAR(64)',
                 'tags' => 'VARCHAR(255)',
                 'version' => 'VARCHAR(64)',
+                'ocs_compatible' => 'INTEGER(1) NOT NULL DEFAULT 1',
                 'content_id' => 'VARCHAR(255)',
                 'content_page' => 'VARCHAR(255)',
                 'downloaded_timestamp' => $timestampDifinition,

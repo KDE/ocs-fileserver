@@ -277,6 +277,7 @@ collection_content_id | - | Collection content ID | - | Collection content ID.
 types | - | audio/mpeg,video/mpeg,video/mp4 | - | File type list as comma-separated list.
 category | - | Category | - | Category.
 tags | - | Tag,Tag,Tag | - | Tag list as comma-separated list.
+ocs_compatibility | - | compatible/incompatible/all | all | OCS compatibility.
 content_id | - | Content ID | - | Content ID.
 search | - | Search term | - | 3 or more strings.
 ids | - | ID,ID,ID | - | File ID list as comma-separated list.
@@ -317,6 +318,7 @@ description | - | Description | - | Additional information.
 category | - | Category | - | Additional information.
 tags | - | Tag,Tag,Tag | - | Additional information. Tag list as comma-separated list.
 version | - | Version number | - | Additional information.
+ocs_compatible | - | 0/1 | 1 | Additional information.
 content_id | - | Content ID | - | Additional information.
 content_page | - | Content page address | - | Additional information.
 
@@ -342,6 +344,7 @@ description | - | Description | - | Additional information.
 category | - | Category | - | Additional information.
 tags | - | Tag,Tag,Tag | - | Additional information. Tag list as comma-separated list.
 version | - | Version number | - | Additional information.
+ocs_compatible | - | 0/1 | 1 | Additional information.
 content_id | - | Content ID | - | Additional information.
 content_page | - | Content page address | - | Additional information.
 
@@ -456,6 +459,7 @@ file_id | - | File ID | - | File ID.
 file_types | - | audio/mpeg,video/mpeg,video/mp4 | - | File type list as comma-separated list.
 file_category | - | File category | - | File category.
 file_tags | - | Tag,Tag,Tag | - | File tag list as comma-separated list.
+file_ocs_compatibility | - | compatible/incompatible/all | all | OCS compatibility.
 file_content_id | - | File content ID | - | File content ID.
 artist_id | - | Artist ID | - | Artist ID.
 album_id | - | Album ID | - | Album ID.
@@ -482,6 +486,7 @@ file_id | - | File ID | - | File ID.
 file_types | - | audio/mpeg,video/mpeg,video/mp4 | - | File type list as comma-separated list.
 file_category | - | File category | - | File category.
 file_tags | - | Tag,Tag,Tag | - | File tag list as comma-separated list.
+file_ocs_compatibility | - | compatible/incompatible/all | all | OCS compatibility.
 file_content_id | - | File content ID | - | File content ID.
 artist_id | - | Artist ID | - | Artist ID.
 album_id | - | Album ID | - | Album ID.
@@ -508,6 +513,7 @@ file_id | - | File ID | - | File ID.
 file_types | - | audio/mpeg,video/mpeg,video/mp4 | - | File type list as comma-separated list.
 file_category | - | File category | - | File category.
 file_tags | - | Tag,Tag,Tag | - | File tag list as comma-separated list.
+file_ocs_compatibility | - | compatible/incompatible/all | all | OCS compatibility.
 file_content_id | - | File content ID | - | File content ID.
 artist_id | - | Artist ID | - | Artist ID.
 album_id | - | Album ID | - | Album ID.
@@ -534,6 +540,7 @@ file_id | - | File ID | - | File ID.
 file_types | - | audio/mpeg,video/mpeg,video/mp4 | - | File type list as comma-separated list.
 file_category | - | File category | - | File category.
 file_tags | - | Tag,Tag,Tag | - | File tag list as comma-separated list.
+file_ocs_compatibility | - | compatible/incompatible/all | all | OCS compatibility.
 file_content_id | - | File content ID | - | File content ID.
 artist_id | - | Artist ID | - | Artist ID.
 album_id | - | Album ID | - | Album ID.

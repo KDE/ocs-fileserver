@@ -36,6 +36,7 @@ class Files extends BaseController
         $types = null;  // Comma-separated list
         $category = null;
         $tags = null; // Comma-separated list
+        $ocsCompatibility = 'all';
         $contentId = null;
         $search = null; // 3 or more strings
         $ids = null; // Comma-separated list
@@ -75,6 +76,9 @@ class Files extends BaseController
         }
         if (isset($this->request->tags)) {
             $tags = $this->request->tags;
+        }
+        if (!empty($this->request->ocs_compatibility)) {
+            $ocsCompatibility = $this->request->ocs_compatibility;
         }
         if (isset($this->request->content_id)) {
             $contentId = $this->request->content_id;
@@ -128,6 +132,7 @@ class Files extends BaseController
             $types,
             $category,
             $tags,
+            $ocsCompatibility,
             $contentId,
             $search,
             $ids,
@@ -188,6 +193,7 @@ class Files extends BaseController
         $category = null;
         $tags = null; // Comma-separated list
         $version = null;
+        $ocsCompatible = 1;
         $contentId = null;
         $contentPage = null;
 
@@ -264,6 +270,14 @@ class Files extends BaseController
         }
         if (isset($this->request->version)) {
             $version = mb_substr(strip_tags($this->request->version), 0, 64);
+        }
+        if (isset($this->request->ocs_compatible)) {
+            if ($this->request->ocs_compatible == 1) {
+                $ocsCompatible = 1;
+            }
+            else if ($this->request->ocs_compatible == 0) {
+                $ocsCompatible = 0;
+            }
         }
         if (isset($this->request->content_id)) {
             $contentId = $this->request->content_id;
@@ -427,6 +441,7 @@ class Files extends BaseController
             'category' => $category,
             'tags' => $tags,
             'version' => $version,
+            'ocs_compatible' => $ocsCompatible,
             'content_id' => $contentId,
             'content_page' => $contentPage,
             'downloaded_count' => $downloadedCount // for hive files importing (Deprecated)
@@ -549,6 +564,7 @@ class Files extends BaseController
         $category = null;
         $tags = null; // Comma-separated list
         $version = null;
+        $ocsCompatible = null;
         $contentId = null;
         $contentPage = null;
 
@@ -569,6 +585,14 @@ class Files extends BaseController
         }
         if (isset($this->request->version)) {
             $version = mb_substr(strip_tags($this->request->version), 0, 64);
+        }
+        if (isset($this->request->ocs_compatible)) {
+            if ($this->request->ocs_compatible == 1) {
+                $ocsCompatible = 1;
+            }
+            else if ($this->request->ocs_compatible == 0) {
+                $ocsCompatible = 0;
+            }
         }
         if (isset($this->request->content_id)) {
             $contentId = $this->request->content_id;
@@ -603,6 +627,9 @@ class Files extends BaseController
         }
         if ($version !== null) {
             $updata['version'] = $version;
+        }
+        if ($ocsCompatible !== null) {
+            $updata['ocs_compatible'] = $ocsCompatible;
         }
         if ($contentId !== null) {
             $updata['content_id'] = $contentId;

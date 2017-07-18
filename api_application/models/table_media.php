@@ -56,6 +56,7 @@ class table_media extends BaseModel
             . "{$prefix}files.category AS file_category,"
             . "{$prefix}files.tags AS file_tags,"
             . "{$prefix}files.version AS file_version,"
+            . "{$prefix}files.ocs_compatible AS file_ocs_compatible,"
             . "{$prefix}files.content_id AS file_content_id,"
             . "{$prefix}files.content_page AS file_content_page,"
             . "{$prefix}media.artist_id AS artist_id,"
@@ -98,7 +99,7 @@ class table_media extends BaseModel
         parent::__set($key, $value);
     }
 
-    public function getGenres($clientId = null, $ownerId = null, $collectionId = null, $collectionCategory = null, $collectionTags = null, $collectionContentId = null, $fileId = null, $fileTypes = null, $fileCategory = null, $fileTags = null, $fileContentId = null, $artistId = null, $albumId = null, $genre = null, $search = null, array $favoriteIds = null, $sort = 'name', $perpage = 20, $page = 1)
+    public function getGenres($clientId = null, $ownerId = null, $collectionId = null, $collectionCategory = null, $collectionTags = null, $collectionContentId = null, $fileId = null, $fileTypes = null, $fileCategory = null, $fileTags = null, $fileOcsCompatibility = 'all', $fileContentId = null, $artistId = null, $albumId = null, $genre = null, $search = null, array $favoriteIds = null, $sort = 'name', $perpage = 20, $page = 1)
     {
         $prefix = $this->getPrefix();
         $columns = $this->getColumns();
@@ -177,6 +178,19 @@ class table_media extends BaseModel
                         . " OR {$prefix}files.tags LIKE " . $this->getDb()->quote("%,$tag,%")
                         . " OR {$prefix}files.tags LIKE " . $this->getDb()->quote("%,$tag") . ')';
                 }
+            }
+        }
+        if ($fileOcsCompatibility != 'all') {
+            $fileOcsCompatible = null;
+            if ($fileOcsCompatibility == 'compatible') {
+                $fileOcsCompatible = 1;
+            }
+            else if ($fileOcsCompatibility == 'incompatible') {
+                $fileOcsCompatible = 0;
+            }
+            if ($fileOcsCompatible !== null) {
+                $where[] = "{$prefix}files.ocs_compatible = :file_ocs_compatible";
+                $values[':file_ocs_compatible'] = $fileOcsCompatible;
             }
         }
         if ($fileContentId !== null && $fileContentId !== '') {
@@ -266,7 +280,7 @@ class table_media extends BaseModel
         );
     }
 
-    public function getOwners($clientId = null, $ownerId = null, $collectionId = null, $collectionCategory = null, $collectionTags = null, $collectionContentId = null, $fileId = null, $fileTypes = null, $fileCategory = null, $fileTags = null, $fileContentId = null, $artistId = null, $albumId = null, $genre = null, $search = null, array $favoriteIds = null, $sort = 'name', $perpage = 20, $page = 1)
+    public function getOwners($clientId = null, $ownerId = null, $collectionId = null, $collectionCategory = null, $collectionTags = null, $collectionContentId = null, $fileId = null, $fileTypes = null, $fileCategory = null, $fileTags = null, $fileOcsCompatibility = 'all', $fileContentId = null, $artistId = null, $albumId = null, $genre = null, $search = null, array $favoriteIds = null, $sort = 'name', $perpage = 20, $page = 1)
     {
         $prefix = $this->getPrefix();
         $columns = $this->getColumns();
@@ -352,6 +366,19 @@ class table_media extends BaseModel
                 }
             }
         }
+        if ($fileOcsCompatibility != 'all') {
+            $fileOcsCompatible = null;
+            if ($fileOcsCompatibility == 'compatible') {
+                $fileOcsCompatible = 1;
+            }
+            else if ($fileOcsCompatibility == 'incompatible') {
+                $fileOcsCompatible = 0;
+            }
+            if ($fileOcsCompatible !== null) {
+                $where[] = "{$prefix}files.ocs_compatible = :file_ocs_compatible";
+                $values[':file_ocs_compatible'] = $fileOcsCompatible;
+            }
+        }
         if ($fileContentId !== null && $fileContentId !== '') {
             $where[] = "{$prefix}files.content_id = :file_content_id";
             $values[':file_content_id'] = $fileContentId;
@@ -435,7 +462,7 @@ class table_media extends BaseModel
         );
     }
 
-    public function getCollections($clientId = null, $ownerId = null, $collectionId = null, $collectionCategory = null, $collectionTags = null, $collectionContentId = null, $fileId = null, $fileTypes = null, $fileCategory = null, $fileTags = null, $fileContentId = null, $artistId = null, $albumId = null, $genre = null, $search = null, array $favoriteIds = null, $sort = 'name', $perpage = 20, $page = 1)
+    public function getCollections($clientId = null, $ownerId = null, $collectionId = null, $collectionCategory = null, $collectionTags = null, $collectionContentId = null, $fileId = null, $fileTypes = null, $fileCategory = null, $fileTags = null, $fileOcsCompatibility = 'all', $fileContentId = null, $artistId = null, $albumId = null, $genre = null, $search = null, array $favoriteIds = null, $sort = 'name', $perpage = 20, $page = 1)
     {
         $prefix = $this->getPrefix();
         $columns = $this->getColumns();
@@ -523,6 +550,19 @@ class table_media extends BaseModel
                 }
             }
         }
+        if ($fileOcsCompatibility != 'all') {
+            $fileOcsCompatible = null;
+            if ($fileOcsCompatibility == 'compatible') {
+                $fileOcsCompatible = 1;
+            }
+            else if ($fileOcsCompatibility == 'incompatible') {
+                $fileOcsCompatible = 0;
+            }
+            if ($fileOcsCompatible !== null) {
+                $where[] = "{$prefix}files.ocs_compatible = :file_ocs_compatible";
+                $values[':file_ocs_compatible'] = $fileOcsCompatible;
+            }
+        }
         if ($fileContentId !== null && $fileContentId !== '') {
             $where[] = "{$prefix}files.content_id = :file_content_id";
             $values[':file_content_id'] = $fileContentId;
@@ -606,7 +646,7 @@ class table_media extends BaseModel
         );
     }
 
-    public function getIndex($clientId = null, $ownerId = null, $collectionId = null, $collectionCategory = null, $collectionTags = null, $collectionContentId = null, $fileId = null, $fileTypes = null, $fileCategory = null, $fileTags = null, $fileContentId = null, $artistId = null, $albumId = null, $genre = null, $search = null, $ids = null, array $favoriteIds = null, $playedTimeperiodBegin = null, $playedTimeperiodEnd = null, $sort = 'name', $perpage = 20, $page = 1)
+    public function getIndex($clientId = null, $ownerId = null, $collectionId = null, $collectionCategory = null, $collectionTags = null, $collectionContentId = null, $fileId = null, $fileTypes = null, $fileCategory = null, $fileTags = null, $fileOcsCompatibility = 'all', $fileContentId = null, $artistId = null, $albumId = null, $genre = null, $search = null, $ids = null, array $favoriteIds = null, $playedTimeperiodBegin = null, $playedTimeperiodEnd = null, $sort = 'name', $perpage = 20, $page = 1)
     {
         $prefix = $this->getPrefix();
         $name = $this->getName();
@@ -678,6 +718,19 @@ class table_media extends BaseModel
                         . " OR {$prefix}files.tags LIKE " . $this->getDb()->quote("%,$tag,%")
                         . " OR {$prefix}files.tags LIKE " . $this->getDb()->quote("%,$tag") . ')';
                 }
+            }
+        }
+        if ($fileOcsCompatibility != 'all') {
+            $fileOcsCompatible = null;
+            if ($fileOcsCompatibility == 'compatible') {
+                $fileOcsCompatible = 1;
+            }
+            else if ($fileOcsCompatibility == 'incompatible') {
+                $fileOcsCompatible = 0;
+            }
+            if ($fileOcsCompatible !== null) {
+                $where[] = "{$prefix}files.ocs_compatible = :file_ocs_compatible";
+                $values[':file_ocs_compatible'] = $fileOcsCompatible;
             }
         }
         if ($fileContentId !== null && $fileContentId !== '') {

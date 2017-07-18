@@ -36,6 +36,7 @@ class Media extends BaseController
         $fileTypes = null; // Comma-separated list
         $fileCategory = null;
         $fileTags = null; // Comma-separated list
+        $fileOcsCompatibility = 'all';
         $fileContentId = null;
         $artistId = null;
         $albumId = null;
@@ -75,6 +76,9 @@ class Media extends BaseController
         }
         if (isset($this->request->file_tags)) {
             $fileTags = $this->request->file_tags;
+        }
+        if (!empty($this->request->file_ocs_compatibility)) {
+            $fileOcsCompatibility = $this->request->file_ocs_compatibility;
         }
         if (isset($this->request->file_content_id)) {
             $fileContentId = $this->request->file_content_id;
@@ -128,6 +132,7 @@ class Media extends BaseController
             $fileTypes,
             $fileCategory,
             $fileTags,
+            $fileOcsCompatibility,
             $fileContentId,
             $artistId,
             $albumId,
@@ -159,6 +164,7 @@ class Media extends BaseController
         $fileTypes = null; // Comma-separated list
         $fileCategory = null;
         $fileTags = null; // Comma-separated list
+        $fileOcsCompatibility = 'all';
         $fileContentId = null;
         $artistId = null;
         $albumId = null;
@@ -198,6 +204,9 @@ class Media extends BaseController
         }
         if (isset($this->request->file_tags)) {
             $fileTags = $this->request->file_tags;
+        }
+        if (!empty($this->request->file_ocs_compatibility)) {
+            $fileOcsCompatibility = $this->request->file_ocs_compatibility;
         }
         if (isset($this->request->file_content_id)) {
             $fileContentId = $this->request->file_content_id;
@@ -251,6 +260,7 @@ class Media extends BaseController
             $fileTypes,
             $fileCategory,
             $fileTags,
+            $fileOcsCompatibility,
             $fileContentId,
             $artistId,
             $albumId,
@@ -282,6 +292,7 @@ class Media extends BaseController
         $fileTypes = null; // Comma-separated list
         $fileCategory = null;
         $fileTags = null; // Comma-separated list
+        $fileOcsCompatibility = 'all';
         $fileContentId = null;
         $artistId = null;
         $albumId = null;
@@ -321,6 +332,9 @@ class Media extends BaseController
         }
         if (isset($this->request->file_tags)) {
             $fileTags = $this->request->file_tags;
+        }
+        if (!empty($this->request->file_ocs_compatibility)) {
+            $fileOcsCompatibility = $this->request->file_ocs_compatibility;
         }
         if (isset($this->request->file_content_id)) {
             $fileContentId = $this->request->file_content_id;
@@ -374,6 +388,7 @@ class Media extends BaseController
             $fileTypes,
             $fileCategory,
             $fileTags,
+            $fileOcsCompatibility,
             $fileContentId,
             $artistId,
             $albumId,
@@ -405,6 +420,7 @@ class Media extends BaseController
         $fileTypes = null; // Comma-separated list
         $fileCategory = null;
         $fileTags = null; // Comma-separated list
+        $fileOcsCompatibility = 'all';
         $fileContentId = null;
         $artistId = null;
         $albumId = null;
@@ -447,6 +463,9 @@ class Media extends BaseController
         }
         if (isset($this->request->file_tags)) {
             $fileTags = $this->request->file_tags;
+        }
+        if (!empty($this->request->file_ocs_compatibility)) {
+            $fileOcsCompatibility = $this->request->file_ocs_compatibility;
         }
         if (isset($this->request->file_content_id)) {
             $fileContentId = $this->request->file_content_id;
@@ -509,6 +528,7 @@ class Media extends BaseController
             $fileTypes,
             $fileCategory,
             $fileTags,
+            $fileOcsCompatibility,
             $fileContentId,
             $artistId,
             $albumId,

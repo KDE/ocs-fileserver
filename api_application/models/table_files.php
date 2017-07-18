@@ -57,6 +57,7 @@ class table_files extends BaseModel
             . "{$prefix}files.category AS category,"
             . "{$prefix}files.tags AS tags,"
             . "{$prefix}files.version AS version,"
+            . "{$prefix}files.ocs_compatible AS ocs_compatible,"
             . "{$prefix}files.content_id AS content_id,"
             . "{$prefix}files.content_page AS content_page,"
             . "{$prefix}files.downloaded_timestamp AS downloaded_timestamp,"
@@ -95,7 +96,7 @@ class table_files extends BaseModel
         parent::__set($key, $value);
     }
 
-    public function getFiles($status = 'active', $clientId = null, $ownerId = null, $collectionId = null, $collectionCategory = null, $collectionTags = null, $collectionContentId = null, $types = null, $category = null, $tags = null, $contentId = null, $search = null, $ids = null, array $favoriteIds = null, $downloadedTimeperiodBegin = null, $downloadedTimeperiodEnd = null, $sort = 'name', $perpage = 20, $page = 1)
+    public function getFiles($status = 'active', $clientId = null, $ownerId = null, $collectionId = null, $collectionCategory = null, $collectionTags = null, $collectionContentId = null, $types = null, $category = null, $tags = null, $ocsCompatibility = 'all', $contentId = null, $search = null, $ids = null, array $favoriteIds = null, $downloadedTimeperiodBegin = null, $downloadedTimeperiodEnd = null, $sort = 'name', $perpage = 20, $page = 1)
     {
         $prefix = $this->getPrefix();
         $name = $this->getName();
@@ -171,6 +172,19 @@ class table_files extends BaseModel
                         . " OR {$prefix}files.tags LIKE " . $this->getDb()->quote("%,$tag,%")
                         . " OR {$prefix}files.tags LIKE " . $this->getDb()->quote("%,$tag") . ')';
                 }
+            }
+        }
+        if ($ocsCompatibility != 'all') {
+            $ocsCompatible = null;
+            if ($ocsCompatibility == 'compatible') {
+                $ocsCompatible = 1;
+            }
+            else if ($ocsCompatibility == 'incompatible') {
+                $ocsCompatible = 0;
+            }
+            if ($ocsCompatible !== null) {
+                $where[] = "{$prefix}files.ocs_compatible = :ocs_compatible";
+                $values[':ocs_compatible'] = $ocsCompatible;
             }
         }
         if ($contentId !== null && $contentId !== '') {

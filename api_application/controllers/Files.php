@@ -721,21 +721,24 @@ class Files extends BaseController
         $this->getDownload(true);
     }
 
-    public function getDownload($headeronly = false)
+    public function getDownloadfile($headeronly = false)
     {
         $id = null;
         $userId = null;
+        $hashGiven = null;
+        $timestamp = null;
 
         if (!empty($this->request->id)) {
             $id = $this->request->id;
         }
-        // Disabled for now
-        //if (!empty($this->request->user_id)) {
-        //    $userId = $this->request->user_id;
-        //}
-
+        if (!empty($this->request->s)) {
+            $hashGiven = $this->request->s;
+        }
+        if (!empty($this->request->t)) {
+            $timestamp = $this->request->t;
+        }
+        
         $file = $this->models->files->$id;
-
         if (!$file) {
             $this->response->setStatus(404);
             throw new Flooer_Exception('Not found', LOG_NOTICE);
@@ -744,8 +747,24 @@ class Files extends BaseController
             $this->response->setStatus(403);
             throw new Flooer_Exception('Forbidden', LOG_NOTICE);
         }
-
+        
         $collectionId = $file->collection_id;
+        
+        //Check link if it is expired or old style
+        $salt = $this->appConfig->security['downloadSecret'];
+        $hash = md5($salt . $collectionId . $timestamp);
+        if($hashGiven != $hash || $timestamp > time()) {
+            //redirect to opendesktop project page
+            $defaultDomain = $this->appConfig->general['default_redir_domain'];
+            $this->response->redirect($defaultDomain.'/c/'.$collectionId);
+        }
+        
+        // Disabled for now
+        //if (!empty($this->request->user_id)) {
+        //    $userId = $this->request->user_id;
+        //}
+
+        
         $collection = $this->models->collections->$collectionId;
 
         if (!$headeronly && $file->downloaded_ip != $this->server->REMOTE_ADDR) {
@@ -783,6 +802,39 @@ class Files extends BaseController
             true,
             $headeronly
         );
+    }
+    
+    /**
+     * Old styl downoad link without expired time
+     * @param type $headeronly
+     * @throws Flooer_Exception
+     */
+    public function getDownload($headeronly = false)
+    {
+        $id = null;
+        $userId = null;
+
+        if (!empty($this->request->id)) {
+            $id = $this->request->id;
+        }
+
+        $file = $this->models->files->$id;
+
+        if (!$file) {
+            $this->response->setStatus(404);
+            throw new Flooer_Exception('Not found', LOG_NOTICE);
+        }
+        else if (!$file->active) {
+            $this->response->setStatus(403);
+            throw new Flooer_Exception('Forbidden', LOG_NOTICE);
+        }
+
+        $collectionId = $file->collection_id;
+        
+        //redirect to opendesktop project page
+        $defaultDomain = $this->appConfig->general['default_redir_domain'];
+        $this->response->redirect($defaultDomain.'/c/'.$collectionId);
+        
     }
 
     private function _remoteFilesize($url)

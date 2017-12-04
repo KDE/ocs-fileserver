@@ -800,7 +800,7 @@ class Files extends BaseController
             $defaultDomain = $this->appConfig->general['default_redir_domain'];
             $hasTest = ($hashGiven == $hash);
             $timeTest = ($timestamp <= time());
-            $this->response->redirect($defaultDomain.'/c/'.$collectionId. '/hasTest='.$hasTest.'/$timestamp='.$timestamp.'/$now=', print_r($now));
+            $this->response->redirect($defaultDomain.'/c/'.$collectionId);
         }
         
         // Disabled for now

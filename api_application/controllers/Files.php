@@ -727,6 +727,7 @@ class Files extends BaseController
         $userId = null;
         $hashGiven = null;
         $timestamp = null;
+        $isFromOcsApi = false;
 
         if (!empty($this->request->id)) {
             $id = $this->request->id;
@@ -736,6 +737,9 @@ class Files extends BaseController
         }
         if (!empty($this->request->t)) {
             $timestamp = $this->request->t;
+        }
+        if (!empty($this->request->o)) {
+            $isFromOcsApi = ($this->request->o == 1);
         }
         
         $file = $this->models->files->$id;
@@ -753,9 +757,10 @@ class Files extends BaseController
         //Check link if it is expired or old style
         $salt = $this->appConfig->security['downloadSecret'];
         $hash = md5($salt . $collectionId . $timestamp);
-        $now = time()+1;
+        $now = time();
+        $div= ($timestamp - $now);
         
-        if($hashGiven == $hash && $timestamp <= $now) {
+        if($hashGiven == $hash && $div > 0) {
             //link is ok, go on
             $collection = $this->models->collections->$collectionId;
 
@@ -763,12 +768,17 @@ class Files extends BaseController
                 $this->models->files->updateDownloadedStatus($file->id);
 
                 $downloadedId = $this->models->files_downloaded->generateId();
+                $ref = null;
+                if($isFromOcsApi) {
+                  $ref = 'OCS-API';  
+                }
                 $this->models->files_downloaded->$downloadedId = array(
                     'client_id' => $file->client_id,
                     'owner_id' => $file->owner_id,
                     'collection_id' => $file->collection_id,
                     'file_id' => $file->id,
-                    'user_id' => $userId
+                    'user_id' => $userId,
+                    'referer' => $ref
                 );
             }
 
@@ -798,8 +808,6 @@ class Files extends BaseController
             //link is not ok
             //redirect to opendesktop project page
             $defaultDomain = $this->appConfig->general['default_redir_domain'];
-            $hasTest = ($hashGiven == $hash);
-            $timeTest = ($timestamp <= time());
             $this->response->redirect($defaultDomain.'/c/'.$collectionId);
         }
         
@@ -839,9 +847,55 @@ class Files extends BaseController
 
         $collectionId = $file->collection_id;
         
-        //redirect to opendesktop project page
-        $defaultDomain = $this->appConfig->general['default_redir_domain'];
-        $this->response->redirect($defaultDomain.'/c/'.$collectionId);
+        
+        //enable old links for now
+        if (!$headeronly && $file->downloaded_ip != $this->server->REMOTE_ADDR) {
+            $this->models->files->updateDownloadedStatus($file->id);
+
+            $downloadedId = $this->models->files_downloaded->generateId();
+            $ref = null;
+            if($isFromOcsApi) {
+              $ref = 'OCS-API';  
+            }
+            $this->models->files_downloaded->$downloadedId = array(
+                'client_id' => $file->client_id,
+                'owner_id' => $file->owner_id,
+                'collection_id' => $file->collection_id,
+                'file_id' => $file->id,
+                'user_id' => $userId,
+                'referer' => $ref
+            );
+        }
+
+        // If external URI has set, redirect to it
+        $externalUri = '';
+        $tags = explode(',', $file->tags);
+        foreach ($tags as $tag) {
+            $tag = trim($tag);
+            if (strpos($tag, 'link##') === 0) {
+                $externalUri = urldecode(str_replace('link##', '', $tag));
+                break;
+            }
+        }
+        if ($externalUri) {
+            $this->response->redirect($externalUri);
+        }
+
+        $this->_sendFile(
+            $this->appConfig->general['filesDir'] . '/' . $collection->name . '/' . $file->name,
+            $file->name,
+            $file->type,
+            $file->size,
+            true,
+            $headeronly
+        );
+        
+        
+        
+//        $collection = $this->models->collections->$collectionId;
+//        //redirect to opendesktop project page
+//        $defaultDomain = $this->appConfig->general['default_redir_domain'];
+//        $this->response->redirect($defaultDomain.'/c/'.$collectionId);
         
     }
 

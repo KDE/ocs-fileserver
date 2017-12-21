@@ -231,8 +231,8 @@ class Files extends BaseController
             if (!empty($this->request->local_file_path)) {
                 $name = mb_substr(strip_tags(basename($this->request->local_file_path)), 0, 200);
 
-                #if this is a external link?
-                if($name == 'empty' && str_word_count($tags, 0, 'link##')>0) {
+                // if this is a external link?
+                if ($name == 'empty' && str_word_count($tags, 0, 'link##') > 0) {
                     $type = null;
                     $size = null;
                     $link = null;
@@ -245,7 +245,8 @@ class Files extends BaseController
                             $type = $this->_mimeContentType($link);
                         }
                     }
-                } else {
+                }
+                else {
                     $finfo = new finfo(FILEINFO_MIME_TYPE);
                     $type = $finfo->file($this->request->local_file_path);
                     if (!$type) {
@@ -741,7 +742,7 @@ class Files extends BaseController
         if (!empty($this->request->o)) {
             $isFromOcsApi = ($this->request->o == 1);
         }
-        
+
         $file = $this->models->files->$id;
         if (!$file) {
             $this->response->setStatus(404);
@@ -751,17 +752,17 @@ class Files extends BaseController
             $this->response->setStatus(403);
             throw new Flooer_Exception('Forbidden', LOG_NOTICE);
         }
-        
+
         $collectionId = $file->collection_id;
-        
-        //Check link if it is expired or old style
+
+        // Check link if it is expired or old style
         $salt = $this->appConfig->security['downloadSecret'];
         $hash = md5($salt . $collectionId . $timestamp);
         $now = time();
-        $div= ($timestamp - $now);
-        
-        if($hashGiven == $hash && $div > 0) {
-            //link is ok, go on
+        $div = ($timestamp - $now);
+
+        if ($isFromOcsApi || ($hashGiven == $hash && $div > 0)) {
+            // link is ok, go on
             $collection = $this->models->collections->$collectionId;
 
             if (!$headeronly && $file->downloaded_ip != $this->server->REMOTE_ADDR) {
@@ -769,8 +770,8 @@ class Files extends BaseController
 
                 $downloadedId = $this->models->files_downloaded->generateId();
                 $ref = null;
-                if($isFromOcsApi) {
-                  $ref = 'OCS-API';  
+                if ($isFromOcsApi) {
+                  $ref = 'OCS-API';
                 }
                 $this->models->files_downloaded->$downloadedId = array(
                     'client_id' => $file->client_id,
@@ -804,22 +805,20 @@ class Files extends BaseController
                 true,
                 $headeronly
             );
-        } else {
-            //link is not ok
-            //redirect to opendesktop project page
-            $defaultDomain = $this->appConfig->general['default_redir_domain'];
-            $this->response->redirect($defaultDomain.'/c/'.$collectionId);
         }
-        
+        else {
+            // link is not ok
+            // redirect to opendesktop project page
+            $defaultDomain = $this->appConfig->general['default_redir_domain'];
+            $this->response->redirect($defaultDomain . '/c/' . $collectionId);
+        }
+
         // Disabled for now
         //if (!empty($this->request->user_id)) {
         //    $userId = $this->request->user_id;
         //}
-
-        
-        
     }
-    
+
     /**
      * Old styl downoad link without expired time
      * @param type $headeronly
@@ -829,10 +828,18 @@ class Files extends BaseController
     {
         $id = null;
         $userId = null;
+        $isFromOcsApi = false;
 
         if (!empty($this->request->id)) {
             $id = $this->request->id;
         }
+        if (!empty($this->request->o)) {
+            $isFromOcsApi = ($this->request->o == 1);
+        }
+        // Disabled for now
+        //if (!empty($this->request->user_id)) {
+        //    $userId = $this->request->user_id;
+        //}
 
         $file = $this->models->files->$id;
 
@@ -846,16 +853,17 @@ class Files extends BaseController
         }
 
         $collectionId = $file->collection_id;
-        
-        
-        //enable old links for now
+
+        /* 20171207 disable old style download link
+        $collection = $this->models->collections->$collectionId;
+
         if (!$headeronly && $file->downloaded_ip != $this->server->REMOTE_ADDR) {
             $this->models->files->updateDownloadedStatus($file->id);
 
             $downloadedId = $this->models->files_downloaded->generateId();
             $ref = null;
-            if($isFromOcsApi) {
-              $ref = 'OCS-API';  
+            if ($isFromOcsApi) {
+              $ref = 'OCS-API-OLD';
             }
             $this->models->files_downloaded->$downloadedId = array(
                 'client_id' => $file->client_id,
@@ -889,14 +897,12 @@ class Files extends BaseController
             true,
             $headeronly
         );
-        
-        
-        
-//        $collection = $this->models->collections->$collectionId;
-//        //redirect to opendesktop project page
-//        $defaultDomain = $this->appConfig->general['default_redir_domain'];
-//        $this->response->redirect($defaultDomain.'/c/'.$collectionId);
-        
+         */
+
+        //$collection = $this->models->collections->$collectionId;
+        //redirect to opendesktop project page
+        $defaultDomain = $this->appConfig->general['default_redir_domain'];
+        $this->response->redirect($defaultDomain . '/c/' . $collectionId);
     }
 
     private function _remoteFilesize($url)
@@ -969,7 +975,8 @@ class Files extends BaseController
         $ext = strtolower(array_pop($filename_parts));
         if (array_key_exists($ext, $mime_types)) {
             return $mime_types[$ext];
-        } else {
+        }
+        else {
             $ch = curl_init($url);
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
             curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);

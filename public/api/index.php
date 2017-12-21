@@ -37,8 +37,6 @@ switch (strtolower($_SERVER['SERVER_NAME'])) {
     case 'cc.ppload.com':
         $application->setConfig('environment', 'development');
         break;
-    case 'it.ppload.com':
-        // Continue to default
     case 'www.ppload.com':
         // Continue to default
     case 'dl.opendesktop.org':

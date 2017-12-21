@@ -448,15 +448,6 @@ class Files extends BaseController
             'downloaded_count' => $downloadedCount // for hive files importing (Deprecated)
         );
 
-        // Delete old torrent file
-        $torrent = $this->appConfig->general['torrentsDir'] . '/' . $collectionName . '.torrent';
-        if (is_file($torrent)) {
-            unlink($torrent);
-        }
-        if (is_file($torrent . '.added')) {
-            unlink($torrent . '.added');
-        }
-
         // Save the media information
         if ($id3Tags) {
             // Get artist id or add new one
@@ -704,15 +695,6 @@ class Files extends BaseController
             'files' => $collection->files - 1,
             'size' => $collection->size - $file->size
         );
-
-        // Delete old torrent file
-        $torrent = $this->appConfig->general['torrentsDir'] . '/' . $collection->name . '.torrent';
-        if (is_file($torrent)) {
-            unlink($torrent);
-        }
-        if (is_file($torrent . '.added')) {
-            unlink($torrent . '.added');
-        }
 
         $this->_setResponseContent('success');
     }

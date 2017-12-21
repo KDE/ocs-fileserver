@@ -248,7 +248,7 @@ client_id | Yes | Client ID | - | Client ID.
 secret | Yes | Secret key | - | Secret key.
 id | Yes | Collection ID | - | Collection ID.
 
-### Download collection
+### Download collection (Disabled)
 
 Request: GET {baseURI}/collections/download
 
@@ -256,7 +256,7 @@ Parameter | Required | Value | Default | Description
 ----------|----------|-------|---------|------------
 id | Yes | Collection ID | - | Collection ID.
 
-Response: Torrent data (application/x-bittorrent)
+Response: gzip data (application/x-gzip)
 
 
 ## Files

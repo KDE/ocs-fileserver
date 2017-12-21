@@ -13,24 +13,20 @@ Copyright 2016 by pling GmbH.
 * php5-mysql
 * php5-curl
 * php5-gd
-* ctorrent
-* rtorrent
-* transmission-daemon
 
 
 ## Installation
 
 1. Set configuration options, if needed.
 
-    api_application/configs/*
+    * api_application/configs/*
 
 2. Deploy the project to web server
 
 3. Change data directories to rewritable
 
-    data/
-
-    data/*
+    * data/
+    * data/*
 
 
 ## Documents

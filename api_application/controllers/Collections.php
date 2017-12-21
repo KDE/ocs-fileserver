@@ -351,14 +351,6 @@ class Collections extends BaseController
             throw new Flooer_Exception('Forbidden', LOG_NOTICE);
         }
 
-        $torrent = $this->appConfig->general['torrentsDir'] . '/' . $collection->name . '.torrent';
-        if (is_file($torrent)) {
-            unlink($torrent);
-        }
-        if (is_file($torrent . '.added')) {
-            unlink($torrent . '.added');
-        }
-
         $thumbnail = $this->appConfig->general['thumbnailsDir'] . '/collection_' . $id . '.jpg';
         if (is_file($thumbnail)) {
             unlink($thumbnail);
@@ -380,6 +372,7 @@ class Collections extends BaseController
         $this->_setResponseContent('success');
     }
 
+    /* Collection download has disabled for now
     public function headDownload()
     {
         $this->getDownload(true);
@@ -405,16 +398,11 @@ class Collections extends BaseController
             throw new Flooer_Exception('Not found', LOG_NOTICE);
         }
 
-        $torrent = $this->appConfig->general['torrentsDir'] . '/' . $collection->name . '.torrent';
-        if (is_file($torrent . '.added')) {
-            $torrent = $torrent . '.added';
-        }
-        else if (!is_file($torrent)) {
-            $this->_generateTorrent(
-                $this->appConfig->general['filesDir'] . '/' . $collection->name,
-                $torrent
-            );
-        }
+        $archive = '/tmp/archives/' . $collection->name . '.tar.gz';
+        $this->_generateArchive(
+            $this->appConfig->general['filesDir'] . '/' . $collection->name,
+            $archive
+        );
 
         $profile = $this->models->profiles->getProfile(
             $collection->client_id,
@@ -447,13 +435,14 @@ class Collections extends BaseController
         }
 
         $this->_sendFile(
-            $torrent,
-            $filename . '.torrent',
-            'application/x-bittorrent',
-            filesize($torrent),
+            $archive,
+            $filename . '.tar.gz',
+            'application/x-gzip',
+            filesize($archive),
             true,
             $headeronly
         );
     }
+    */
 
 }

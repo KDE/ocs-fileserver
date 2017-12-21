@@ -189,12 +189,10 @@ class BaseController extends Flooer_Controller
         return $ids;
     }
 
-    protected function _generateTorrent($source, $torrent)
+    protected function _generateArchive($source, $archive)
     {
-        exec('ctorrent'
-            . ' -t'
-            . ' -u "' . $this->appConfig->general['announceUri'] . '"'
-            . ' -s "' . $torrent . '"'
+        exec('tar'
+            . ' -czf "' . $archive . '"'
             . ' "' . $source . '"'
         );
     }

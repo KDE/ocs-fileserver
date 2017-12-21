@@ -756,7 +756,7 @@ class Files extends BaseController
         $collectionId = $file->collection_id;
 
         // Check link if it is expired or old style
-        $salt = $this->appConfig->security['downloadSecret'];
+        $salt = $this->_getDownloadSecret($file->client_id);
         $hash = md5($salt . $collectionId . $timestamp);
         $now = time();
         $div = ($timestamp - $now);

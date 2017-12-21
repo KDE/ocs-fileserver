@@ -4,3 +4,5 @@ data/files/*
 data/torrents/*
 data/thumbnails/*
 public/torrent/config.php
+public/robots.txt
+public/google*.html

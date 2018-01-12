@@ -96,6 +96,15 @@ class BaseController extends Flooer_Controller
         return $dom;
     }
 
+    protected function _getDownloadSecret($clientId)
+    {
+        $clients = parse_ini_file('configs/clients.ini', true);
+        if (isset($clients[$clientId])) {
+            return $clients[$clientId]['downloadSecret'];
+        }
+        return '';
+    }
+
     protected function _isAllowedAccess()
     {
         if (!empty($this->request->client_id)
@@ -180,12 +189,10 @@ class BaseController extends Flooer_Controller
         return $ids;
     }
 
-    protected function _generateTorrent($source, $torrent)
+    protected function _generateArchive($source, $archive)
     {
-        exec('ctorrent'
-            . ' -t'
-            . ' -u "' . $this->appConfig->general['announceUri'] . '"'
-            . ' -s "' . $torrent . '"'
+        exec('tar'
+            . ' -czf "' . $archive . '"'
             . ' "' . $source . '"'
         );
     }

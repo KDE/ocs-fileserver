@@ -58,14 +58,6 @@ class Owners extends BaseController
         if ($collections) {
             $this->log->log("Delete collections (client:$clientId; owner:$ownerId)", LOG_NOTICE);
             foreach ($collections as $collection) {
-                $torrent = $this->appConfig->general['torrentsDir'] . '/' . $collection->name . '.torrent';
-                if (is_file($torrent)) {
-                    unlink($torrent);
-                }
-                if (is_file($torrent . '.added')) {
-                    unlink($torrent . '.added');
-                }
-
                 $thumbnail = $this->appConfig->general['thumbnailsDir'] . '/collection_' . $collection->id . '.jpg';
                 if (is_file($thumbnail)) {
                     unlink($thumbnail);

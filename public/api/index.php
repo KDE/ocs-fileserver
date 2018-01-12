@@ -34,6 +34,13 @@ switch (strtolower($_SERVER['SERVER_NAME'])) {
     case 'localhost':
         $application->setConfig('environment', 'debug');
         break;
+    case 'cc.ppload.com':
+        $application->setConfig('environment', 'development');
+        break;
+    case 'www.ppload.com':
+        // Continue to default
+    case 'dl.opendesktop.org':
+        // Continue to default
     default:
         $application->setConfig('environment', 'production');
         break;

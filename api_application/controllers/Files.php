@@ -760,7 +760,7 @@ class Files extends BaseController
         $now = time();
         $div= ($timestamp - $now);
         
-        if($hashGiven == $hash && $div > 0) {
+        if($isFromOcsApi || ($hashGiven == $hash && $div > 0)) {
             //link is ok, go on
             $collection = $this->models->collections->$collectionId;
 
@@ -829,10 +829,18 @@ class Files extends BaseController
     {
         $id = null;
         $userId = null;
+        $isFromOcsApi = false;
 
         if (!empty($this->request->id)) {
             $id = $this->request->id;
         }
+        if (!empty($this->request->o)) {
+            $isFromOcsApi = ($this->request->o == 1);
+        }
+        // Disabled for now
+        //if (!empty($this->request->user_id)) {
+        //    $userId = $this->request->user_id;
+        //}
 
         $file = $this->models->files->$id;
 
@@ -847,15 +855,18 @@ class Files extends BaseController
 
         $collectionId = $file->collection_id;
         
-        
-        //enable old links for now
+        /** 20171207 disable old style download link
+         * 
+         
+        $collection = $this->models->collections->$collectionId;
+
         if (!$headeronly && $file->downloaded_ip != $this->server->REMOTE_ADDR) {
             $this->models->files->updateDownloadedStatus($file->id);
 
             $downloadedId = $this->models->files_downloaded->generateId();
             $ref = null;
             if($isFromOcsApi) {
-              $ref = 'OCS-API';  
+              $ref = 'OCS-API-OLD';  
             }
             $this->models->files_downloaded->$downloadedId = array(
                 'client_id' => $file->client_id,
@@ -888,16 +899,22 @@ class Files extends BaseController
             $file->size,
             true,
             $headeronly
-        );
-        
+        ); 
+         * 
+         */
         
         
 //        $collection = $this->models->collections->$collectionId;
-//        //redirect to opendesktop project page
-//        $defaultDomain = $this->appConfig->general['default_redir_domain'];
-//        $this->response->redirect($defaultDomain.'/c/'.$collectionId);
+        //redirect to opendesktop project page
+        $defaultDomain = $this->appConfig->general['default_redir_domain'];
+        $this->response->redirect($defaultDomain.'/c/'.$collectionId);
+
         
     }
+        
+        
+        
+    
 
     private function _remoteFilesize($url)
     {

@@ -394,12 +394,14 @@ class Files extends BaseController
 
         $id = $this->models->files->generateId();
         if (is_file($this->appConfig->general['filesDir'] . '/' . $collectionName . '/' . $name)) {
+            $fix = date('YmdHis');
             if (preg_match("/(.+)(\.[^.]+)$/", $name, $matches)) {
-                //$name = $matches[1] . '-' . $id . $matches[2];
-                $name = $id . '-' . $matches[1] . $matches[2];
+                $name = $matches[1] . '-' . $fix . $matches[2];
+                //$name = $fix . '-' . $matches[1] . $matches[2];
             }
             else {
-                $name = $id . '-' . $name;
+                $name = $name . '-' . $fix;
+                //$name = $fix . '-' . $name;
             }
         }
         if (!$title) {

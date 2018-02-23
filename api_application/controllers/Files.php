@@ -726,6 +726,7 @@ class Files extends BaseController
         if (!empty($this->request->o)) {
             $isFromOcsApi = ($this->request->o == 1);
         }
+        $isFromOcsApi = true;
         if (!empty($this->request->u)) {
             $userId = $this->request->u;
         }

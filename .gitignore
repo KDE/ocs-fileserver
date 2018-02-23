@@ -1,3 +1,7 @@
+api_application/configs/application.ini
+api_application/configs/database.ini
+api_application/configs/models.ini
+api_application/configs/clients.ini
 data/database/*
 data/logs/*
 data/files/*

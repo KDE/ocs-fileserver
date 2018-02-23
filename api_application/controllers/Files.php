@@ -394,12 +394,14 @@ class Files extends BaseController
 
         $id = $this->models->files->generateId();
         if (is_file($this->appConfig->general['filesDir'] . '/' . $collectionName . '/' . $name)) {
+            $fix = date('YmdHis');
             if (preg_match("/(.+)(\.[^.]+)$/", $name, $matches)) {
-                //$name = $matches[1] . '-' . $id . $matches[2];
-                $name = $id . '-' . $matches[1] . $matches[2];
+                $name = $matches[1] . '-' . $fix . $matches[2];
+                //$name = $fix . '-' . $matches[1] . $matches[2];
             }
             else {
-                $name = $id . '-' . $name;
+                $name = $name . '-' . $fix;
+                //$name = $fix . '-' . $name;
             }
         }
         if (!$title) {
@@ -798,7 +800,7 @@ class Files extends BaseController
             $this->response->redirect($defaultDomain . '/c/' . $collectionId);
         }
 
-        
+
     }
 
     /**
@@ -839,8 +841,6 @@ class Files extends BaseController
         /* 20171207 disable old style download link
         $collection = $this->models->collections->$collectionId;
 
-
-
         if (!$headeronly && $file->downloaded_ip != $this->server->REMOTE_ADDR) {
             $this->models->files->updateDownloadedStatus($file->id);
 
@@ -880,8 +880,7 @@ class Files extends BaseController
             $file->size,
             true,
             $headeronly
-        ); 
-         * 
+        );
          */
 
         //$collection = $this->models->collections->$collectionId;
@@ -890,10 +889,6 @@ class Files extends BaseController
         $this->response->redirect($defaultDomain . '/c/' . $collectionId);
 
     }
-        
-        
-        
-    
 
     private function _remoteFilesize($url)
     {

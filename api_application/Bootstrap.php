@@ -123,8 +123,10 @@ class Bootstrap extends Flooer_Application_Bootstrap
         require_once 'models/BaseModel.php';
         require_once 'models/ModelContainer.php';
         $db = $this->getApplication()->getResource('db');
-        $config = parse_ini_file('configs/models.ini', true);
-        $models = new ModelContainer($db, $config);
+        $models = new ModelContainer(
+            $db,
+            parse_ini_file('configs/models.ini', true)
+        );
         $this->getApplication()->setResource('models', $models);
     }
 

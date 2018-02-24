@@ -17,16 +17,20 @@ Copyright 2016 by pling GmbH.
 
 ## Installation
 
-1. Set configuration options, if needed.
+Create configuration files from *.sample.ini to *.ini.
 
-    * api_application/configs/*
+* api_application/configs/application.ini
+* api_application/configs/database.ini
+* api_application/configs/models.ini
+* api_application/configs/clients.ini
 
-2. Deploy the project to web server
+Change data directories to rewritable
 
-3. Change data directories to rewritable
-
-    * data/
-    * data/*
+* data
+* data/database
+* data/files
+* data/logs
+* data/thumbnails
 
 
 ## Documents

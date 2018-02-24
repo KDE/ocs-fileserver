@@ -8,3 +8,4 @@ data/files/*
 data/thumbnails/*
 public/robots.txt
 public/google*.html
+public/.well-known/*

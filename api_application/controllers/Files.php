@@ -748,6 +748,9 @@ class Files extends BaseController
         $hash = md5($salt . $collectionId . $timestamp);
         $now = time();
         $div = ($timestamp - $now);
+        
+        //Log
+        $this->log->log("Start Download.  client: $file->client_id; salt: $salt; hash: $hash; hashGiven: $hashGiven)", LOG_NOTICE);
 
         if ($isFromOcsApi || ($hashGiven == $hash && $div > 0)) {
             // link is ok, go on

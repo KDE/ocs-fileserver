@@ -796,7 +796,7 @@ class Files extends BaseController
         else {
             // link is not ok
             //Log
-            $this->log->log("Start Download failed. file: $file->id  client: $file->client_id; salt: $salt; hash: $hash; hashGiven: $hashGiven)", LOG_NOTICE);
+            $this->log->log("Start Download failed. file: $file->id; time-div: $div;  client: $file->client_id; salt: $salt; hash: $hash; hashGiven: $hashGiven)", LOG_NOTICE);
             // redirect to opendesktop project page
             $defaultDomain = $this->appConfig->general['default_redir_domain'];
             $this->response->redirect($defaultDomain . '/c/' . $collectionId);

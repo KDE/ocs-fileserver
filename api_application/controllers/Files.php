@@ -748,9 +748,6 @@ class Files extends BaseController
         $now = time();
         $div = ($timestamp - $now);
         
-        //Log
-        $this->log->log("Start Download.  client: $file->client_id; salt: $salt; hash: $hash; hashGiven: $hashGiven)", LOG_NOTICE);
-
         if ($isFromOcsApi || ($hashGiven == $hash && $div > 0)) {
             // link is ok, go on
             $collection = $this->models->collections->$collectionId;
@@ -798,6 +795,8 @@ class Files extends BaseController
         }
         else {
             // link is not ok
+            //Log
+            $this->log->log("Start Download failed. file: $file->id  client: $file->client_id; salt: $salt; hash: $hash; hashGiven: $hashGiven)", LOG_NOTICE);
             // redirect to opendesktop project page
             $defaultDomain = $this->appConfig->general['default_redir_domain'];
             $this->response->redirect($defaultDomain . '/c/' . $collectionId);

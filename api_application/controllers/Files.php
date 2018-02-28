@@ -395,13 +395,13 @@ class Files extends BaseController
         $id = $this->models->files->generateId();
         if (is_file($this->appConfig->general['filesDir'] . '/' . $collectionName . '/' . $name)) {
             $fix = date('YmdHis');
-            if (preg_match("/(.+)(\.[^.]+)$/", $name, $matches)) {
-                $name = $matches[1] . '-' . $fix . $matches[2];
+            if (preg_match("/^([^.]+)(\..+)/", $name, $matches)) {
                 //$name = $fix . '-' . $matches[1] . $matches[2];
+                $name = $matches[1] . '-' . $fix . $matches[2];
             }
             else {
-                $name = $name . '-' . $fix;
                 //$name = $fix . '-' . $name;
+                $name = $name . '-' . $fix;
             }
         }
         if (!$title) {
@@ -798,6 +798,8 @@ class Files extends BaseController
         }
         else {
             // link is not ok
+            //Log
+            $this->log->log("Start Download failed. file: $file->id; time-div: $div;  client: $file->client_id; salt: $salt; hash: $hash; hashGiven: $hashGiven)", LOG_NOTICE);
             // redirect to opendesktop project page
             $defaultDomain = $this->appConfig->general['default_redir_domain'];
             $this->response->redirect($defaultDomain . '/c/' . $collectionId);

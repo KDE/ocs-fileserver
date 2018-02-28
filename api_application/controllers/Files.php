@@ -395,13 +395,13 @@ class Files extends BaseController
         $id = $this->models->files->generateId();
         if (is_file($this->appConfig->general['filesDir'] . '/' . $collectionName . '/' . $name)) {
             $fix = date('YmdHis');
-            if (preg_match("/(.+)(\.[^.]+)$/", $name, $matches)) {
-                $name = $matches[1] . '-' . $fix . $matches[2];
+            if (preg_match("/^([^.]+)(\..+)/", $name, $matches)) {
                 //$name = $fix . '-' . $matches[1] . $matches[2];
+                $name = $matches[1] . '-' . $fix . $matches[2];
             }
             else {
-                $name = $name . '-' . $fix;
                 //$name = $fix . '-' . $name;
+                $name = $name . '-' . $fix;
             }
         }
         if (!$title) {
@@ -747,7 +747,7 @@ class Files extends BaseController
         $hash = md5($salt . $collectionId . $timestamp);
         $now = time();
         $div = ($timestamp - $now);
-        
+
         if ($isFromOcsApi || ($hashGiven == $hash && $div > 0)) {
             // link is ok, go on
             $collection = $this->models->collections->$collectionId;

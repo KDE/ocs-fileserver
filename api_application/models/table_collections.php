@@ -85,7 +85,7 @@ class table_collections extends BaseModel
         parent::__set($key, $value);
     }
 
-    public function getCollections($clientId = null, $ownerId = null, $category = null, $tags = null, $contentId = null, $search = null, $ids = null, array $favoriteIds = null, $downloadedTimeperiodBegin = null, $downloadedTimeperiodEnd = null, $sort = 'name', $perpage = 20, $page = 1)
+    public function getCollections($status = 'active', $clientId = null, $ownerId = null, $category = null, $tags = null, $contentId = null, $search = null, $ids = null, array $favoriteIds = null, $downloadedTimeperiodBegin = null, $downloadedTimeperiodEnd = null, $sort = 'name', $perpage = 20, $page = 1)
     {
         $prefix = $this->getPrefix();
         $name = $this->getName();
@@ -97,9 +97,14 @@ class table_collections extends BaseModel
         $order = "{$prefix}collections.name ASC";
         $offset = 0;
 
-        $where[] = "{$prefix}collections.active = :active";
-        $values[':active'] = 1;
-
+        if ($status != 'all') {
+            $active = 1;
+            if ($status == 'inactive') {
+                $active = 0;
+            }
+            $where[] = "{$prefix}collections.active = :active";
+            $values[':active'] = $active;
+        }
         if ($clientId) {
             $where[] = "{$prefix}collections.client_id = :client_id";
             $values[':client_id'] = $clientId;
@@ -292,12 +297,8 @@ class table_collections extends BaseModel
         $collection = $this->fetchRow(
             $this->_join
             . " WHERE {$prefix}collections.id = :id"
-            . " AND {$prefix}collections.active = :active"
             . ' LIMIT 1',
-            array(
-                ':id' => $id,
-                ':active' => 1
-            )
+            array(':id' => $id)
         );
         $this->setColumns($columns);
 

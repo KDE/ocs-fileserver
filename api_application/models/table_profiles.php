@@ -38,7 +38,7 @@ class table_profiles extends BaseModel
         parent::__set($key, $value);
     }
 
-    public function getProfiles($clientId = null, $ownerId = null, $search = null, $ids = null, array $favoriteIds = null, $sort = 'name', $perpage = 20, $page = 1)
+    public function getProfiles($status = 'active', $clientId = null, $ownerId = null, $search = null, $ids = null, array $favoriteIds = null, $sort = 'name', $perpage = 20, $page = 1)
     {
         $statementOption = '';
         $where = array();
@@ -46,9 +46,14 @@ class table_profiles extends BaseModel
         $order = 'name ASC';
         $offset = 0;
 
-        $where[] = 'active = :active';
-        $values[':active'] = 1;
-
+        if ($status != 'all') {
+            $active = 1;
+            if ($status == 'inactive') {
+                $active = 0;
+            }
+            $where[] = 'active = :active';
+            $values[':active'] = $active;
+        }
         if ($clientId) {
             $where[] = 'client_id = :client_id';
             $values[':client_id'] = $clientId;
@@ -128,24 +133,18 @@ class table_profiles extends BaseModel
     {
         return $this->fetchRow(
             'WHERE id = :id'
-            . ' AND active = :active'
             . ' LIMIT 1',
-            array(
-                ':id' => $id,
-                ':active' => 1
-            )
+            array(':id' => $id)
         );
     }
 
     public function getProfileByClientIdAndOwnerId($clientId, $ownerId)
     {
         return $this->fetchRow(
-            'WHERE active = :active'
-            . ' AND client_id = :client_id'
+            'WHERE client_id = :client_id'
             . ' AND owner_id = :owner_id'
             . ' LIMIT 1',
             array(
-                ':active' => 1,
                 ':client_id' => $clientId,
                 ':owner_id' => $ownerId
             )

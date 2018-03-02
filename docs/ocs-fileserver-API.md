@@ -269,6 +269,7 @@ status | - | active/inactive/all | active | File status.
 client_id | - | Client ID | - | Client ID.
 owner_id | - | User ID | - | User ID.
 collection_id | - | Collection ID | - | Collection ID.
+collection_status | - | active/inactive/all | active | Collection status.
 collection_category | - | Collection category | - | Collection category.
 collection_tags | - | Tag,Tag,Tag | - | Collection tag list as comma-separated list.
 collection_content_id | - | Collection content ID | - | Collection content ID.

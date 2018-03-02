@@ -30,6 +30,7 @@ class Files extends BaseController
         $clientId = null;
         $ownerId = null;
         $collectionId = null;
+        $collectionStatus = 'active';
         $collectionCategory = null;
         $collectionTags = null; // Comma-separated list
         $collectionContentId = null;
@@ -58,6 +59,9 @@ class Files extends BaseController
         }
         if (!empty($this->request->collection_id)) {
             $collectionId = $this->request->collection_id;
+        }
+        if (!empty($this->request->collection_status)) {
+            $collectionStatus = $this->request->collection_status;
         }
         if (isset($this->request->collection_category)) {
             $collectionCategory = $this->request->collection_category;
@@ -126,6 +130,7 @@ class Files extends BaseController
             $clientId,
             $ownerId,
             $collectionId,
+            $collectionStatus,
             $collectionCategory,
             $collectionTags,
             $collectionContentId,
@@ -362,6 +367,7 @@ class Files extends BaseController
         else {
             // Prepare new collection
             $collectionId = $this->models->collections->generateId();
+            $collectionActive = 1;
             $collectionName = $collectionId;
             $collectionTitle = $collectionName;
             $collectionDescription = null;
@@ -377,6 +383,7 @@ class Files extends BaseController
                 throw new Flooer_Exception('Failed to create collection', LOG_ALERT);
             }
             $collectionData = array(
+                'active' => $collectionActive,
                 'client_id' => $clientId,
                 'owner_id' => $ownerId,
                 'name' => $collectionName,
@@ -644,6 +651,8 @@ class Files extends BaseController
 
     public function deleteFile()
     {
+        // Please be care the remove process in Collections::deleteCollection()
+
         if (!$this->_isAllowedAccess()) {
             $this->response->setStatus(403);
             throw new Flooer_Exception('Forbidden', LOG_NOTICE);
@@ -672,16 +681,14 @@ class Files extends BaseController
         //unlink($this->appConfig->general['filesDir'] . '/' . $collection->name . '/' . $file->name);
         //unset($this->models->files->$id);
 
-        if (!is_dir($this->appConfig->general['filesDir'] . '/' . $collection->name . '/.trash')
-            && !mkdir($this->appConfig->general['filesDir'] . '/' . $collection->name . '/.trash')
-        ) {
+        $trashDir = $this->appConfig->general['filesDir'] . '/' . $collection->name . '/.trash';
+        if (!is_dir($trashDir) && !mkdir($trashDir)) {
             $this->response->setStatus(500);
             throw new Flooer_Exception('Failed to remove the file', LOG_ALERT);
         }
-
         if (!rename(
             $this->appConfig->general['filesDir'] . '/' . $collection->name . '/' . $file->name,
-            $this->appConfig->general['filesDir'] . '/' . $collection->name . '/.trash/' . $id . '-' . $file->name
+            $trashDir . '/' . $id . '-' . $file->name
         )) {
             $this->response->setStatus(500);
             throw new Flooer_Exception('Failed to remove the file', LOG_ALERT);
@@ -701,9 +708,9 @@ class Files extends BaseController
         $this->_setResponseContent('success');
     }
 
-    public function headDownload()
+    public function headDownloadfile()
     {
-        $this->getDownload(true);
+        $this->getDownloadfile(true);
     }
 
     public function getDownloadfile($headeronly = false)
@@ -747,9 +754,9 @@ class Files extends BaseController
         $hash = md5($salt . $collectionId . $timestamp);
         $now = time();
         $div = ($timestamp - $now);
-        
+
         //Log
-        $this->log->log("Start Download.  client: $file->client_id; salt: $salt; hash: $hash; hashGiven: $hashGiven)", LOG_NOTICE);
+        $this->log->log("Start Download (client: $file->client_id; salt: $salt; hash: $hash; hashGiven: $hashGiven)", LOG_NOTICE);
 
         if ($isFromOcsApi || ($hashGiven == $hash && $div > 0)) {
             // link is ok, go on
@@ -799,13 +806,16 @@ class Files extends BaseController
         else {
             // link is not ok
             //Log
-            $this->log->log("Start Download failed. file: $file->id; time-div: $div;  client: $file->client_id; salt: $salt; hash: $hash; hashGiven: $hashGiven)", LOG_NOTICE);
+            $this->log->log("Start Download failed (file: $file->id; time-div: $div;  client: $file->client_id; salt: $salt; hash: $hash; hashGiven: $hashGiven)", LOG_NOTICE);
             // redirect to opendesktop project page
             $defaultDomain = $this->appConfig->general['default_redir_domain'];
             $this->response->redirect($defaultDomain . '/c/' . $collectionId);
         }
+    }
 
-
+    public function headDownload()
+    {
+        $this->getDownload(true);
     }
 
     /**
@@ -892,7 +902,6 @@ class Files extends BaseController
         //redirect to opendesktop project page
         $defaultDomain = $this->appConfig->general['default_redir_domain'];
         $this->response->redirect($defaultDomain . '/c/' . $collectionId);
-
     }
 
     private function _remoteFilesize($url)
@@ -901,9 +910,8 @@ class Files extends BaseController
         if (!$fp = @fopen($url, 'rb')) {
             return false;
         }
-        if (
-            isset($http_response_header) &&
-            preg_match($regex, implode("\n", $http_response_header), $matches)
+        if (isset($http_response_header)
+            && preg_match($regex, implode("\n", $http_response_header), $matches)
         ) {
             return (int)$matches[0];
         }

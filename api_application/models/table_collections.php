@@ -37,6 +37,7 @@ class table_collections extends BaseModel
         $prefix = $this->getPrefix();
 
         $this->_columns = "{$prefix}collections.id AS id,"
+            . "{$prefix}collections.active AS active,"
             . "{$prefix}collections.client_id AS client_id,"
             . "{$prefix}collections.owner_id AS owner_id,"
             . "{$prefix}profiles.id AS profile_id,"
@@ -84,7 +85,7 @@ class table_collections extends BaseModel
         parent::__set($key, $value);
     }
 
-    public function getCollections($clientId = null, $ownerId = null, $category = null, $tags = null, $contentId = null, $search = null, $ids = null, array $favoriteIds = null, $downloadedTimeperiodBegin = null, $downloadedTimeperiodEnd = null, $sort = 'name', $perpage = 20, $page = 1)
+    public function getCollections($status = 'active', $clientId = null, $ownerId = null, $category = null, $tags = null, $contentId = null, $search = null, $ids = null, array $favoriteIds = null, $downloadedTimeperiodBegin = null, $downloadedTimeperiodEnd = null, $sort = 'name', $perpage = 20, $page = 1)
     {
         $prefix = $this->getPrefix();
         $name = $this->getName();
@@ -96,6 +97,14 @@ class table_collections extends BaseModel
         $order = "{$prefix}collections.name ASC";
         $offset = 0;
 
+        if ($status != 'all') {
+            $active = 1;
+            if ($status == 'inactive') {
+                $active = 0;
+            }
+            $where[] = "{$prefix}collections.active = :active";
+            $values[':active'] = $active;
+        }
         if ($clientId) {
             $where[] = "{$prefix}collections.client_id = :client_id";
             $values[':client_id'] = $clientId;

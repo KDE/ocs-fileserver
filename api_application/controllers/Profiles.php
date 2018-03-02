@@ -26,6 +26,7 @@ class Profiles extends BaseController
 
     public function getIndex()
     {
+        $status = 'active';
         $clientId = null;
         $ownerId = null;
         $search = null; // 3 or more strings
@@ -35,6 +36,9 @@ class Profiles extends BaseController
         $perpage = $this->appConfig->general['perpage'];
         $page = 1;
 
+        if (!empty($this->request->status)) {
+            $status = $this->request->status;
+        }
         if (!empty($this->request->client_id)) {
             $clientId = $this->request->client_id;
         }
@@ -74,6 +78,7 @@ class Profiles extends BaseController
         }
 
         $profiles = $this->models->profiles->getProfiles(
+            $status,
             $clientId,
             $ownerId,
             $search,
@@ -100,7 +105,7 @@ class Profiles extends BaseController
             $id = $this->request->id;
         }
 
-        $profile = $this->models->profiles->$id;
+        $profile = $this->models->profiles->getProfile($id);
 
         if (!$profile) {
             $this->response->setStatus(404);
@@ -123,6 +128,7 @@ class Profiles extends BaseController
         }
 
         $id = null; // Auto generated
+        $active = 1;
         $clientId = null;
         $ownerId = null;
         $name = null;
@@ -185,17 +191,23 @@ class Profiles extends BaseController
             return;
         }
 
-        $profile = $this->models->profiles->getProfile($clientId, $ownerId);
+        $profile = $this->models->profiles->getProfileByClientIdAndOwnerId($clientId, $ownerId);
 
-        $id = null;
         if ($profile) {
-            $id = $profile->id;
+            if ($profile->active) {
+                $id = $profile->id;
+            }
+            else {
+                $this->response->setStatus(403);
+                throw new Flooer_Exception('Forbidden', LOG_NOTICE);
+            }
         }
         else {
             $id = $this->models->profiles->generateId();
         }
 
         $this->models->profiles->$id = array(
+            'active' => $active,
             'client_id' => $clientId,
             'owner_id' => $ownerId,
             'name' => $name,
@@ -205,7 +217,7 @@ class Profiles extends BaseController
             'description' => $description
         );
 
-        $profile = $this->models->profiles->$id;
+        $profile = $this->models->profiles->getProfile($id);
 
         $this->_setResponseContent(
             'success',
@@ -252,7 +264,7 @@ class Profiles extends BaseController
             $this->response->setStatus(404);
             throw new Flooer_Exception('Not found', LOG_NOTICE);
         }
-        else if ($profile->client_id != $this->request->client_id) {
+        else if (!$profile->active || $profile->client_id != $this->request->client_id) {
             $this->response->setStatus(403);
             throw new Flooer_Exception('Forbidden', LOG_NOTICE);
         }
@@ -276,7 +288,7 @@ class Profiles extends BaseController
 
         $this->models->profiles->$id = $updata;
 
-        $profile = $this->models->profiles->$id;
+        $profile = $this->models->profiles->getProfile($id);
 
         $this->_setResponseContent(
             'success',
@@ -286,6 +298,8 @@ class Profiles extends BaseController
 
     public function deleteProfile()
     {
+        // Please be care the remove process in Owners::deleteOwner()
+
         if (!$this->_isAllowedAccess()) {
             $this->response->setStatus(403);
             throw new Flooer_Exception('Forbidden', LOG_NOTICE);
@@ -303,12 +317,13 @@ class Profiles extends BaseController
             $this->response->setStatus(404);
             throw new Flooer_Exception('Not found', LOG_NOTICE);
         }
-        else if ($profile->client_id != $this->request->client_id) {
+        else if (!$profile->active || $profile->client_id != $this->request->client_id) {
             $this->response->setStatus(403);
             throw new Flooer_Exception('Forbidden', LOG_NOTICE);
         }
 
-        unset($this->models->profiles->$id);
+        //unset($this->models->profiles->$id);
+        $this->models->profiles->$id = array('active' => 0);
 
         $this->_setResponseContent('success');
     }

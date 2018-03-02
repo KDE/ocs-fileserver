@@ -26,6 +26,7 @@ class Collections extends BaseController
 
     public function getIndex()
     {
+        $status = 'active';
         $clientId = null;
         $ownerId = null;
         $category = null;
@@ -40,6 +41,9 @@ class Collections extends BaseController
         $perpage = $this->appConfig->general['perpage'];
         $page = 1;
 
+        if (!empty($this->request->status)) {
+            $status = $this->request->status;
+        }
         if (!empty($this->request->client_id)) {
             $clientId = $this->request->client_id;
         }
@@ -94,6 +98,7 @@ class Collections extends BaseController
         }
 
         $collections = $this->models->collections->getCollections(
+            $status,
             $clientId,
             $ownerId,
             $category,
@@ -146,6 +151,7 @@ class Collections extends BaseController
         }
 
         $id = null; // Auto generated
+        $active = 1;
         $clientId = null;
         $ownerId = null;
         $name = null; // Auto generated
@@ -212,14 +218,15 @@ class Collections extends BaseController
         if (!$title) {
             $title = $name;
         }
-        if (!is_dir($this->appConfig->general['filesDir'] . '/' . $name)
-            && !mkdir($this->appConfig->general['filesDir'] . '/' . $name)
-        ) {
+
+        $collectionDir = $this->appConfig->general['filesDir'] . '/' . $name;
+        if (!is_dir($collectionDir) && !mkdir($collectionDir)) {
             $this->response->setStatus(500);
             throw new Flooer_Exception('Failed to create collection', LOG_ALERT);
         }
 
         $this->models->collections->$id = array(
+            'active' => $active,
             'client_id' => $clientId,
             'owner_id' => $ownerId,
             'name' => $name,
@@ -289,7 +296,7 @@ class Collections extends BaseController
             $this->response->setStatus(404);
             throw new Flooer_Exception('Not found', LOG_NOTICE);
         }
-        else if ($collection->client_id != $this->request->client_id) {
+        else if (!$collection->active || $collection->client_id != $this->request->client_id) {
             $this->response->setStatus(403);
             throw new Flooer_Exception('Forbidden', LOG_NOTICE);
         }
@@ -329,6 +336,8 @@ class Collections extends BaseController
 
     public function deleteCollection()
     {
+        // Please be care the remove process in Owners::deleteOwner()
+
         if (!$this->_isAllowedAccess()) {
             $this->response->setStatus(403);
             throw new Flooer_Exception('Forbidden', LOG_NOTICE);
@@ -346,7 +355,7 @@ class Collections extends BaseController
             $this->response->setStatus(404);
             throw new Flooer_Exception('Not found', LOG_NOTICE);
         }
-        else if ($collection->client_id != $this->request->client_id) {
+        else if (!$collection->active || $collection->client_id != $this->request->client_id) {
             $this->response->setStatus(403);
             throw new Flooer_Exception('Forbidden', LOG_NOTICE);
         }
@@ -356,14 +365,28 @@ class Collections extends BaseController
             unlink($thumbnail);
         }
 
-        exec('rm'
-            . ' -r'
-            . ' "' . $this->appConfig->general['filesDir'] . '/' . $collection->name . '"'
-        );
+        //exec('rm'
+        //    . ' -rf'
+        //    . ' "' . $this->appConfig->general['filesDir'] . '/' . $collection->name . '"'
+        //);
+        //unset($this->models->collections->$id);
 
-        unset($this->models->collections->$id);
+        $trashDir = $this->appConfig->general['filesDir'] . '/.trash';
+        if (!is_dir($trashDir) && !mkdir($trashDir)) {
+            $this->response->setStatus(500);
+            throw new Flooer_Exception('Failed to remove the collection', LOG_ALERT);
+        }
+        if (!rename(
+            $this->appConfig->general['filesDir'] . '/' . $collection->name,
+            $trashDir . '/' . $id . '-' . $collection->name
+        )) {
+            $this->response->setStatus(500);
+            throw new Flooer_Exception('Failed to remove the collection', LOG_ALERT);
+        }
+
+        $this->models->collections->$id = array('active' => 0);
         //$this->models->collections_downloaded->deleteByCollectionId($id);
-        $this->models->files->deleteByCollectionId($id);
+        //$this->models->files->deleteByCollectionId($id);
         //$this->models->files_downloaded->deleteByCollectionId($id);
         $this->models->favorites->deleteByCollectionId($id);
         $this->models->media->deleteByCollectionId($id);
@@ -397,6 +420,10 @@ class Collections extends BaseController
             $this->response->setStatus(404);
             throw new Flooer_Exception('Not found', LOG_NOTICE);
         }
+        else if (!$collection->active) {
+            $this->response->setStatus(403);
+            throw new Flooer_Exception('Forbidden', LOG_NOTICE);
+        }
 
         $archive = '/tmp/archives/' . $collection->name . '.tar.gz';
         $this->_generateArchive(
@@ -404,7 +431,7 @@ class Collections extends BaseController
             $archive
         );
 
-        $profile = $this->models->profiles->getProfile(
+        $profile = $this->models->profiles->getProfileByClientIdAndOwnerId(
             $collection->client_id,
             $collection->owner_id
         );

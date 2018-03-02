@@ -110,6 +110,7 @@ Request: GET {baseURI}/profiles/index
 
 Parameter | Required | Value | Default | Description
 ----------|----------|-------|---------|------------
+status | - | active/inactive/all | active | Profile status.
 client_id | - | Client ID | - | Client ID.
 owner_id | - | User ID | - | User ID.
 search | - | Search term | - | 3 or more strings.
@@ -178,6 +179,7 @@ Request: GET {baseURI}/collections/index
 
 Parameter | Required | Value | Default | Description
 ----------|----------|-------|---------|------------
+status | - | active/inactive/all | active | Collection status.
 client_id | - | Client ID | - | Client ID.
 owner_id | - | User ID | - | User ID.
 category | - | Category | - | Category.
@@ -236,10 +238,6 @@ content_page | - | Content page address | - | Additional information.
 
 ### Delete collection
 
-When a collection has been deleted,
-related data of the collection
-and all files in the collection also deleted.
-
 Request: DELETE {baseURI}/collections/collection
 
 Parameter | Required | Value | Default | Description
@@ -271,6 +269,7 @@ status | - | active/inactive/all | active | File status.
 client_id | - | Client ID | - | Client ID.
 owner_id | - | User ID | - | User ID.
 collection_id | - | Collection ID | - | Collection ID.
+collection_status | - | active/inactive/all | active | Collection status.
 collection_category | - | Collection category | - | Collection category.
 collection_tags | - | Tag,Tag,Tag | - | Collection tag list as comma-separated list.
 collection_content_id | - | Collection content ID | - | Collection content ID.
@@ -349,12 +348,6 @@ content_id | - | Content ID | - | Additional information.
 content_page | - | Content page address | - | Additional information.
 
 ### Delete file
-
-When a file has been deleted,
-deleted file has been changed into inactive state,
-and real file has moved to the trash directory in a collection directory.
-
-And related data of the file has been deleted.
 
 Request: DELETE {baseURI}/files/file
 

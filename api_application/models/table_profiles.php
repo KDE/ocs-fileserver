@@ -124,7 +124,20 @@ class table_profiles extends BaseModel
         );
     }
 
-    public function getProfile($clientId, $ownerId)
+    public function getProfile($id)
+    {
+        return $this->fetchRow(
+            'WHERE id = :id'
+            . ' AND active = :active'
+            . ' LIMIT 1',
+            array(
+                ':id' => $id,
+                ':active' => 1
+            )
+        );
+    }
+
+    public function getProfileByClientIdAndOwnerId($clientId, $ownerId)
     {
         return $this->fetchRow(
             'WHERE active = :active'

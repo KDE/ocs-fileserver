@@ -43,15 +43,16 @@ class Owners extends BaseController
 
         // Remove profile
         $profile = $this->models->profiles->getProfileByClientIdAndOwnerId($clientId, $ownerId);
-        if ($profile) {
+        if ($profile && $profile->active) {
             //unset($this->models->profiles->{$profile->id});
             $this->models->profiles->{$profile->id} = array('active' => 0);
         }
 
         // Remove collections and related data
         $collections = $this->models->collections->fetchRowset(
-            'WHERE client_id = :client_id AND owner_id = :owner_id',
+            'WHERE active = :active AND client_id = :client_id AND owner_id = :owner_id',
             array(
+                ':active' => 1,
                 ':client_id' => $clientId,
                 ':owner_id' => $ownerId
             )

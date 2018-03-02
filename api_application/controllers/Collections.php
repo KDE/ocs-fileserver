@@ -381,7 +381,7 @@ class Collections extends BaseController
             $trashDir . '/' . $id . '-' . $collection->name
         )) {
             $this->response->setStatus(500);
-            throw new Flooer_Exception('Failed to remove the file', LOG_ALERT);
+            throw new Flooer_Exception('Failed to remove the collection', LOG_ALERT);
         }
 
         $this->models->collections->$id = array('active' => 0);

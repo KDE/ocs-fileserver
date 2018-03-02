@@ -105,7 +105,7 @@ class Profiles extends BaseController
             $id = $this->request->id;
         }
 
-        $profile = $this->models->profiles->$id;
+        $profile = $this->models->profiles->getProfile($id);
 
         if (!$profile) {
             $this->response->setStatus(404);
@@ -210,7 +210,7 @@ class Profiles extends BaseController
             'description' => $description
         );
 
-        $profile = $this->models->profiles->$id;
+        $profile = $this->models->profiles->getProfile($id);
 
         $this->_setResponseContent(
             'success',
@@ -281,7 +281,7 @@ class Profiles extends BaseController
 
         $this->models->profiles->$id = $updata;
 
-        $profile = $this->models->profiles->$id;
+        $profile = $this->models->profiles->getProfile($id);
 
         $this->_setResponseContent(
             'success',

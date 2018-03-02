@@ -362,6 +362,7 @@ class Files extends BaseController
         else {
             // Prepare new collection
             $collectionId = $this->models->collections->generateId();
+            $collectionActive = 1;
             $collectionName = $collectionId;
             $collectionTitle = $collectionName;
             $collectionDescription = null;
@@ -377,6 +378,7 @@ class Files extends BaseController
                 throw new Flooer_Exception('Failed to create collection', LOG_ALERT);
             }
             $collectionData = array(
+                'active' => $collectionActive,
                 'client_id' => $clientId,
                 'owner_id' => $ownerId,
                 'name' => $collectionName,

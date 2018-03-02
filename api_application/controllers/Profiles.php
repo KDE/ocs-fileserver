@@ -26,6 +26,7 @@ class Profiles extends BaseController
 
     public function getIndex()
     {
+        $status = 'active';
         $clientId = null;
         $ownerId = null;
         $search = null; // 3 or more strings
@@ -35,6 +36,9 @@ class Profiles extends BaseController
         $perpage = $this->appConfig->general['perpage'];
         $page = 1;
 
+        if (!empty($this->request->status)) {
+            $status = $this->request->status;
+        }
         if (!empty($this->request->client_id)) {
             $clientId = $this->request->client_id;
         }
@@ -74,6 +78,7 @@ class Profiles extends BaseController
         }
 
         $profiles = $this->models->profiles->getProfiles(
+            $status,
             $clientId,
             $ownerId,
             $search,

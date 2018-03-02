@@ -701,9 +701,9 @@ class Files extends BaseController
         $this->_setResponseContent('success');
     }
 
-    public function headDownload()
+    public function headDownloadfile()
     {
-        $this->getDownload(true);
+        $this->getDownloadfile(true);
     }
 
     public function getDownloadfile($headeronly = false)
@@ -747,7 +747,7 @@ class Files extends BaseController
         $hash = md5($salt . $collectionId . $timestamp);
         $now = time();
         $div = ($timestamp - $now);
-        
+
         //Log
         $this->log->log("Start Download.  client: $file->client_id; salt: $salt; hash: $hash; hashGiven: $hashGiven)", LOG_NOTICE);
 
@@ -804,8 +804,11 @@ class Files extends BaseController
             $defaultDomain = $this->appConfig->general['default_redir_domain'];
             $this->response->redirect($defaultDomain . '/c/' . $collectionId);
         }
+    }
 
-
+    public function headDownload()
+    {
+        $this->getDownload(true);
     }
 
     /**
@@ -892,7 +895,6 @@ class Files extends BaseController
         //redirect to opendesktop project page
         $defaultDomain = $this->appConfig->general['default_redir_domain'];
         $this->response->redirect($defaultDomain . '/c/' . $collectionId);
-
     }
 
     private function _remoteFilesize($url)
@@ -901,9 +903,8 @@ class Files extends BaseController
         if (!$fp = @fopen($url, 'rb')) {
             return false;
         }
-        if (
-            isset($http_response_header) &&
-            preg_match($regex, implode("\n", $http_response_header), $matches)
+        if (isset($http_response_header)
+            && preg_match($regex, implode("\n", $http_response_header), $matches)
         ) {
             return (int)$matches[0];
         }

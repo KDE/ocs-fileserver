@@ -421,10 +421,6 @@ id | Yes | Favorite ID | - | Favorite ID.
 
 ### Delete owner
 
-When a owner has been deleted,
-related data of the owner
-and all files of the owner also deleted.
-
 Request: DELETE {baseURI}/owners/owner
 
 Parameter | Required | Value | Default | Description

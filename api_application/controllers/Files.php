@@ -644,6 +644,8 @@ class Files extends BaseController
 
     public function deleteFile()
     {
+        // Please be care the remove process in Collections::deleteCollection()
+
         if (!$this->_isAllowedAccess()) {
             $this->response->setStatus(403);
             throw new Flooer_Exception('Forbidden', LOG_NOTICE);

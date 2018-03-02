@@ -41,13 +41,14 @@ class Owners extends BaseController
         $clientId = $this->request->client_id;
         $ownerId = $this->request->id;
 
-        // Delete profile
-        $profile = $this->models->profiles->getProfile($clientId, $ownerId);
+        // Remove profile
+        $profile = $this->models->profiles->getProfileByClientIdAndOwnerId($clientId, $ownerId);
         if ($profile) {
-            unset($this->models->profiles->{$profile->id});
+            //unset($this->models->profiles->{$profile->id});
+            $this->models->profiles->{$profile->id} = array('active' => 0);
         }
 
-        // Delete collections and related data
+        // Remove collections and related data
         $collections = $this->models->collections->fetchRowset(
             'WHERE client_id = :client_id AND owner_id = :owner_id',
             array(
@@ -56,21 +57,35 @@ class Owners extends BaseController
             )
         );
         if ($collections) {
-            $this->log->log("Delete collections (client:$clientId; owner:$ownerId)", LOG_NOTICE);
+            $this->log->log("Remove collections (client:$clientId; owner:$ownerId)", LOG_NOTICE);
             foreach ($collections as $collection) {
                 $thumbnail = $this->appConfig->general['thumbnailsDir'] . '/collection_' . $collection->id . '.jpg';
                 if (is_file($thumbnail)) {
                     unlink($thumbnail);
                 }
 
-                exec('rm'
-                . ' -r'
-                . ' "' . $this->appConfig->general['filesDir'] . '/' . $collection->name . '"'
-                );
+                //exec('rm'
+                //    . ' -rf'
+                //    . ' "' . $this->appConfig->general['filesDir'] . '/' . $collection->name . '"'
+                //);
+                //unset($this->models->collections->{$collection->id});
 
-                unset($this->models->collections->{$collection->id});
+                $trashDir = $this->appConfig->general['filesDir'] . '/.trash';
+                if (!is_dir($trashDir) && !mkdir($trashDir)) {
+                    $this->response->setStatus(500);
+                    throw new Flooer_Exception('Failed to remove the collection', LOG_ALERT);
+                }
+                if (!rename(
+                    $this->appConfig->general['filesDir'] . '/' . $collection->name,
+                    $trashDir . '/' . $collection->id . '-' . $collection->name
+                )) {
+                    $this->response->setStatus(500);
+                    throw new Flooer_Exception('Failed to remove the collection', LOG_ALERT);
+                }
+
+                $this->models->collections->{$collection->id} = array('active' => 0);
                 //$this->models->collections_downloaded->deleteByCollectionId($collection->id);
-                $this->models->files->deleteByCollectionId($collection->id);
+                //$this->models->files->deleteByCollectionId($collection->id);
                 //$this->models->files_downloaded->deleteByCollectionId($collection->id);
                 $this->models->favorites->deleteByCollectionId($collection->id);
                 $this->models->media->deleteByCollectionId($collection->id);
@@ -78,7 +93,7 @@ class Owners extends BaseController
             }
         }
 
-        // Delete user or owner from favorites
+        // Remove user or owner from favorites
         $favorites = $this->models->favorites->fetchRowset(
             'WHERE client_id = :client_id'
             . ' AND (user_id = :user_id OR owner_id = :owner_id)',

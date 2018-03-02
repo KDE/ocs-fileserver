@@ -336,6 +336,8 @@ class Collections extends BaseController
 
     public function deleteCollection()
     {
+        // Please be care the remove process in Owners::deleteOwner()
+
         if (!$this->_isAllowedAccess()) {
             $this->response->setStatus(403);
             throw new Flooer_Exception('Forbidden', LOG_NOTICE);

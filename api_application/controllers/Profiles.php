@@ -128,6 +128,7 @@ class Profiles extends BaseController
         }
 
         $id = null; // Auto generated
+        $active = 1;
         $clientId = null;
         $ownerId = null;
         $name = null;
@@ -190,17 +191,23 @@ class Profiles extends BaseController
             return;
         }
 
-        $profile = $this->models->profiles->getProfile($clientId, $ownerId);
+        $profile = $this->models->profiles->getProfileByClientIdAndOwnerId($clientId, $ownerId);
 
-        $id = null;
         if ($profile) {
-            $id = $profile->id;
+            if ($profile->active) {
+                $id = $profile->id;
+            }
+            else {
+                $this->response->setStatus(403);
+                throw new Flooer_Exception('Forbidden', LOG_NOTICE);
+            }
         }
         else {
             $id = $this->models->profiles->generateId();
         }
 
         $this->models->profiles->$id = array(
+            'active' => $active,
             'client_id' => $clientId,
             'owner_id' => $ownerId,
             'name' => $name,
@@ -257,7 +264,7 @@ class Profiles extends BaseController
             $this->response->setStatus(404);
             throw new Flooer_Exception('Not found', LOG_NOTICE);
         }
-        else if ($profile->client_id != $this->request->client_id) {
+        else if (!$profile->active || $profile->client_id != $this->request->client_id) {
             $this->response->setStatus(403);
             throw new Flooer_Exception('Forbidden', LOG_NOTICE);
         }
@@ -308,12 +315,13 @@ class Profiles extends BaseController
             $this->response->setStatus(404);
             throw new Flooer_Exception('Not found', LOG_NOTICE);
         }
-        else if ($profile->client_id != $this->request->client_id) {
+        else if (!$profile->active || $profile->client_id != $this->request->client_id) {
             $this->response->setStatus(403);
             throw new Flooer_Exception('Forbidden', LOG_NOTICE);
         }
 
-        unset($this->models->profiles->$id);
+        //unset($this->models->profiles->$id);
+        $this->models->profiles->$id = array('active' => 0);
 
         $this->_setResponseContent('success');
     }

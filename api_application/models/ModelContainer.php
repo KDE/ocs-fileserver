@@ -120,6 +120,7 @@ class ModelContainer
         if (!isset($this->_db->collections)) {
             $this->_db->collections = array(
                 'id' => $idDifinition,
+                'active' => 'INTEGER(1) NOT NULL DEFAULT 1',
                 'client_id' => 'INTEGER NOT NULL',
                 'owner_id' => 'VARCHAR(255) NOT NULL',
                 'name' => 'VARCHAR(255) NOT NULL',

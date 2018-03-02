@@ -37,6 +37,7 @@ class table_collections extends BaseModel
         $prefix = $this->getPrefix();
 
         $this->_columns = "{$prefix}collections.id AS id,"
+            . "{$prefix}collections.active AS active,"
             . "{$prefix}collections.client_id AS client_id,"
             . "{$prefix}collections.owner_id AS owner_id,"
             . "{$prefix}profiles.id AS profile_id,"
@@ -95,6 +96,9 @@ class table_collections extends BaseModel
         $values = array();
         $order = "{$prefix}collections.name ASC";
         $offset = 0;
+
+        $where[] = "{$prefix}collections.active = :active";
+        $values[':active'] = 1;
 
         if ($clientId) {
             $where[] = "{$prefix}collections.client_id = :client_id";
@@ -288,8 +292,12 @@ class table_collections extends BaseModel
         $collection = $this->fetchRow(
             $this->_join
             . " WHERE {$prefix}collections.id = :id"
+            . " AND {$prefix}collections.active = :active"
             . ' LIMIT 1',
-            array(':id' => $id)
+            array(
+                ':id' => $id,
+                ':active' => 1
+            )
         );
         $this->setColumns($columns);
 

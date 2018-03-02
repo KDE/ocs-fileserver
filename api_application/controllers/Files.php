@@ -30,6 +30,7 @@ class Files extends BaseController
         $clientId = null;
         $ownerId = null;
         $collectionId = null;
+        $collectionStatus = 'active';
         $collectionCategory = null;
         $collectionTags = null; // Comma-separated list
         $collectionContentId = null;
@@ -58,6 +59,9 @@ class Files extends BaseController
         }
         if (!empty($this->request->collection_id)) {
             $collectionId = $this->request->collection_id;
+        }
+        if (!empty($this->request->collection_status)) {
+            $collectionStatus = $this->request->collection_status;
         }
         if (isset($this->request->collection_category)) {
             $collectionCategory = $this->request->collection_category;
@@ -126,6 +130,7 @@ class Files extends BaseController
             $clientId,
             $ownerId,
             $collectionId,
+            $collectionStatus,
             $collectionCategory,
             $collectionTags,
             $collectionContentId,

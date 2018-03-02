@@ -43,6 +43,7 @@ class table_files extends BaseModel
             . "{$prefix}profiles.id AS profile_id,"
             . "{$prefix}profiles.name AS profile_name,"
             . "{$prefix}files.collection_id AS collection_id,"
+            . "{$prefix}collections.active AS collection_active,"
             . "{$prefix}collections.title AS collection_title,"
             . "{$prefix}collections.category AS collection_category,"
             . "{$prefix}collections.tags AS collection_tags,"
@@ -96,7 +97,7 @@ class table_files extends BaseModel
         parent::__set($key, $value);
     }
 
-    public function getFiles($status = 'active', $clientId = null, $ownerId = null, $collectionId = null, $collectionCategory = null, $collectionTags = null, $collectionContentId = null, $types = null, $category = null, $tags = null, $ocsCompatibility = 'all', $contentId = null, $search = null, $ids = null, array $favoriteIds = null, $downloadedTimeperiodBegin = null, $downloadedTimeperiodEnd = null, $sort = 'name', $perpage = 20, $page = 1)
+    public function getFiles($status = 'active', $clientId = null, $ownerId = null, $collectionId = null, $collectionStatus = 'active', $collectionCategory = null, $collectionTags = null, $collectionContentId = null, $types = null, $category = null, $tags = null, $ocsCompatibility = 'all', $contentId = null, $search = null, $ids = null, array $favoriteIds = null, $downloadedTimeperiodBegin = null, $downloadedTimeperiodEnd = null, $sort = 'name', $perpage = 20, $page = 1)
     {
         $prefix = $this->getPrefix();
         $name = $this->getName();
@@ -127,6 +128,14 @@ class table_files extends BaseModel
         if ($collectionId) {
             $where[] = "{$prefix}files.collection_id = :collection_id";
             $values[':collection_id'] = $collectionId;
+        }
+        if ($collectionStatus != 'all') {
+            $collectionActive = 1;
+            if ($collectionStatus == 'inactive') {
+                $collectionActive = 0;
+            }
+            $where[] = "{$prefix}collections.active = :collection_active";
+            $values[':collection_active'] = $collectionActive;
         }
         if ($collectionCategory !== null && $collectionCategory !== '') {
             $where[] = "{$prefix}collections.category = :collection_category";

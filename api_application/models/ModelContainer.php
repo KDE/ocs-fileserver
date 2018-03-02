@@ -106,6 +106,7 @@ class ModelContainer
         if (!isset($this->_db->profiles)) {
             $this->_db->profiles = array(
                 'id' => $idDifinition,
+                'active' => 'INTEGER(1) NOT NULL DEFAULT 1',
                 'client_id' => 'INTEGER NOT NULL',
                 'owner_id' => 'VARCHAR(255) NOT NULL',
                 'name' => 'VARCHAR(255) NOT NULL',

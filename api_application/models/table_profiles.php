@@ -46,6 +46,9 @@ class table_profiles extends BaseModel
         $order = 'name ASC';
         $offset = 0;
 
+        $where[] = 'active = :active';
+        $values[':active'] = 1;
+
         if ($clientId) {
             $where[] = 'client_id = :client_id';
             $values[':client_id'] = $clientId;
@@ -124,10 +127,12 @@ class table_profiles extends BaseModel
     public function getProfile($clientId, $ownerId)
     {
         return $this->fetchRow(
-            'WHERE client_id = :client_id'
+            'WHERE active = :active'
+            . ' AND client_id = :client_id'
             . ' AND owner_id = :owner_id'
             . ' LIMIT 1',
             array(
+                ':active' => 1,
                 ':client_id' => $clientId,
                 ':owner_id' => $ownerId
             )

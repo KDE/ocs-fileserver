@@ -363,14 +363,28 @@ class Collections extends BaseController
             unlink($thumbnail);
         }
 
-        exec('rm'
-            . ' -r'
-            . ' "' . $this->appConfig->general['filesDir'] . '/' . $collection->name . '"'
-        );
+        //exec('rm'
+        //    . ' -rf'
+        //    . ' "' . $this->appConfig->general['filesDir'] . '/' . $collection->name . '"'
+        //);
+        //unset($this->models->collections->$id);
 
-        unset($this->models->collections->$id);
+        $trashDir = $this->appConfig->general['filesDir'] . '/.trash';
+        if (!is_dir($trashDir) && !mkdir($trashDir)) {
+            $this->response->setStatus(500);
+            throw new Flooer_Exception('Failed to remove the collection', LOG_ALERT);
+        }
+        if (!rename(
+            $this->appConfig->general['filesDir'] . '/' . $collection->name,
+            $trashDir . '/' . $id . '-' . $collection->name
+        )) {
+            $this->response->setStatus(500);
+            throw new Flooer_Exception('Failed to remove the file', LOG_ALERT);
+        }
+
+        $this->models->collections->$id = array('active' => 0);
         //$this->models->collections_downloaded->deleteByCollectionId($id);
-        $this->models->files->deleteByCollectionId($id);
+        //$this->models->files->deleteByCollectionId($id);
         //$this->models->files_downloaded->deleteByCollectionId($id);
         $this->models->favorites->deleteByCollectionId($id);
         $this->models->media->deleteByCollectionId($id);

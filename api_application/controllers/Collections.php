@@ -376,10 +376,12 @@ class Collections extends BaseController
             $this->response->setStatus(500);
             throw new Flooer_Exception('Failed to remove the collection', LOG_ALERT);
         }
-        if (!rename(
-            $this->appConfig->general['filesDir'] . '/' . $collection->name,
-            $trashDir . '/' . $id . '-' . $collection->name
-        )) {
+        if (is_dir($this->appConfig->general['filesDir'] . '/' . $collection->name)
+            && !rename(
+                $this->appConfig->general['filesDir'] . '/' . $collection->name,
+                $trashDir . '/' . $id . '-' . $collection->name
+            )
+        ) {
             $this->response->setStatus(500);
             throw new Flooer_Exception('Failed to remove the collection', LOG_ALERT);
         }

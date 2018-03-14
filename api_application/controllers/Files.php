@@ -686,10 +686,12 @@ class Files extends BaseController
             $this->response->setStatus(500);
             throw new Flooer_Exception('Failed to remove the file', LOG_ALERT);
         }
-        if (!rename(
-            $this->appConfig->general['filesDir'] . '/' . $collection->name . '/' . $file->name,
-            $trashDir . '/' . $id . '-' . $file->name
-        )) {
+        if (is_file($this->appConfig->general['filesDir'] . '/' . $collection->name . '/' . $file->name)
+            && !rename(
+                $this->appConfig->general['filesDir'] . '/' . $collection->name . '/' . $file->name,
+                $trashDir . '/' . $id . '-' . $file->name
+            )
+        ) {
             $this->response->setStatus(500);
             throw new Flooer_Exception('Failed to remove the file', LOG_ALERT);
         }

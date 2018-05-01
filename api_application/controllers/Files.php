@@ -187,6 +187,7 @@ class Files extends BaseController
 
         $id = null; // Auto generated
         $active = 1;
+        $exist = 1;
         $clientId = null;
         $ownerId = null;
         $collectionId = null;
@@ -403,11 +404,9 @@ class Files extends BaseController
         if (is_file($this->appConfig->general['filesDir'] . '/' . $collectionName . '/' . $name)) {
             $fix = date('YmdHis');
             if (preg_match("/^([^.]+)(\..+)/", $name, $matches)) {
-                //$name = $fix . '-' . $matches[1] . $matches[2];
                 $name = $matches[1] . '-' . $fix . $matches[2];
             }
             else {
-                //$name = $fix . '-' . $name;
                 $name = $name . '-' . $fix;
             }
         }
@@ -440,6 +439,7 @@ class Files extends BaseController
 
         $this->models->files->$id = array(
             'active' => $active,
+            'exist' => $exist,
             'client_id' => $clientId,
             'owner_id' => $ownerId,
             'collection_id' => $collectionId,
@@ -678,9 +678,6 @@ class Files extends BaseController
         $collectionId = $file->collection_id;
         $collection = $this->models->collections->$collectionId;
 
-        //unlink($this->appConfig->general['filesDir'] . '/' . $collection->name . '/' . $file->name);
-        //unset($this->models->files->$id);
-
         $trashDir = $this->appConfig->general['filesDir'] . '/' . $collection->name . '/.trash';
         if (!is_dir($trashDir) && !mkdir($trashDir)) {
             $this->response->setStatus(500);
@@ -726,6 +723,9 @@ class Files extends BaseController
         if (!empty($this->request->id)) {
             $id = $this->request->id;
         }
+        if (!empty($this->request->u)) {
+            $userId = $this->request->u;
+        }
         if (!empty($this->request->s)) {
             $hashGiven = $this->request->s;
         }
@@ -735,18 +735,12 @@ class Files extends BaseController
         if (!empty($this->request->o)) {
             $isFromOcsApi = ($this->request->o == 1);
         }
-        if (!empty($this->request->u)) {
-            $userId = $this->request->u;
-        }
 
         $file = $this->models->files->$id;
-        if (!$file) {
+
+        if (!$file || !$file->exist) {
             $this->response->setStatus(404);
             throw new Flooer_Exception('Not found', LOG_NOTICE);
-        }
-        else if (!$file->active) {
-            $this->response->setStatus(403);
-            throw new Flooer_Exception('Forbidden', LOG_NOTICE);
         }
 
         $collectionId = $file->collection_id;
@@ -796,8 +790,24 @@ class Files extends BaseController
                 $this->response->redirect($externalUri);
             }
 
+            $collectionDir = '';
+            if ($collection->active) {
+                $collectionDir = $this->appConfig->general['filesDir'] . '/' . $collection->name;
+            }
+            else {
+                $collectionDir = $this->appConfig->general['filesDir'] . '/.trash/' . $collection->id . '-' . $collection->name;
+            }
+
+            $filePath = '';
+            if ($file->active) {
+                $filePath = $collectionDir . '/' . $file->name;
+            }
+            else {
+                $filePath = $collectionDir . '/.trash/' . $file->id . '-' . $file->name;
+            }
+
             $this->_sendFile(
-                $this->appConfig->general['filesDir'] . '/' . $collection->name . '/' . $file->name,
+                $filePath,
                 $file->name,
                 $file->type,
                 $file->size,
@@ -834,23 +844,18 @@ class Files extends BaseController
         if (!empty($this->request->id)) {
             $id = $this->request->id;
         }
+        if (!empty($this->request->u)) {
+            $userId = $this->request->u;
+        }
         if (!empty($this->request->o)) {
             $isFromOcsApi = ($this->request->o == 1);
         }
-        // Disabled for now
-        //if (!empty($this->request->user_id)) {
-        //    $userId = $this->request->user_id;
-        //}
 
         $file = $this->models->files->$id;
 
-        if (!$file) {
+        if (!$file || !$file->exist) {
             $this->response->setStatus(404);
             throw new Flooer_Exception('Not found', LOG_NOTICE);
-        }
-        else if (!$file->active) {
-            $this->response->setStatus(403);
-            throw new Flooer_Exception('Forbidden', LOG_NOTICE);
         }
 
         $collectionId = $file->collection_id;
@@ -890,8 +895,24 @@ class Files extends BaseController
             $this->response->redirect($externalUri);
         }
 
+        $collectionDir = '';
+        if ($collection->active) {
+            $collectionDir = $this->appConfig->general['filesDir'] . '/' . $collection->name;
+        }
+        else {
+            $collectionDir = $this->appConfig->general['filesDir'] . '/.trash/' . $collection->id . '-' . $collection->name;
+        }
+
+        $filePath = '';
+        if ($file->active) {
+            $filePath = $collectionDir . '/' . $file->name;
+        }
+        else {
+            $filePath = $collectionDir . '/.trash/' . $file->id . '-' . $file->name;
+        }
+
         $this->_sendFile(
-            $this->appConfig->general['filesDir'] . '/' . $collection->name . '/' . $file->name,
+            $filePath,
             $file->name,
             $file->type,
             $file->size,
@@ -900,7 +921,6 @@ class Files extends BaseController
         );
          */
 
-        //$collection = $this->models->collections->$collectionId;
         //redirect to opendesktop project page
         $defaultDomain = $this->appConfig->general['default_redir_domain'];
         $this->response->redirect($defaultDomain . '/c/' . $collectionId);

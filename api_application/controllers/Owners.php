@@ -44,7 +44,6 @@ class Owners extends BaseController
         // Remove profile
         $profile = $this->models->profiles->getProfileByClientIdAndOwnerId($clientId, $ownerId);
         if ($profile && $profile->active) {
-            //unset($this->models->profiles->{$profile->id});
             $this->models->profiles->{$profile->id} = array('active' => 0);
         }
 
@@ -64,12 +63,6 @@ class Owners extends BaseController
                 if (is_file($thumbnail)) {
                     unlink($thumbnail);
                 }
-
-                //exec('rm'
-                //    . ' -rf'
-                //    . ' "' . $this->appConfig->general['filesDir'] . '/' . $collection->name . '"'
-                //);
-                //unset($this->models->collections->{$collection->id});
 
                 $trashDir = $this->appConfig->general['filesDir'] . '/.trash';
                 if (!is_dir($trashDir) && !mkdir($trashDir)) {

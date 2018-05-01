@@ -586,8 +586,8 @@ class Media extends BaseController
             $id = $this->request->id;
         }
         // Disabled for now
-        //if (!empty($this->request->user_id)) {
-        //    $userId = $this->request->user_id;
+        //if (!empty($this->request->u)) {
+        //    $userId = $this->request->u;
         //}
 
         $media = $this->models->media->$id;

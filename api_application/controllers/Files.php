@@ -187,6 +187,7 @@ class Files extends BaseController
 
         $id = null; // Auto generated
         $active = 1;
+        $exist = 1;
         $clientId = null;
         $ownerId = null;
         $collectionId = null;
@@ -438,6 +439,7 @@ class Files extends BaseController
 
         $this->models->files->$id = array(
             'active' => $active,
+            'exist' => $exist,
             'client_id' => $clientId,
             'owner_id' => $ownerId,
             'collection_id' => $collectionId,
@@ -736,7 +738,7 @@ class Files extends BaseController
 
         $file = $this->models->files->$id;
 
-        if (!$file) {
+        if (!$file || !$file->exist) {
             $this->response->setStatus(404);
             throw new Flooer_Exception('Not found', LOG_NOTICE);
         }
@@ -851,7 +853,7 @@ class Files extends BaseController
 
         $file = $this->models->files->$id;
 
-        if (!$file) {
+        if (!$file || !$file->exist) {
             $this->response->setStatus(404);
             throw new Flooer_Exception('Not found', LOG_NOTICE);
         }

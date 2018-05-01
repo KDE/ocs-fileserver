@@ -160,7 +160,6 @@ class ModelContainer
             $this->_db->files = array(
                 'id' => $idDifinition,
                 'active' => 'INTEGER(1) NOT NULL DEFAULT 1',
-                'exist' => 'INTEGER(1) NOT NULL DEFAULT 1',
                 'client_id' => 'INTEGER NOT NULL',
                 'owner_id' => 'VARCHAR(255) NOT NULL',
                 'collection_id' => 'INTEGER NOT NULL',

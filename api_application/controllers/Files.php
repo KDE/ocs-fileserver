@@ -744,10 +744,6 @@ class Files extends BaseController
             $this->response->setStatus(404);
             throw new Flooer_Exception('Not found', LOG_NOTICE);
         }
-        else if (!$file->active) {
-            $this->response->setStatus(403);
-            throw new Flooer_Exception('Forbidden', LOG_NOTICE);
-        }
 
         $collectionId = $file->collection_id;
 
@@ -796,8 +792,15 @@ class Files extends BaseController
                 $this->response->redirect($externalUri);
             }
 
+            $filePath = '';
+            if ($file->active) {
+                $filePath = $this->appConfig->general['filesDir'] . '/' . $collection->name . '/' . $file->name;
+            }
+            else {
+                $filePath = $this->appConfig->general['filesDir'] . '/' . $collection->name . '/.trash/' . $id . '-' . $file->name;
+            }
             $this->_sendFile(
-                $this->appConfig->general['filesDir'] . '/' . $collection->name . '/' . $file->name,
+                $filePath,
                 $file->name,
                 $file->type,
                 $file->size,
@@ -848,10 +851,6 @@ class Files extends BaseController
             $this->response->setStatus(404);
             throw new Flooer_Exception('Not found', LOG_NOTICE);
         }
-        else if (!$file->active) {
-            $this->response->setStatus(403);
-            throw new Flooer_Exception('Forbidden', LOG_NOTICE);
-        }
 
         $collectionId = $file->collection_id;
 
@@ -890,8 +889,15 @@ class Files extends BaseController
             $this->response->redirect($externalUri);
         }
 
+        $filePath = '';
+        if ($file->active) {
+            $filePath = $this->appConfig->general['filesDir'] . '/' . $collection->name . '/' . $file->name;
+        }
+        else {
+            $filePath = $this->appConfig->general['filesDir'] . '/' . $collection->name . '/.trash/' . $id . '-' . $file->name;
+        }
         $this->_sendFile(
-            $this->appConfig->general['filesDir'] . '/' . $collection->name . '/' . $file->name,
+            $filePath,
             $file->name,
             $file->type,
             $file->size,

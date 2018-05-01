@@ -38,7 +38,7 @@ class table_files extends BaseModel
 
         $this->_columns = "{$prefix}files.id AS id,"
             . "{$prefix}files.active AS active,"
-            . "{$prefix}files.exists AS exists,"
+            . "{$prefix}files.exist AS exist,"
             . "{$prefix}files.client_id AS client_id,"
             . "{$prefix}files.owner_id AS owner_id,"
             . "{$prefix}profiles.id AS profile_id,"

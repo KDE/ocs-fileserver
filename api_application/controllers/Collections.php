@@ -365,12 +365,6 @@ class Collections extends BaseController
             unlink($thumbnail);
         }
 
-        //exec('rm'
-        //    . ' -rf'
-        //    . ' "' . $this->appConfig->general['filesDir'] . '/' . $collection->name . '"'
-        //);
-        //unset($this->models->collections->$id);
-
         $trashDir = $this->appConfig->general['filesDir'] . '/.trash';
         if (!is_dir($trashDir) && !mkdir($trashDir)) {
             $this->response->setStatus(500);
@@ -411,10 +405,9 @@ class Collections extends BaseController
         if (!empty($this->request->id)) {
             $id = $this->request->id;
         }
-        // Disabled for now
-        //if (!empty($this->request->user_id)) {
-        //    $userId = $this->request->user_id;
-        //}
+        if (!empty($this->request->u)) {
+            $userId = $this->request->u;
+        }
 
         $collection = $this->models->collections->$id;
 

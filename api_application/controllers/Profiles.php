@@ -322,7 +322,6 @@ class Profiles extends BaseController
             throw new Flooer_Exception('Forbidden', LOG_NOTICE);
         }
 
-        //unset($this->models->profiles->$id);
         $this->models->profiles->$id = array('active' => 0);
 
         $this->_setResponseContent('success');

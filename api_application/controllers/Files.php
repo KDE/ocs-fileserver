@@ -403,11 +403,9 @@ class Files extends BaseController
         if (is_file($this->appConfig->general['filesDir'] . '/' . $collectionName . '/' . $name)) {
             $fix = date('YmdHis');
             if (preg_match("/^([^.]+)(\..+)/", $name, $matches)) {
-                //$name = $fix . '-' . $matches[1] . $matches[2];
                 $name = $matches[1] . '-' . $fix . $matches[2];
             }
             else {
-                //$name = $fix . '-' . $name;
                 $name = $name . '-' . $fix;
             }
         }
@@ -678,9 +676,6 @@ class Files extends BaseController
         $collectionId = $file->collection_id;
         $collection = $this->models->collections->$collectionId;
 
-        //unlink($this->appConfig->general['filesDir'] . '/' . $collection->name . '/' . $file->name);
-        //unset($this->models->files->$id);
-
         $trashDir = $this->appConfig->general['filesDir'] . '/' . $collection->name . '/.trash';
         if (!is_dir($trashDir) && !mkdir($trashDir)) {
             $this->response->setStatus(500);
@@ -726,6 +721,9 @@ class Files extends BaseController
         if (!empty($this->request->id)) {
             $id = $this->request->id;
         }
+        if (!empty($this->request->u)) {
+            $userId = $this->request->u;
+        }
         if (!empty($this->request->s)) {
             $hashGiven = $this->request->s;
         }
@@ -734,9 +732,6 @@ class Files extends BaseController
         }
         if (!empty($this->request->o)) {
             $isFromOcsApi = ($this->request->o == 1);
-        }
-        if (!empty($this->request->u)) {
-            $userId = $this->request->u;
         }
 
         $file = $this->models->files->$id;
@@ -847,13 +842,12 @@ class Files extends BaseController
         if (!empty($this->request->id)) {
             $id = $this->request->id;
         }
+        if (!empty($this->request->u)) {
+            $userId = $this->request->u;
+        }
         if (!empty($this->request->o)) {
             $isFromOcsApi = ($this->request->o == 1);
         }
-        // Disabled for now
-        //if (!empty($this->request->user_id)) {
-        //    $userId = $this->request->user_id;
-        //}
 
         $file = $this->models->files->$id;
 
@@ -925,7 +919,6 @@ class Files extends BaseController
         );
          */
 
-        //$collection = $this->models->collections->$collectionId;
         //redirect to opendesktop project page
         $defaultDomain = $this->appConfig->general['default_redir_domain'];
         $this->response->redirect($defaultDomain . '/c/' . $collectionId);

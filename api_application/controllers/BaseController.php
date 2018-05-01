@@ -199,9 +199,6 @@ class BaseController extends Flooer_Controller
 
     protected function _sendFile($filepath, $filename, $type, $size, $attachment = false, $headeronly = false)
     {
-        //$this->dispatch->setFilterOutput(false);
-        //$this->dispatch->setSendResponse(false);
-
         $rangeBegin = 0;
         $rangeEnd = $size - 1; // Content-Range: bytes 0-1023/1024
         $disposition = 'inline';

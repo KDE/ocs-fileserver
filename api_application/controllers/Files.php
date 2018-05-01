@@ -740,6 +740,7 @@ class Files extends BaseController
         }
 
         $file = $this->models->files->$id;
+
         if (!$file) {
             $this->response->setStatus(404);
             throw new Flooer_Exception('Not found', LOG_NOTICE);
@@ -792,13 +793,22 @@ class Files extends BaseController
                 $this->response->redirect($externalUri);
             }
 
-            $filePath = '';
-            if ($file->active) {
-                $filePath = $this->appConfig->general['filesDir'] . '/' . $collection->name . '/' . $file->name;
+            $collectionDir = '';
+            if ($collection->active) {
+                $collectionDir = $this->appConfig->general['filesDir'] . '/' . $collection->name;
             }
             else {
-                $filePath = $this->appConfig->general['filesDir'] . '/' . $collection->name . '/.trash/' . $id . '-' . $file->name;
+                $collectionDir = $this->appConfig->general['filesDir'] . '/.trash/' . $collection->id . '-' . $collection->name;
             }
+
+            $filePath = '';
+            if ($file->active) {
+                $filePath = $collectionDir . '/' . $file->name;
+            }
+            else {
+                $filePath = $collectionDir . '/.trash/' . $file->id . '-' . $file->name;
+            }
+
             $this->_sendFile(
                 $filePath,
                 $file->name,
@@ -889,13 +899,22 @@ class Files extends BaseController
             $this->response->redirect($externalUri);
         }
 
-        $filePath = '';
-        if ($file->active) {
-            $filePath = $this->appConfig->general['filesDir'] . '/' . $collection->name . '/' . $file->name;
+        $collectionDir = '';
+        if ($collection->active) {
+            $collectionDir = $this->appConfig->general['filesDir'] . '/' . $collection->name;
         }
         else {
-            $filePath = $this->appConfig->general['filesDir'] . '/' . $collection->name . '/.trash/' . $id . '-' . $file->name;
+            $collectionDir = $this->appConfig->general['filesDir'] . '/.trash/' . $collection->id . '-' . $collection->name;
         }
+
+        $filePath = '';
+        if ($file->active) {
+            $filePath = $collectionDir . '/' . $file->name;
+        }
+        else {
+            $filePath = $collectionDir . '/.trash/' . $file->id . '-' . $file->name;
+        }
+
         $this->_sendFile(
             $filePath,
             $file->name,

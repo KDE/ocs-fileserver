@@ -442,7 +442,7 @@ class Files extends BaseController
 
         // Save the media information
         if ($id3Tags) {
-            $this->_saveMedia($id3Tags, $clientId, $ownerId, $collectionId, $id, $name);
+            $this->_addMedia($id3Tags, $clientId, $ownerId, $collectionId, $id, $name);
         }
 
         $file = $this->models->files->getFile($id);
@@ -864,7 +864,7 @@ class Files extends BaseController
         return $id3Tags;
     }
 
-    private function _saveMedia($id3Tags, $clientId, $ownerId, $collectionId, $fileId, $defaultTitle)
+    private function _addMedia($id3Tags, $clientId, $ownerId, $collectionId, $fileId, $defaultTitle)
     {
         // Get artist id or add new one
         $artistName = 'Unknown';

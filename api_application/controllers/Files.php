@@ -337,6 +337,7 @@ class Files extends BaseController
         // Get ID3 tags
         $id3Tags = $this->_getId3Tags($type, $_FILES['file']['tmp_name']);
 
+        // Prepare to append the file to collection
         $collectionName = null;
         $collectionData = array();
         if ($collectionId) {
@@ -397,6 +398,7 @@ class Files extends BaseController
             $title = $name;
         }
 
+        // Save the uploaded file
         if (isset($_FILES['file'])) {
             if (!move_uploaded_file(
                 $_FILES['file']['tmp_name'],
@@ -418,8 +420,10 @@ class Files extends BaseController
         }
         // ------------------------------------------------
 
+        // Update the collection
         $this->models->collections->$collectionId = $collectionData;
 
+        // Add the file
         $this->models->files->$id = array(
             'origin_id' => $originId,
             'active' => $active,
@@ -440,7 +444,7 @@ class Files extends BaseController
             'downloaded_count' => $downloadedCount // for hive files importing (Deprecated)
         );
 
-        // Save the media information
+        // Add the media
         if ($id3Tags) {
             $this->_addMedia($id3Tags, $clientId, $ownerId, $collectionId, $id, $name);
         }
@@ -585,7 +589,7 @@ class Files extends BaseController
                 throw new Flooer_Exception('Failed to save the file', LOG_ALERT);
             }
 
-            // Add the file information
+            // Add the file
             $this->models->files->$id = array(
                 'origin_id' => $originId,
                 'active' => $active,
@@ -609,7 +613,7 @@ class Files extends BaseController
             // Update the collection
             $this->models->collections->$collectionId = $collectionData;
 
-            // Add the media information
+            // Add the media
             if ($id3Tags) {
                 $this->_addMedia($id3Tags, $clientId, $ownerId, $collectionId, $id, $name);
             }
@@ -658,8 +662,6 @@ class Files extends BaseController
 
     public function deleteFile()
     {
-        // Please be care the remove process in Collections::deleteCollection()
-
         if (!$this->_isAllowedAccess()) {
             $this->response->setStatus(403);
             throw new Flooer_Exception('Forbidden', LOG_NOTICE);
@@ -922,6 +924,8 @@ class Files extends BaseController
 
     private function _removeFile($file)
     {
+        // Please be care the remove process in Collections::deleteCollection()
+
         $id = $file->id;
 
         $collectionId = $file->collection_id;
@@ -1004,7 +1008,7 @@ class Files extends BaseController
             );
         }
 
-        // Set the media information
+        // Add the media
         $mediaData = array(
             'client_id' => $clientId,
             'owner_id' => $ownerId,

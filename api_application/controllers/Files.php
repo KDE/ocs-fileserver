@@ -514,33 +514,139 @@ class Files extends BaseController
             throw new Flooer_Exception('Forbidden', LOG_NOTICE);
         }
 
-        $updata = array();
-        if ($title !== null) {
-            $updata['title'] = $title;
-        }
-        if ($description !== null) {
-            $updata['description'] = $description;
-        }
-        if ($category !== null) {
-            $updata['category'] = $category;
-        }
-        if ($tags !== null) {
-            $updata['tags'] = $tags;
-        }
-        if ($version !== null) {
-            $updata['version'] = $version;
-        }
-        if ($ocsCompatible !== null) {
-            $updata['ocs_compatible'] = $ocsCompatible;
-        }
-        if ($contentId !== null) {
-            $updata['content_id'] = $contentId;
-        }
-        if ($contentPage !== null) {
-            $updata['content_page'] = $contentPage;
-        }
+        // If new file has uploaded,
+        // remove old file and replace to the new file with new file id
+        if (isset($_FILES['file'])) {
+            $originId = $file->origin_id;
+            $active = 1;
+            $clientId = $file->client_id;
+            $ownerId = $file->owner_id;
+            $collectionId = $file->collection_id;
+            $name = null; // Auto generated
+            $type = null; // Auto detect
+            $size = null; // Auto detect
 
-        $this->models->files->$id = $updata;
+            $downloadedCount = 0; // for hive files importing (Deprecated)
+
+            if (!empty($_FILES['file']['name'])) {
+                $name = mb_substr(strip_tags(basename($_FILES['file']['name'])), 0, 200);
+            }
+            if (!empty($_FILES['file']['tmp_name'])) {
+                $finfo = new finfo(FILEINFO_MIME_TYPE);
+                $type = $finfo->file($_FILES['file']['tmp_name']);
+                if (!$type) {
+                    $type = 'application/octet-stream';
+                }
+            }
+            if (!empty($_FILES['file']['size'])) {
+                $size = $_FILES['file']['size'];
+            }
+
+            $errors = array();
+            if (!empty($_FILES['file']['error'])) { // 0 = UPLOAD_ERR_OK
+                $errors['file'] = $_FILES['file']['error'];
+            }
+
+            if ($errors) {
+                $this->response->setStatus(400);
+                $this->_setResponseContent(
+                    'error',
+                    array(
+                        'message' => 'File upload error',
+                        'errors' => $errors
+                    )
+                );
+                return;
+            }
+
+            // Get ID3 tags
+            $id3Tags = $this->_getId3Tags($type, $_FILES['file']['tmp_name']);
+
+            // Prepare to append the file to collection
+            $collection = $this->models->collections->$collectionId;
+            $collectionName = $collection->name;
+            $collectionData = array(
+                'files' => $collection->files + 1,
+                'size' => $collection->size + $size
+            );
+
+            $id = $this->models->files->generateId();
+            $name = $this->_fixFilenameInCollection($name, $collectionName);
+            if (!$title) {
+                $title = $name;
+            }
+
+            // Save the uploaded file
+            if (!move_uploaded_file(
+                $_FILES['file']['tmp_name'],
+                $this->appConfig->general['filesDir'] . '/' . $collectionName . '/' . $name
+            )) {
+                $this->response->setStatus(500);
+                throw new Flooer_Exception('Failed to save the file', LOG_ALERT);
+            }
+
+            // Add the file information
+            $this->models->files->$id = array(
+                'origin_id' => $originId,
+                'active' => $active,
+                'client_id' => $clientId,
+                'owner_id' => $ownerId,
+                'collection_id' => $collectionId,
+                'name' => $name,
+                'type' => $type,
+                'size' => $size,
+                'title' => $title,
+                'description' => $description,
+                'category' => $category,
+                'tags' => $tags,
+                'version' => $version,
+                'ocs_compatible' => $ocsCompatible,
+                'content_id' => $contentId,
+                'content_page' => $contentPage,
+                'downloaded_count' => $downloadedCount // for hive files importing (Deprecated)
+            );
+
+            // Update the collection
+            $this->models->collections->$collectionId = $collectionData;
+
+            // Add the media information
+            if ($id3Tags) {
+                $this->_addMedia($id3Tags, $clientId, $ownerId, $collectionId, $id, $name);
+            }
+
+            // Remove old file
+            $this->_removeFile($file);
+        }
+        else {
+            $updata = array();
+
+            if ($title !== null) {
+                $updata['title'] = $title;
+            }
+            if ($description !== null) {
+                $updata['description'] = $description;
+            }
+            if ($category !== null) {
+                $updata['category'] = $category;
+            }
+            if ($tags !== null) {
+                $updata['tags'] = $tags;
+            }
+            if ($version !== null) {
+                $updata['version'] = $version;
+            }
+            if ($ocsCompatible !== null) {
+                $updata['ocs_compatible'] = $ocsCompatible;
+            }
+            if ($contentId !== null) {
+                $updata['content_id'] = $contentId;
+            }
+            if ($contentPage !== null) {
+                $updata['content_page'] = $contentPage;
+            }
+
+            $this->models->files->$id = $updata;
+        }
 
         $file = $this->models->files->getFile($id);
 

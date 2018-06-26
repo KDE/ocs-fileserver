@@ -186,6 +186,7 @@ class Files extends BaseController
         }
 
         $id = null; // Auto generated
+        $originId = null; // Auto generated
         $active = 1;
         $clientId = null;
         $ownerId = null;
@@ -334,18 +335,9 @@ class Files extends BaseController
         }
 
         // Get ID3 tags
-        // NOTE: getid3 may not work for a files in a network storage.
-        $id3Tags = null;
-        if (strpos($type, 'audio/') !== false
-            || strpos($type, 'video/') !== false
-            || strpos($type, 'application/ogg') !== false
-        ) {
-            require_once 'getid3/getid3.php';
-            $getID3 = new getID3();
-            $id3Tags = $getID3->analyze($_FILES['file']['tmp_name']);
-            getid3_lib::CopyTagsToComments($id3Tags);
-        }
+        $id3Tags = $this->_getId3Tags($type, $_FILES['file']['tmp_name']);
 
+        // Prepare to append the file to collection
         $collectionName = null;
         $collectionData = array();
         if ($collectionId) {
@@ -400,19 +392,13 @@ class Files extends BaseController
         }
 
         $id = $this->models->files->generateId();
-        if (is_file($this->appConfig->general['filesDir'] . '/' . $collectionName . '/' . $name)) {
-            $fix = date('YmdHis');
-            if (preg_match("/^([^.]+)(\..+)/", $name, $matches)) {
-                $name = $matches[1] . '-' . $fix . $matches[2];
-            }
-            else {
-                $name = $name . '-' . $fix;
-            }
-        }
+        $originId = $id;
+        $name = $this->_fixFilenameInCollection($name, $collectionName);
         if (!$title) {
             $title = $name;
         }
 
+        // Save the uploaded file
         if (isset($_FILES['file'])) {
             if (!move_uploaded_file(
                 $_FILES['file']['tmp_name'],
@@ -434,9 +420,12 @@ class Files extends BaseController
         }
         // ------------------------------------------------
 
+        // Update the collection
         $this->models->collections->$collectionId = $collectionData;
 
+        // Add the file
         $this->models->files->$id = array(
+            'origin_id' => $originId,
             'active' => $active,
             'client_id' => $clientId,
             'owner_id' => $ownerId,
@@ -455,91 +444,9 @@ class Files extends BaseController
             'downloaded_count' => $downloadedCount // for hive files importing (Deprecated)
         );
 
-        // Save the media information
+        // Add the media
         if ($id3Tags) {
-            // Get artist id or add new one
-            $artistName = 'Unknown';
-            if (isset($id3Tags['comments']['artist'][0])
-                && $id3Tags['comments']['artist'][0] != ''
-            ) {
-                $artistName = mb_substr(strip_tags($id3Tags['comments']['artist'][0]), 0, 255);
-            }
-            $artistId = $this->models->media_artists->getId($clientId, $artistName);
-            if (!$artistId) {
-                $artistId = $this->models->media_artists->generateId();
-                $this->models->media_artists->$artistId = array(
-                    'client_id' => $clientId,
-                    'name' => $artistName
-                );
-            }
-
-            // Get album id or add new one
-            $albumName = 'Unknown';
-            if (isset($id3Tags['comments']['album'][0])
-                && $id3Tags['comments']['album'][0] != ''
-            ) {
-                $albumName = mb_substr(strip_tags($id3Tags['comments']['album'][0]), 0, 255);
-            }
-            $albumId = $this->models->media->getAlbumId($clientId, $artistName, $albumName);
-            if (!$albumId) {
-                $albumId = $this->models->media_albums->generateId();
-                $this->models->media_albums->$albumId = array(
-                    'client_id' => $clientId,
-                    'name' => $albumName
-                );
-            }
-
-            // Set the media information
-            $mediaData = array(
-                'client_id' => $clientId,
-                'owner_id' => $ownerId,
-                'collection_id' => $collectionId,
-                'file_id' => $id,
-                'artist_id' => $artistId,
-                'album_id' => $albumId,
-                'title' => $name,
-                'genre' => null,
-                'track' => null,
-                'creationdate' => null,
-                'bitrate' => 0,
-                'playtime_seconds' => 0,
-                'playtime_string' => 0
-            );
-            if (isset($id3Tags['comments']['title'][0])
-                && $id3Tags['comments']['title'][0] != ''
-            ) {
-                $mediaData['title'] = mb_substr(strip_tags($id3Tags['comments']['title'][0]), 0, 255);
-            }
-            if (!empty($id3Tags['comments']['genre'][0])) {
-                $mediaData['genre'] = mb_substr(strip_tags($id3Tags['comments']['genre'][0]), 0, 64);
-            }
-            if (!empty($id3Tags['comments']['track_number'][0])) {
-                $mediaData['track'] = mb_substr(strip_tags($id3Tags['comments']['track_number'][0]), 0, 5);
-            }
-            if (!empty($id3Tags['comments']['creationdate'][0])) {
-                $mediaData['creationdate'] = mb_substr(strip_tags($id3Tags['comments']['creationdate'][0]), 0, 4);
-            }
-            if (!empty($id3Tags['bitrate'])) {
-                $mediaData['bitrate'] = mb_substr(strip_tags($id3Tags['bitrate']), 0, 11);
-            }
-            if (!empty($id3Tags['playtime_seconds'])) {
-                $mediaData['playtime_seconds'] = mb_substr(strip_tags($id3Tags['playtime_seconds']), 0, 11);
-            }
-            if (!empty($id3Tags['playtime_string'])) {
-                $mediaData['playtime_string'] = mb_substr(strip_tags($id3Tags['playtime_string']), 0, 8);
-            }
-
-            $mediaId = $this->models->media->generateId();
-            $this->models->media->$mediaId = $mediaData;
-
-            // Save the album cover
-            if (!empty($id3Tags['comments']['picture'][0]['data'])) {
-                $image = imagecreatefromstring($id3Tags['comments']['picture'][0]['data']);
-                if ($image !== false) {
-                    imagejpeg($image, $this->appConfig->general['thumbnailsDir'] . '/album_' . $albumId . '.jpg', 75);
-                    imagedestroy($image);
-                }
-            }
+            $this->_addMedia($id3Tags, $clientId, $ownerId, $collectionId, $id, $name);
         }
 
         $file = $this->models->files->getFile($id);
@@ -611,33 +518,165 @@ class Files extends BaseController
             throw new Flooer_Exception('Forbidden', LOG_NOTICE);
         }
 
-        $updata = array();
-        if ($title !== null) {
-            $updata['title'] = $title;
-        }
-        if ($description !== null) {
-            $updata['description'] = $description;
-        }
-        if ($category !== null) {
-            $updata['category'] = $category;
-        }
-        if ($tags !== null) {
-            $updata['tags'] = $tags;
-        }
-        if ($version !== null) {
-            $updata['version'] = $version;
-        }
-        if ($ocsCompatible !== null) {
-            $updata['ocs_compatible'] = $ocsCompatible;
-        }
-        if ($contentId !== null) {
-            $updata['content_id'] = $contentId;
-        }
-        if ($contentPage !== null) {
-            $updata['content_page'] = $contentPage;
-        }
+        // If new file has uploaded,
+        // remove old file and replace to the new file with new file id
+        if (isset($_FILES['file'])) {
+            $id = null;
+            $originId = $file->origin_id;
+            $active = 1;
+            $clientId = $file->client_id;
+            $ownerId = $file->owner_id;
+            $collectionId = $file->collection_id;
+            $name = null; // Auto generated
+            $type = null; // Auto detect
+            $size = null; // Auto detect
 
-        $this->models->files->$id = $updata;
+            if (!empty($_FILES['file']['name'])) {
+                $name = mb_substr(strip_tags(basename($_FILES['file']['name'])), 0, 200);
+            }
+            if (!empty($_FILES['file']['tmp_name'])) {
+                $finfo = new finfo(FILEINFO_MIME_TYPE);
+                $type = $finfo->file($_FILES['file']['tmp_name']);
+                if (!$type) {
+                    $type = 'application/octet-stream';
+                }
+            }
+            if (!empty($_FILES['file']['size'])) {
+                $size = $_FILES['file']['size'];
+            }
+            if ($title === null) {
+                $title = $file->title;
+            }
+            if ($description === null) {
+                $description = $file->description;
+            }
+            if ($category === null) {
+                $category = $file->category;
+            }
+            if ($tags === null) {
+                $tags = $file->tags;
+            }
+            if ($version === null) {
+                $version = $file->version;
+            }
+            if ($ocsCompatible === null) {
+                $ocsCompatible = $file->ocs_compatible;
+            }
+            if ($contentId === null) {
+                $contentId = $file->content_id;
+            }
+            if ($contentPage === null) {
+                $contentPage = $file->content_page;
+            }
+
+            $downloadedCount = 0; // for hive files importing (Deprecated)
+
+            $errors = array();
+            if (!empty($_FILES['file']['error'])) { // 0 = UPLOAD_ERR_OK
+                $errors['file'] = $_FILES['file']['error'];
+            }
+
+            if ($errors) {
+                $this->response->setStatus(400);
+                $this->_setResponseContent(
+                    'error',
+                    array(
+                        'message' => 'File upload error',
+                        'errors' => $errors
+                    )
+                );
+                return;
+            }
+
+            // Get ID3 tags
+            $id3Tags = $this->_getId3Tags($type, $_FILES['file']['tmp_name']);
+
+            // Prepare to append the file to collection
+            $collection = $this->models->collections->$collectionId;
+            $collectionName = $collection->name;
+            $collectionData = array(
+                'files' => $collection->files + 1,
+                'size' => $collection->size + $size
+            );
+
+            $id = $this->models->files->generateId();
+            $name = $this->_fixFilenameInCollection($name, $collectionName);
+            if (!$title) {
+                $title = $name;
+            }
+
+            // Save the uploaded file
+            if (!move_uploaded_file(
+                $_FILES['file']['tmp_name'],
+                $this->appConfig->general['filesDir'] . '/' . $collectionName . '/' . $name
+            )) {
+                $this->response->setStatus(500);
+                throw new Flooer_Exception('Failed to save the file', LOG_ALERT);
+            }
+
+            // Add the file
+            $this->models->files->$id = array(
+                'origin_id' => $originId,
+                'active' => $active,
+                'client_id' => $clientId,
+                'owner_id' => $ownerId,
+                'collection_id' => $collectionId,
+                'name' => $name,
+                'type' => $type,
+                'size' => $size,
+                'title' => $title,
+                'description' => $description,
+                'category' => $category,
+                'tags' => $tags,
+                'version' => $version,
+                'ocs_compatible' => $ocsCompatible,
+                'content_id' => $contentId,
+                'content_page' => $contentPage,
+                'downloaded_count' => $downloadedCount // for hive files importing (Deprecated)
+            );
+
+            // Update the collection
+            $this->models->collections->$collectionId = $collectionData;
+
+            // Add the media
+            if ($id3Tags) {
+                $this->_addMedia($id3Tags, $clientId, $ownerId, $collectionId, $id, $name);
+            }
+
+            // Remove old file
+            $this->_removeFile($file);
+        }
+        // Update only file information
+        else {
+            $updata = array();
+
+            if ($title !== null) {
+                $updata['title'] = $title;
+            }
+            if ($description !== null) {
+                $updata['description'] = $description;
+            }
+            if ($category !== null) {
+                $updata['category'] = $category;
+            }
+            if ($tags !== null) {
+                $updata['tags'] = $tags;
+            }
+            if ($version !== null) {
+                $updata['version'] = $version;
+            }
+            if ($ocsCompatible !== null) {
+                $updata['ocs_compatible'] = $ocsCompatible;
+            }
+            if ($contentId !== null) {
+                $updata['content_id'] = $contentId;
+            }
+            if ($contentPage !== null) {
+                $updata['content_page'] = $contentPage;
+            }
+
+            $this->models->files->$id = $updata;
+        }
 
         $file = $this->models->files->getFile($id);
 
@@ -649,8 +688,6 @@ class Files extends BaseController
 
     public function deleteFile()
     {
-        // Please be care the remove process in Collections::deleteCollection()
-
         if (!$this->_isAllowedAccess()) {
             $this->response->setStatus(403);
             throw new Flooer_Exception('Forbidden', LOG_NOTICE);
@@ -673,34 +710,7 @@ class Files extends BaseController
             throw new Flooer_Exception('Forbidden', LOG_NOTICE);
         }
 
-        $collectionId = $file->collection_id;
-        $collection = $this->models->collections->$collectionId;
-
-        $trashDir = $this->appConfig->general['filesDir'] . '/' . $collection->name . '/.trash';
-        if (!is_dir($trashDir) && !mkdir($trashDir)) {
-            $this->response->setStatus(500);
-            throw new Flooer_Exception('Failed to remove the file', LOG_ALERT);
-        }
-        if (is_file($this->appConfig->general['filesDir'] . '/' . $collection->name . '/' . $file->name)
-            && !rename(
-                $this->appConfig->general['filesDir'] . '/' . $collection->name . '/' . $file->name,
-                $trashDir . '/' . $id . '-' . $file->name
-            )
-        ) {
-            $this->response->setStatus(500);
-            throw new Flooer_Exception('Failed to remove the file', LOG_ALERT);
-        }
-
-        $this->models->files->$id = array('active' => 0);
-        //$this->models->files_downloaded->deleteByFileId($id);
-        $this->models->favorites->deleteByFileId($id);
-        $this->models->media->deleteByFileId($id);
-        $this->models->media_played->deleteByFileId($id);
-
-        $this->models->collections->$collectionId = array(
-            'files' => $collection->files - 1,
-            'size' => $collection->size - $file->size
-        );
+        $this->_removeFile($file);
 
         $this->_setResponseContent('success');
     }
@@ -922,6 +932,159 @@ class Files extends BaseController
         //redirect to opendesktop project page
         $defaultDomain = $this->appConfig->general['default_redir_domain'];
         $this->response->redirect($defaultDomain . '/c/' . $collectionId);
+    }
+
+    private function _fixFilenameInCollection($name, $collectionName)
+    {
+        if (is_file($this->appConfig->general['filesDir'] . '/' . $collectionName . '/' . $name)) {
+            $fix = date('YmdHis');
+            if (preg_match("/^([^.]+)(\..+)/", $name, $matches)) {
+                $name = $matches[1] . '-' . $fix . $matches[2];
+            }
+            else {
+                $name = $name . '-' . $fix;
+            }
+        }
+        return $name;
+    }
+
+    private function _removeFile($file)
+    {
+        // Please be care the remove process in Collections::deleteCollection()
+
+        $id = $file->id;
+
+        $collectionId = $file->collection_id;
+        $collection = $this->models->collections->$collectionId;
+
+        $trashDir = $this->appConfig->general['filesDir'] . '/' . $collection->name . '/.trash';
+        if (!is_dir($trashDir) && !mkdir($trashDir)) {
+            $this->response->setStatus(500);
+            throw new Flooer_Exception('Failed to remove the file', LOG_ALERT);
+        }
+        if (is_file($this->appConfig->general['filesDir'] . '/' . $collection->name . '/' . $file->name)
+            && !rename(
+                $this->appConfig->general['filesDir'] . '/' . $collection->name . '/' . $file->name,
+                $trashDir . '/' . $id . '-' . $file->name
+            )
+        ) {
+            $this->response->setStatus(500);
+            throw new Flooer_Exception('Failed to remove the file', LOG_ALERT);
+        }
+
+        $this->models->files->$id = array('active' => 0);
+        //$this->models->files_downloaded->deleteByFileId($id);
+        $this->models->favorites->deleteByFileId($id);
+        $this->models->media->deleteByFileId($id);
+        $this->models->media_played->deleteByFileId($id);
+
+        $this->models->collections->$collectionId = array(
+            'files' => $collection->files - 1,
+            'size' => $collection->size - $file->size
+        );
+    }
+
+    private function _getId3Tags($filetype, $filepath)
+    {
+        // NOTE: getid3 may not work for a files in a network storage.
+        $id3Tags = null;
+        if (strpos($filetype, 'audio/') !== false
+            || strpos($filetype, 'video/') !== false
+            || strpos($filetype, 'application/ogg') !== false
+        ) {
+            require_once 'getid3/getid3.php';
+            $getID3 = new getID3();
+            $id3Tags = $getID3->analyze($filepath);
+            getid3_lib::CopyTagsToComments($id3Tags);
+        }
+        return $id3Tags;
+    }
+
+    private function _addMedia($id3Tags, $clientId, $ownerId, $collectionId, $fileId, $defaultTitle)
+    {
+        // Get artist id or add new one
+        $artistName = 'Unknown';
+        if (isset($id3Tags['comments']['artist'][0])
+            && $id3Tags['comments']['artist'][0] != ''
+        ) {
+            $artistName = mb_substr(strip_tags($id3Tags['comments']['artist'][0]), 0, 255);
+        }
+        $artistId = $this->models->media_artists->getId($clientId, $artistName);
+        if (!$artistId) {
+            $artistId = $this->models->media_artists->generateId();
+            $this->models->media_artists->$artistId = array(
+                'client_id' => $clientId,
+                'name' => $artistName
+            );
+        }
+
+        // Get album id or add new one
+        $albumName = 'Unknown';
+        if (isset($id3Tags['comments']['album'][0])
+            && $id3Tags['comments']['album'][0] != ''
+        ) {
+            $albumName = mb_substr(strip_tags($id3Tags['comments']['album'][0]), 0, 255);
+        }
+        $albumId = $this->models->media->getAlbumId($clientId, $artistName, $albumName);
+        if (!$albumId) {
+            $albumId = $this->models->media_albums->generateId();
+            $this->models->media_albums->$albumId = array(
+                'client_id' => $clientId,
+                'name' => $albumName
+            );
+        }
+
+        // Add the media
+        $mediaData = array(
+            'client_id' => $clientId,
+            'owner_id' => $ownerId,
+            'collection_id' => $collectionId,
+            'file_id' => $fileId,
+            'artist_id' => $artistId,
+            'album_id' => $albumId,
+            'title' => $defaultTitle,
+            'genre' => null,
+            'track' => null,
+            'creationdate' => null,
+            'bitrate' => 0,
+            'playtime_seconds' => 0,
+            'playtime_string' => 0
+        );
+        if (isset($id3Tags['comments']['title'][0])
+            && $id3Tags['comments']['title'][0] != ''
+        ) {
+            $mediaData['title'] = mb_substr(strip_tags($id3Tags['comments']['title'][0]), 0, 255);
+        }
+        if (!empty($id3Tags['comments']['genre'][0])) {
+            $mediaData['genre'] = mb_substr(strip_tags($id3Tags['comments']['genre'][0]), 0, 64);
+        }
+        if (!empty($id3Tags['comments']['track_number'][0])) {
+            $mediaData['track'] = mb_substr(strip_tags($id3Tags['comments']['track_number'][0]), 0, 5);
+        }
+        if (!empty($id3Tags['comments']['creationdate'][0])) {
+            $mediaData['creationdate'] = mb_substr(strip_tags($id3Tags['comments']['creationdate'][0]), 0, 4);
+        }
+        if (!empty($id3Tags['bitrate'])) {
+            $mediaData['bitrate'] = mb_substr(strip_tags($id3Tags['bitrate']), 0, 11);
+        }
+        if (!empty($id3Tags['playtime_seconds'])) {
+            $mediaData['playtime_seconds'] = mb_substr(strip_tags($id3Tags['playtime_seconds']), 0, 11);
+        }
+        if (!empty($id3Tags['playtime_string'])) {
+            $mediaData['playtime_string'] = mb_substr(strip_tags($id3Tags['playtime_string']), 0, 8);
+        }
+
+        $mediaId = $this->models->media->generateId();
+        $this->models->media->$mediaId = $mediaData;
+
+        // Save the album cover
+        if (!empty($id3Tags['comments']['picture'][0]['data'])) {
+            $image = imagecreatefromstring($id3Tags['comments']['picture'][0]['data']);
+            if ($image !== false) {
+                imagejpeg($image, $this->appConfig->general['thumbnailsDir'] . '/album_' . $albumId . '.jpg', 75);
+                imagedestroy($image);
+            }
+        }
     }
 
     private function _remoteFilesize($url)

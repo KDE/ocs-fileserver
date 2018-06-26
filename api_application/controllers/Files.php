@@ -392,7 +392,7 @@ class Files extends BaseController
 
         $id = $this->models->files->generateId();
         $originId = $id;
-        $name = $this->_fixFilename($name, $collectionName);
+        $name = $this->_fixFilenameInCollection($name, $collectionName);
         if (!$title) {
             $title = $name;
         }
@@ -800,7 +800,7 @@ class Files extends BaseController
         $this->response->redirect($defaultDomain . '/c/' . $collectionId);
     }
 
-    private function _fixFilename($name, $collectionName)
+    private function _fixFilenameInCollection($name, $collectionName)
     {
         if (is_file($this->appConfig->general['filesDir'] . '/' . $collectionName . '/' . $name)) {
             $fix = date('YmdHis');

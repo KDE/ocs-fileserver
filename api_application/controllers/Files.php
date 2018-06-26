@@ -392,15 +392,7 @@ class Files extends BaseController
 
         $id = $this->models->files->generateId();
         $originId = $id;
-        if (is_file($this->appConfig->general['filesDir'] . '/' . $collectionName . '/' . $name)) {
-            $fix = date('YmdHis');
-            if (preg_match("/^([^.]+)(\..+)/", $name, $matches)) {
-                $name = $matches[1] . '-' . $fix . $matches[2];
-            }
-            else {
-                $name = $name . '-' . $fix;
-            }
-        }
+        $name = $this->_fixFilename($name, $collectionName);
         if (!$title) {
             $title = $name;
         }
@@ -833,6 +825,20 @@ class Files extends BaseController
         //redirect to opendesktop project page
         $defaultDomain = $this->appConfig->general['default_redir_domain'];
         $this->response->redirect($defaultDomain . '/c/' . $collectionId);
+    }
+
+    private function _fixFilename($name, $collectionName)
+    {
+        if (is_file($this->appConfig->general['filesDir'] . '/' . $collectionName . '/' . $name)) {
+            $fix = date('YmdHis');
+            if (preg_match("/^([^.]+)(\..+)/", $name, $matches)) {
+                $name = $matches[1] . '-' . $fix . $matches[2];
+            }
+            else {
+                $name = $name . '-' . $fix;
+            }
+        }
+        return $name;
     }
 
     private function _getId3Tags($filetype, $filepath)

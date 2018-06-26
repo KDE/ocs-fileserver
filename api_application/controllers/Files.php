@@ -521,6 +521,7 @@ class Files extends BaseController
         // If new file has uploaded,
         // remove old file and replace to the new file with new file id
         if (isset($_FILES['file'])) {
+            $id = null;
             $originId = $file->origin_id;
             $active = 1;
             $clientId = $file->client_id;
@@ -529,8 +530,6 @@ class Files extends BaseController
             $name = null; // Auto generated
             $type = null; // Auto detect
             $size = null; // Auto detect
-
-            $downloadedCount = 0; // for hive files importing (Deprecated)
 
             if (!empty($_FILES['file']['name'])) {
                 $name = mb_substr(strip_tags(basename($_FILES['file']['name'])), 0, 200);
@@ -545,6 +544,32 @@ class Files extends BaseController
             if (!empty($_FILES['file']['size'])) {
                 $size = $_FILES['file']['size'];
             }
+            if ($title === null) {
+                $title = $file->title;
+            }
+            if ($description === null) {
+                $description = $file->description;
+            }
+            if ($category === null) {
+                $category = $file->category;
+            }
+            if ($tags === null) {
+                $tags = $file->tags;
+            }
+            if ($version === null) {
+                $version = $file->version;
+            }
+            if ($ocsCompatible === null) {
+                $ocsCompatible = $file->ocs_compatible;
+            }
+            if ($contentId === null) {
+                $contentId = $file->content_id;
+            }
+            if ($contentPage === null) {
+                $contentPage = $file->content_page;
+            }
+
+            $downloadedCount = 0; // for hive files importing (Deprecated)
 
             $errors = array();
             if (!empty($_FILES['file']['error'])) { // 0 = UPLOAD_ERR_OK
@@ -621,6 +646,7 @@ class Files extends BaseController
             // Remove old file
             $this->_removeFile($file);
         }
+        // Update only file information
         else {
             $updata = array();
 

@@ -331,13 +331,18 @@ downloaded_count | - | 0-n | - | Download counter.
 
 ### Update file
 
+If a new file uploaded, old file has removed and replace to the new file with new file id.
+
 Request: PUT {baseURI}/files/file
+
+Enctype: multipart/form-data
 
 Parameter | Required | Value | Default | Description
 ----------|----------|-------|---------|------------
 client_id | Yes | Client ID | - | Client ID.
 secret | Yes | Secret key | - | Secret key.
 id | Yes | File ID | - | File ID.
+file | - | FILE | - | Upload file.
 title | - | Title | - | Additional information.
 description | - | Description | - | Additional information.
 category | - | Category | - | Additional information.

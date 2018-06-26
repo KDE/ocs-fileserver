@@ -335,17 +335,7 @@ class Files extends BaseController
         }
 
         // Get ID3 tags
-        // NOTE: getid3 may not work for a files in a network storage.
-        $id3Tags = null;
-        if (strpos($type, 'audio/') !== false
-            || strpos($type, 'video/') !== false
-            || strpos($type, 'application/ogg') !== false
-        ) {
-            require_once 'getid3/getid3.php';
-            $getID3 = new getID3();
-            $id3Tags = $getID3->analyze($_FILES['file']['tmp_name']);
-            getid3_lib::CopyTagsToComments($id3Tags);
-        }
+        $id3Tags = $this->_getId3Tags($type, $_FILES['file']['tmp_name']);
 
         $collectionName = null;
         $collectionData = array();
@@ -460,89 +450,7 @@ class Files extends BaseController
 
         // Save the media information
         if ($id3Tags) {
-            // Get artist id or add new one
-            $artistName = 'Unknown';
-            if (isset($id3Tags['comments']['artist'][0])
-                && $id3Tags['comments']['artist'][0] != ''
-            ) {
-                $artistName = mb_substr(strip_tags($id3Tags['comments']['artist'][0]), 0, 255);
-            }
-            $artistId = $this->models->media_artists->getId($clientId, $artistName);
-            if (!$artistId) {
-                $artistId = $this->models->media_artists->generateId();
-                $this->models->media_artists->$artistId = array(
-                    'client_id' => $clientId,
-                    'name' => $artistName
-                );
-            }
-
-            // Get album id or add new one
-            $albumName = 'Unknown';
-            if (isset($id3Tags['comments']['album'][0])
-                && $id3Tags['comments']['album'][0] != ''
-            ) {
-                $albumName = mb_substr(strip_tags($id3Tags['comments']['album'][0]), 0, 255);
-            }
-            $albumId = $this->models->media->getAlbumId($clientId, $artistName, $albumName);
-            if (!$albumId) {
-                $albumId = $this->models->media_albums->generateId();
-                $this->models->media_albums->$albumId = array(
-                    'client_id' => $clientId,
-                    'name' => $albumName
-                );
-            }
-
-            // Set the media information
-            $mediaData = array(
-                'client_id' => $clientId,
-                'owner_id' => $ownerId,
-                'collection_id' => $collectionId,
-                'file_id' => $id,
-                'artist_id' => $artistId,
-                'album_id' => $albumId,
-                'title' => $name,
-                'genre' => null,
-                'track' => null,
-                'creationdate' => null,
-                'bitrate' => 0,
-                'playtime_seconds' => 0,
-                'playtime_string' => 0
-            );
-            if (isset($id3Tags['comments']['title'][0])
-                && $id3Tags['comments']['title'][0] != ''
-            ) {
-                $mediaData['title'] = mb_substr(strip_tags($id3Tags['comments']['title'][0]), 0, 255);
-            }
-            if (!empty($id3Tags['comments']['genre'][0])) {
-                $mediaData['genre'] = mb_substr(strip_tags($id3Tags['comments']['genre'][0]), 0, 64);
-            }
-            if (!empty($id3Tags['comments']['track_number'][0])) {
-                $mediaData['track'] = mb_substr(strip_tags($id3Tags['comments']['track_number'][0]), 0, 5);
-            }
-            if (!empty($id3Tags['comments']['creationdate'][0])) {
-                $mediaData['creationdate'] = mb_substr(strip_tags($id3Tags['comments']['creationdate'][0]), 0, 4);
-            }
-            if (!empty($id3Tags['bitrate'])) {
-                $mediaData['bitrate'] = mb_substr(strip_tags($id3Tags['bitrate']), 0, 11);
-            }
-            if (!empty($id3Tags['playtime_seconds'])) {
-                $mediaData['playtime_seconds'] = mb_substr(strip_tags($id3Tags['playtime_seconds']), 0, 11);
-            }
-            if (!empty($id3Tags['playtime_string'])) {
-                $mediaData['playtime_string'] = mb_substr(strip_tags($id3Tags['playtime_string']), 0, 8);
-            }
-
-            $mediaId = $this->models->media->generateId();
-            $this->models->media->$mediaId = $mediaData;
-
-            // Save the album cover
-            if (!empty($id3Tags['comments']['picture'][0]['data'])) {
-                $image = imagecreatefromstring($id3Tags['comments']['picture'][0]['data']);
-                if ($image !== false) {
-                    imagejpeg($image, $this->appConfig->general['thumbnailsDir'] . '/album_' . $albumId . '.jpg', 75);
-                    imagedestroy($image);
-                }
-            }
+            $this->_saveMedia($id3Tags, $clientId, $ownerId, $collectionId, $id, $name);
         }
 
         $file = $this->models->files->getFile($id);
@@ -925,6 +833,109 @@ class Files extends BaseController
         //redirect to opendesktop project page
         $defaultDomain = $this->appConfig->general['default_redir_domain'];
         $this->response->redirect($defaultDomain . '/c/' . $collectionId);
+    }
+
+    private function _getId3Tags($filetype, $filepath)
+    {
+        // NOTE: getid3 may not work for a files in a network storage.
+        $id3Tags = null;
+        if (strpos($filetype, 'audio/') !== false
+            || strpos($filetype, 'video/') !== false
+            || strpos($filetype, 'application/ogg') !== false
+        ) {
+            require_once 'getid3/getid3.php';
+            $getID3 = new getID3();
+            $id3Tags = $getID3->analyze($filepath);
+            getid3_lib::CopyTagsToComments($id3Tags);
+        }
+        return $id3Tags;
+    }
+
+    private function _saveMedia($id3Tags, $clientId, $ownerId, $collectionId, $fileId, $defaultTitle)
+    {
+        // Get artist id or add new one
+        $artistName = 'Unknown';
+        if (isset($id3Tags['comments']['artist'][0])
+            && $id3Tags['comments']['artist'][0] != ''
+        ) {
+            $artistName = mb_substr(strip_tags($id3Tags['comments']['artist'][0]), 0, 255);
+        }
+        $artistId = $this->models->media_artists->getId($clientId, $artistName);
+        if (!$artistId) {
+            $artistId = $this->models->media_artists->generateId();
+            $this->models->media_artists->$artistId = array(
+                'client_id' => $clientId,
+                'name' => $artistName
+            );
+        }
+
+        // Get album id or add new one
+        $albumName = 'Unknown';
+        if (isset($id3Tags['comments']['album'][0])
+            && $id3Tags['comments']['album'][0] != ''
+        ) {
+            $albumName = mb_substr(strip_tags($id3Tags['comments']['album'][0]), 0, 255);
+        }
+        $albumId = $this->models->media->getAlbumId($clientId, $artistName, $albumName);
+        if (!$albumId) {
+            $albumId = $this->models->media_albums->generateId();
+            $this->models->media_albums->$albumId = array(
+                'client_id' => $clientId,
+                'name' => $albumName
+            );
+        }
+
+        // Set the media information
+        $mediaData = array(
+            'client_id' => $clientId,
+            'owner_id' => $ownerId,
+            'collection_id' => $collectionId,
+            'file_id' => $fileId,
+            'artist_id' => $artistId,
+            'album_id' => $albumId,
+            'title' => $defaultTitle,
+            'genre' => null,
+            'track' => null,
+            'creationdate' => null,
+            'bitrate' => 0,
+            'playtime_seconds' => 0,
+            'playtime_string' => 0
+        );
+        if (isset($id3Tags['comments']['title'][0])
+            && $id3Tags['comments']['title'][0] != ''
+        ) {
+            $mediaData['title'] = mb_substr(strip_tags($id3Tags['comments']['title'][0]), 0, 255);
+        }
+        if (!empty($id3Tags['comments']['genre'][0])) {
+            $mediaData['genre'] = mb_substr(strip_tags($id3Tags['comments']['genre'][0]), 0, 64);
+        }
+        if (!empty($id3Tags['comments']['track_number'][0])) {
+            $mediaData['track'] = mb_substr(strip_tags($id3Tags['comments']['track_number'][0]), 0, 5);
+        }
+        if (!empty($id3Tags['comments']['creationdate'][0])) {
+            $mediaData['creationdate'] = mb_substr(strip_tags($id3Tags['comments']['creationdate'][0]), 0, 4);
+        }
+        if (!empty($id3Tags['bitrate'])) {
+            $mediaData['bitrate'] = mb_substr(strip_tags($id3Tags['bitrate']), 0, 11);
+        }
+        if (!empty($id3Tags['playtime_seconds'])) {
+            $mediaData['playtime_seconds'] = mb_substr(strip_tags($id3Tags['playtime_seconds']), 0, 11);
+        }
+        if (!empty($id3Tags['playtime_string'])) {
+            $mediaData['playtime_string'] = mb_substr(strip_tags($id3Tags['playtime_string']), 0, 8);
+        }
+
+        $mediaId = $this->models->media->generateId();
+        $this->models->media->$mediaId = $mediaData;
+
+        // Save the album cover
+        if (!empty($id3Tags['comments']['picture'][0]['data'])) {
+            $image = imagecreatefromstring($id3Tags['comments']['picture'][0]['data']);
+            if ($image !== false) {
+                imagejpeg($image, $this->appConfig->general['thumbnailsDir'] . '/album_' . $albumId . '.jpg', 75);
+                imagedestroy($image);
+            }
+        }
     }
 
     private function _remoteFilesize($url)

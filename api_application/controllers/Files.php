@@ -576,34 +576,7 @@ class Files extends BaseController
             throw new Flooer_Exception('Forbidden', LOG_NOTICE);
         }
 
-        $collectionId = $file->collection_id;
-        $collection = $this->models->collections->$collectionId;
-
-        $trashDir = $this->appConfig->general['filesDir'] . '/' . $collection->name . '/.trash';
-        if (!is_dir($trashDir) && !mkdir($trashDir)) {
-            $this->response->setStatus(500);
-            throw new Flooer_Exception('Failed to remove the file', LOG_ALERT);
-        }
-        if (is_file($this->appConfig->general['filesDir'] . '/' . $collection->name . '/' . $file->name)
-            && !rename(
-                $this->appConfig->general['filesDir'] . '/' . $collection->name . '/' . $file->name,
-                $trashDir . '/' . $id . '-' . $file->name
-            )
-        ) {
-            $this->response->setStatus(500);
-            throw new Flooer_Exception('Failed to remove the file', LOG_ALERT);
-        }
-
-        $this->models->files->$id = array('active' => 0);
-        //$this->models->files_downloaded->deleteByFileId($id);
-        $this->models->favorites->deleteByFileId($id);
-        $this->models->media->deleteByFileId($id);
-        $this->models->media_played->deleteByFileId($id);
-
-        $this->models->collections->$collectionId = array(
-            'files' => $collection->files - 1,
-            'size' => $collection->size - $file->size
-        );
+        $this->_removeFile($file);
 
         $this->_setResponseContent('success');
     }
@@ -839,6 +812,40 @@ class Files extends BaseController
             }
         }
         return $name;
+    }
+
+    private function _removeFile($file)
+    {
+        $id = $file->id;
+
+        $collectionId = $file->collection_id;
+        $collection = $this->models->collections->$collectionId;
+
+        $trashDir = $this->appConfig->general['filesDir'] . '/' . $collection->name . '/.trash';
+        if (!is_dir($trashDir) && !mkdir($trashDir)) {
+            $this->response->setStatus(500);
+            throw new Flooer_Exception('Failed to remove the file', LOG_ALERT);
+        }
+        if (is_file($this->appConfig->general['filesDir'] . '/' . $collection->name . '/' . $file->name)
+            && !rename(
+                $this->appConfig->general['filesDir'] . '/' . $collection->name . '/' . $file->name,
+                $trashDir . '/' . $id . '-' . $file->name
+            )
+        ) {
+            $this->response->setStatus(500);
+            throw new Flooer_Exception('Failed to remove the file', LOG_ALERT);
+        }
+
+        $this->models->files->$id = array('active' => 0);
+        //$this->models->files_downloaded->deleteByFileId($id);
+        $this->models->favorites->deleteByFileId($id);
+        $this->models->media->deleteByFileId($id);
+        $this->models->media_played->deleteByFileId($id);
+
+        $this->models->collections->$collectionId = array(
+            'files' => $collection->files - 1,
+            'size' => $collection->size - $file->size
+        );
     }
 
     private function _getId3Tags($filetype, $filepath)

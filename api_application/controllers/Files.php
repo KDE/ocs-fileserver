@@ -186,6 +186,7 @@ class Files extends BaseController
         }
 
         $id = null; // Auto generated
+        $originId = null; // Auto generated
         $active = 1;
         $clientId = null;
         $ownerId = null;
@@ -400,6 +401,7 @@ class Files extends BaseController
         }
 
         $id = $this->models->files->generateId();
+        $originId = $id;
         if (is_file($this->appConfig->general['filesDir'] . '/' . $collectionName . '/' . $name)) {
             $fix = date('YmdHis');
             if (preg_match("/^([^.]+)(\..+)/", $name, $matches)) {
@@ -437,6 +439,7 @@ class Files extends BaseController
         $this->models->collections->$collectionId = $collectionData;
 
         $this->models->files->$id = array(
+            'origin_id' => $originId,
             'active' => $active,
             'client_id' => $clientId,
             'owner_id' => $ownerId,

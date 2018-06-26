@@ -37,6 +37,7 @@ class table_files extends BaseModel
         $prefix = $this->getPrefix();
 
         $this->_columns = "{$prefix}files.id AS id,"
+            . "{$prefix}files.origin_id AS origin_id,"
             . "{$prefix}files.active AS active,"
             . "{$prefix}files.client_id AS client_id,"
             . "{$prefix}files.owner_id AS owner_id,"

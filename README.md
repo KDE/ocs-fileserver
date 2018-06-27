@@ -32,6 +32,7 @@ Change data directories to rewritable
 * data/files
 * data/logs
 * data/thumbnails
+* data/zsync
 
 
 ## Documents

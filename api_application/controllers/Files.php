@@ -588,6 +588,9 @@ class Files extends BaseController
                 return;
             }
 
+            // Remove old file
+            $this->_removeFile($file);
+
             // Get ID3 tags
             $id3Tags = $this->_getId3Tags($type, $_FILES['file']['tmp_name']);
 
@@ -642,9 +645,6 @@ class Files extends BaseController
             if ($id3Tags) {
                 $this->_addMedia($id3Tags, $clientId, $ownerId, $collectionId, $id, $name);
             }
-
-            // Remove old file
-            $this->_removeFile($file);
         }
         // Update only file information
         else {

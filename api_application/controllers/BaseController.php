@@ -197,6 +197,14 @@ class BaseController extends Flooer_Controller
         );
     }
 
+    protected function _generateZsync($source, $zsync)
+    {
+        exec('zsyncmake'
+            . ' -o "' . $zsync . '"'
+            . ' "' . $source . '"'
+        );
+    }
+
     protected function _sendFile($filepath, $filename, $type, $size, $attachment = false, $headeronly = false)
     {
         $rangeBegin = 0;

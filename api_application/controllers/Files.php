@@ -588,6 +588,9 @@ class Files extends BaseController
                 return;
             }
 
+            // Remove old file
+            $this->_removeFile($file);
+
             // Get ID3 tags
             $id3Tags = $this->_getId3Tags($type, $_FILES['file']['tmp_name']);
 
@@ -642,9 +645,6 @@ class Files extends BaseController
             if ($id3Tags) {
                 $this->_addMedia($id3Tags, $clientId, $ownerId, $collectionId, $id, $name);
             }
-
-            // Remove old file
-            $this->_removeFile($file);
         }
         // Update only file information
         else {
@@ -766,38 +766,6 @@ class Files extends BaseController
             // link is ok, go on
             $collection = $this->models->collections->$collectionId;
 
-            if (!$headeronly && $file->downloaded_ip != $this->server->REMOTE_ADDR) {
-                $this->models->files->updateDownloadedStatus($file->id);
-
-                $downloadedId = $this->models->files_downloaded->generateId();
-                $ref = null;
-                if ($isFromOcsApi) {
-                  $ref = 'OCS-API';
-                }
-                $this->models->files_downloaded->$downloadedId = array(
-                    'client_id' => $file->client_id,
-                    'owner_id' => $file->owner_id,
-                    'collection_id' => $file->collection_id,
-                    'file_id' => $file->id,
-                    'user_id' => $userId,
-                    'referer' => $ref
-                );
-            }
-
-            // If external URI has set, redirect to it
-            $externalUri = '';
-            $tags = explode(',', $file->tags);
-            foreach ($tags as $tag) {
-                $tag = trim($tag);
-                if (strpos($tag, 'link##') === 0) {
-                    $externalUri = urldecode(str_replace('link##', '', $tag));
-                    break;
-                }
-            }
-            if ($externalUri) {
-                $this->response->redirect($externalUri);
-            }
-
             $collectionDir = '';
             if ($collection->active) {
                 $collectionDir = $this->appConfig->general['filesDir'] . '/' . $collection->name;
@@ -814,11 +782,61 @@ class Files extends BaseController
                 $filePath = $collectionDir . '/.trash/' . $file->id . '-' . $file->name;
             }
 
+            $fileName = $file->name;
+            $fileType = $file->type;
+            $fileSize = $file->size;
+
+            // If request URI ended with .zsync, make a response as zsync data
+            if (strtolower(substr($this->request->getUri(), -6)) == '.zsync') {
+                $zsyncPath = $this->appConfig->general['zsyncDir'] . '/' . $file->id . '.zsync';
+                if (!is_file($zsyncPath)) {
+                    $this->_generateZsync($filePath, $zsyncPath, $fileName);
+                }
+
+                $filePath = $zsyncPath;
+                $fileName .= '.zsync';
+                $fileType = 'application/x-zsync';
+                $fileSize = filesize($zsyncPath);
+            }
+            else {
+                if (!$headeronly && $file->downloaded_ip != $this->server->REMOTE_ADDR) {
+                    $this->models->files->updateDownloadedStatus($file->id);
+
+                    $downloadedId = $this->models->files_downloaded->generateId();
+                    $ref = null;
+                    if ($isFromOcsApi) {
+                      $ref = 'OCS-API';
+                    }
+                    $this->models->files_downloaded->$downloadedId = array(
+                        'client_id' => $file->client_id,
+                        'owner_id' => $file->owner_id,
+                        'collection_id' => $file->collection_id,
+                        'file_id' => $file->id,
+                        'user_id' => $userId,
+                        'referer' => $ref
+                    );
+                }
+
+                // If external URI has set, redirect to it
+                $externalUri = '';
+                $tags = explode(',', $file->tags);
+                foreach ($tags as $tag) {
+                    $tag = trim($tag);
+                    if (strpos($tag, 'link##') === 0) {
+                        $externalUri = urldecode(str_replace('link##', '', $tag));
+                        break;
+                    }
+                }
+                if ($externalUri) {
+                    $this->response->redirect($externalUri);
+                }
+            }
+
             $this->_sendFile(
                 $filePath,
-                $file->name,
-                $file->type,
-                $file->size,
+                $fileName,
+                $fileType,
+                $fileSize,
                 true,
                 $headeronly
             );

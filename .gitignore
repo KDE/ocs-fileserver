@@ -5,6 +5,7 @@ api_application/configs/clients.ini
 data/database/*
 data/logs/*
 data/files/*
+data/zsync/*
 data/thumbnails/*
 public/robots.txt
 public/google*.html

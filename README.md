@@ -9,10 +9,11 @@ Copyright 2016 by pling GmbH.
 
 * apache2
 * mysql-server
-* php5
-* php5-mysql
-* php5-curl
-* php5-gd
+* php/php5
+* php-mysql/php5-mysql
+* php-curl/php5-curl
+* php-gd/php5-gd
+* zsync
 
 
 ## Installation

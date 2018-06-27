@@ -790,7 +790,7 @@ class Files extends BaseController
             if (strtolower(substr($this->request->getUri(), -6)) == '.zsync') {
                 $zsyncPath = $this->appConfig->general['zsyncDir'] . '/' . $file->id . '.zsync';
                 if (!is_file($zsyncPath)) {
-                    $this->_generateZsync($filePath, $zsyncPath);
+                    $this->_generateZsync($filePath, $zsyncPath, $fileName);
                 }
 
                 $filePath = $zsyncPath;

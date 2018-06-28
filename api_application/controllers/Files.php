@@ -236,7 +236,6 @@ class Files extends BaseController
         else if (isset($this->request->local_file_path)) {
             if (!empty($this->request->local_file_path)) {
                 $name = mb_substr(strip_tags(basename($this->request->local_file_path)), 0, 200);
-
                 // if this is a external link?
                 if ($name == 'empty' && str_word_count($tags, 0, 'link##') > 0) {
                     $type = null;
@@ -247,8 +246,8 @@ class Files extends BaseController
                         $tag = trim($tag);
                         if (strpos($tag, 'link##') === 0) {
                             $link = urldecode(str_replace('link##', '', $tag));
-                            $size = $this->_remoteFilesize($link);
-                            $type = $this->_mimeContentType($link);
+                            $size = $this->_detectFilesizeFromUri($link);
+                            $type = $this->_detectMimeTypeFromUri($link);
                         }
                     }
                 }
@@ -420,7 +419,7 @@ class Files extends BaseController
         }
         // ------------------------------------------------
 
-        // Update the collection
+        // Add/Update the collection
         $this->models->collections->$collectionId = $collectionData;
 
         // Add the file
@@ -531,6 +530,8 @@ class Files extends BaseController
             $type = null; // Auto detect
             $size = null; // Auto detect
 
+            $downloadedCount = 0; // for hive files importing (Deprecated)
+
             if (!empty($_FILES['file']['name'])) {
                 $name = mb_substr(strip_tags(basename($_FILES['file']['name'])), 0, 200);
             }
@@ -568,8 +569,6 @@ class Files extends BaseController
             if ($contentPage === null) {
                 $contentPage = $file->content_page;
             }
-
-            $downloadedCount = 0; // for hive files importing (Deprecated)
 
             $errors = array();
             if (!empty($_FILES['file']['error'])) { // 0 = UPLOAD_ERR_OK
@@ -717,10 +716,24 @@ class Files extends BaseController
 
     public function headDownloadfile()
     {
-        $this->getDownloadfile(true);
+        // This is alias for HEAD /api/files/download
+
+        $this->headDownload();
+    }
+
+    public function headDownload()
+    {
+        $this->getDownload(true);
     }
 
     public function getDownloadfile($headeronly = false)
+    {
+        // This is alias for GET /api/files/download
+
+        $this->getDownload($headeronly);
+    }
+
+    public function getDownload($headeronly = false)
     {
         $id = null;
         $userId = null;
@@ -759,11 +772,11 @@ class Files extends BaseController
         $now = time();
         $div = ($timestamp - $now);
 
-        //Log
+        // Log
         $this->log->log("Start Download (client: $file->client_id; salt: $salt; hash: $hash; hashGiven: $hashGiven)", LOG_NOTICE);
 
         if ($isFromOcsApi || ($hashGiven == $hash && $div > 0)) {
-            // link is ok, go on
+            // Link is ok, go on
             $collection = $this->models->collections->$collectionId;
 
             $collectionDir = '';
@@ -842,114 +855,12 @@ class Files extends BaseController
             );
         }
         else {
-            // link is not ok
-            //Log
+            // Link is not ok
+            // Log
             $this->log->log("Start Download failed (file: $file->id; time-div: $div;  client: $file->client_id; salt: $salt; hash: $hash; hashGiven: $hashGiven)", LOG_NOTICE);
-            // redirect to opendesktop project page
-            $defaultDomain = $this->appConfig->general['default_redir_domain'];
-            $this->response->redirect($defaultDomain . '/c/' . $collectionId);
+            // Redirect to opendesktop project page
+            $this->response->redirect($this->appConfig->general['redirectServer'] . '/c/' . $collectionId);
         }
-    }
-
-    public function headDownload()
-    {
-        $this->getDownload(true);
-    }
-
-    /**
-     * Old styl downoad link without expired time
-     * @param type $headeronly
-     * @throws Flooer_Exception
-     */
-    public function getDownload($headeronly = false)
-    {
-        $id = null;
-        $userId = null;
-        $isFromOcsApi = false;
-
-        if (!empty($this->request->id)) {
-            $id = $this->request->id;
-        }
-        if (!empty($this->request->u)) {
-            $userId = $this->request->u;
-        }
-        if (!empty($this->request->o)) {
-            $isFromOcsApi = ($this->request->o == 1);
-        }
-
-        $file = $this->models->files->$id;
-
-        if (!$file) {
-            $this->response->setStatus(404);
-            throw new Flooer_Exception('Not found', LOG_NOTICE);
-        }
-
-        $collectionId = $file->collection_id;
-
-        /* 20171207 disable old style download link
-        $collection = $this->models->collections->$collectionId;
-
-        if (!$headeronly && $file->downloaded_ip != $this->server->REMOTE_ADDR) {
-            $this->models->files->updateDownloadedStatus($file->id);
-
-            $downloadedId = $this->models->files_downloaded->generateId();
-            $ref = null;
-            if ($isFromOcsApi) {
-              $ref = 'OCS-API-OLD';
-            }
-            $this->models->files_downloaded->$downloadedId = array(
-                'client_id' => $file->client_id,
-                'owner_id' => $file->owner_id,
-                'collection_id' => $file->collection_id,
-                'file_id' => $file->id,
-                'user_id' => $userId,
-                'referer' => $ref
-            );
-        }
-
-        // If external URI has set, redirect to it
-        $externalUri = '';
-        $tags = explode(',', $file->tags);
-        foreach ($tags as $tag) {
-            $tag = trim($tag);
-            if (strpos($tag, 'link##') === 0) {
-                $externalUri = urldecode(str_replace('link##', '', $tag));
-                break;
-            }
-        }
-        if ($externalUri) {
-            $this->response->redirect($externalUri);
-        }
-
-        $collectionDir = '';
-        if ($collection->active) {
-            $collectionDir = $this->appConfig->general['filesDir'] . '/' . $collection->name;
-        }
-        else {
-            $collectionDir = $this->appConfig->general['filesDir'] . '/.trash/' . $collection->id . '-' . $collection->name;
-        }
-
-        $filePath = '';
-        if ($file->active) {
-            $filePath = $collectionDir . '/' . $file->name;
-        }
-        else {
-            $filePath = $collectionDir . '/.trash/' . $file->id . '-' . $file->name;
-        }
-
-        $this->_sendFile(
-            $filePath,
-            $file->name,
-            $file->type,
-            $file->size,
-            true,
-            $headeronly
-        );
-         */
-
-        //redirect to opendesktop project page
-        $defaultDomain = $this->appConfig->general['default_redir_domain'];
-        $this->response->redirect($defaultDomain . '/c/' . $collectionId);
     }
 
     private function _fixFilenameInCollection($name, $collectionName)
@@ -1105,10 +1016,10 @@ class Files extends BaseController
         }
     }
 
-    private function _remoteFilesize($url)
+    private function _detectFilesizeFromUri($uri)
     {
         static $regex = '/^Content-Length: *+\K\d++$/im';
-        if (!$fp = @fopen($url, 'rb')) {
+        if (!$fp = @fopen($uri, 'rb')) {
             return false;
         }
         if (isset($http_response_header)
@@ -1119,9 +1030,9 @@ class Files extends BaseController
         return strlen(stream_get_contents($fp));
     }
 
-    private function _mimeContentType($url)
+    private function _detectMimeTypeFromUri($uri)
     {
-        $mime_types = array(
+        $mimeTypes = array(
           'txt'  => 'text/plain',
           'htm'  => 'text/html',
           'html' => 'text/html',
@@ -1181,13 +1092,14 @@ class Files extends BaseController
           'ods'  => 'application/vnd.oasis.opendocument.spreadsheet'
         );
 
-        $filename_parts = explode('.', $url);
-        $ext = strtolower(array_pop($filename_parts));
-        if (array_key_exists($ext, $mime_types)) {
-            return $mime_types[$ext];
+        $uriParts = explode('.', $uri);
+        $ext = strtolower(array_pop($uriParts));
+
+        if (array_key_exists($ext, $mimeTypes)) {
+            return $mimeTypes[$ext];
         }
         else {
-            $ch = curl_init($url);
+            $ch = curl_init($uri);
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
             curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
             curl_setopt($ch, CURLOPT_HEADER, 1);

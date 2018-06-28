@@ -24,18 +24,22 @@
 class BaseModel extends Flooer_Db_Table
 {
 
+    /**
+     * Generates a ID number for primary key
+     *
+     * This method generating a unique ID number based on unix time.
+     * And the maximum value of the ID has affected by database
+     * column data type.
+     *
+     * Case of INT Signed:
+     * Max value = 2147483647 (19 Jan 2038 03:14:07 UTC)
+     * Case of INT Unsigned:
+     * Max value = 4294967295 (07 Feb 2106 06:28:15 UTC)
+     * Case of BIGINT Signed:
+     * Max value = 9223372036854775807 (After 3000 billion years)
+     */
     public function generateId()
     {
-        // This method generate a unique ID number based on unix time.
-        // And the valid period of this method has influenced by
-        // column data type of database.
-        // Case of INT Signed:
-        // Max value = 2147483647 = 19 Jan 2038 03:14:07 UTC
-        // Case of INT Unsigned:
-        // Max value = 4294967295 = 07 Feb 2106 06:28:15 UTC
-        // Case of BIGINT Signed:
-        // Max value = 9223372036854775807 = In the end of human existence
-
         $id = time();
         while (isset($this->$id)) {
             $id++;

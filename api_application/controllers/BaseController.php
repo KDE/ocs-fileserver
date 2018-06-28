@@ -279,4 +279,97 @@ class BaseController extends Flooer_Controller
         exit;
     }
 
+    protected function _detectMimeTypeFromUri($uri)
+    {
+        $mimeTypes = array(
+          'txt'  => 'text/plain',
+          'htm'  => 'text/html',
+          'html' => 'text/html',
+          'php'  => 'text/html',
+          'css'  => 'text/css',
+          'js'   => 'application/javascript',
+          'json' => 'application/json',
+          'xml'  => 'application/xml',
+          'swf'  => 'application/x-shockwave-flash',
+          // images
+          'png'  => 'image/png',
+          'jpe'  => 'image/jpeg',
+          'jpeg' => 'image/jpeg',
+          'jpg'  => 'image/jpeg',
+          'gif'  => 'image/gif',
+          'bmp'  => 'image/bmp',
+          'ico'  => 'image/vnd.microsoft.icon',
+          'tiff' => 'image/tiff',
+          'tif'  => 'image/tiff',
+          'svg'  => 'image/svg+xml',
+          'svgz' => 'image/svg+xml',
+          // archives
+          'tar'  => 'application/x-tar',
+          'tgz'  => 'application/tar+gzip',
+          'gz'   => 'application/x-gzip',
+          'bz2'   => 'application/x-bzip2',
+          'xz'   => 'application/x-xz',
+          'zip'  => 'application/zip',
+          '7z'   => 'application/x-7z-compressed',
+          'rar'  => 'application/x-rar-compressed',
+          'exe'  => 'application/x-msdownload',
+          'msi'  => 'application/x-msdownload',
+          'cab'  => 'application/vnd.ms-cab-compressed',
+          // audio/video
+          'aac'  => 'audio/aac',
+          'm4a'  => 'audio/mp4',
+          'mp3'  => 'audio/mpeg',
+          'qt'   => 'video/quicktime',
+          'mov'  => 'video/quicktime',
+          'mp4'  => 'video/mp4',
+          'm4v'  => 'video/mp4',
+          'ogv'  => 'video/ogg',
+          'flv'  => 'video/x-flv',
+          // adobe
+          'pdf'  => 'application/pdf',
+          'psd'  => 'image/vnd.adobe.photoshop',
+          'ai'   => 'application/postscript',
+          'eps'  => 'application/postscript',
+          'ps'   => 'application/postscript',
+          // ms office
+          'doc'  => 'application/msword',
+          'rtf'  => 'application/rtf',
+          'xls'  => 'application/vnd.ms-excel',
+          'ppt'  => 'application/vnd.ms-powerpoint',
+          // open office
+          'odt'  => 'application/vnd.oasis.opendocument.text',
+          'ods'  => 'application/vnd.oasis.opendocument.spreadsheet'
+        );
+
+        $uriParts = explode('.', $uri);
+        $ext = strtolower(array_pop($uriParts));
+
+        if (array_key_exists($ext, $mimeTypes)) {
+            return $mimeTypes[$ext];
+        }
+        else {
+            $ch = curl_init($uri);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+            curl_setopt($ch, CURLOPT_HEADER, 1);
+            curl_setopt($ch, CURLOPT_NOBODY, 1);
+            curl_exec($ch);
+            return curl_getinfo($ch, CURLINFO_CONTENT_TYPE);
+        }
+    }
+
+    protected function _detectFilesizeFromUri($uri)
+    {
+        static $regex = '/^Content-Length: *+\K\d++$/im';
+        if (!$fp = @fopen($uri, 'rb')) {
+            return false;
+        }
+        if (isset($http_response_header)
+            && preg_match($regex, implode("\n", $http_response_header), $matches)
+        ) {
+            return (int)$matches[0];
+        }
+        return strlen(stream_get_contents($fp));
+    }
+
 }

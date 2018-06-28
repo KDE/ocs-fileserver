@@ -236,21 +236,10 @@ class Files extends BaseController
         else if (isset($this->request->local_file_path)) {
             if (!empty($this->request->local_file_path)) {
                 $name = mb_substr(strip_tags(basename($this->request->local_file_path)), 0, 200);
-
-                // if this is a external link?
-                if ($name == 'empty' && str_word_count($tags, 0, 'link##') > 0) {
-                    $type = null;
-                    $size = null;
-                    $link = null;
-                    $tagArray = explode(",", $tags);
-                    foreach ($tagArray as $tag) {
-                        $tag = trim($tag);
-                        if (strpos($tag, 'link##') === 0) {
-                            $link = urldecode(str_replace('link##', '', $tag));
-                            $size = $this->_remoteFilesize($link);
-                            $type = $this->_mimeContentType($link);
-                        }
-                    }
+                $externalUri = $this->_detectLinkInTags($tags);
+                if ($name == 'empty' && $externalUri) {
+                    $type = $this->_detectMimeTypeFromUri($externalUri);
+                    $size = $this->_detectFilesizeFromUri($externalUri);
                 }
                 else {
                     $finfo = new finfo(FILEINFO_MIME_TYPE);
@@ -334,7 +323,7 @@ class Files extends BaseController
             return;
         }
 
-        // Get ID3 tags
+        // Get ID3 tags in the file
         $id3Tags = $this->_getId3Tags($type, $_FILES['file']['tmp_name']);
 
         // Prepare to append the file to collection
@@ -420,7 +409,7 @@ class Files extends BaseController
         }
         // ------------------------------------------------
 
-        // Update the collection
+        // Add/Update the collection
         $this->models->collections->$collectionId = $collectionData;
 
         // Add the file
@@ -531,6 +520,8 @@ class Files extends BaseController
             $type = null; // Auto detect
             $size = null; // Auto detect
 
+            $downloadedCount = 0; // for hive files importing (Deprecated)
+
             if (!empty($_FILES['file']['name'])) {
                 $name = mb_substr(strip_tags(basename($_FILES['file']['name'])), 0, 200);
             }
@@ -569,8 +560,6 @@ class Files extends BaseController
                 $contentPage = $file->content_page;
             }
 
-            $downloadedCount = 0; // for hive files importing (Deprecated)
-
             $errors = array();
             if (!empty($_FILES['file']['error'])) { // 0 = UPLOAD_ERR_OK
                 $errors['file'] = $_FILES['file']['error'];
@@ -591,7 +580,7 @@ class Files extends BaseController
             // Remove old file
             $this->_removeFile($file);
 
-            // Get ID3 tags
+            // Get ID3 tags in the file
             $id3Tags = $this->_getId3Tags($type, $_FILES['file']['tmp_name']);
 
             // Prepare to append the file to collection
@@ -717,10 +706,24 @@ class Files extends BaseController
 
     public function headDownloadfile()
     {
-        $this->getDownloadfile(true);
+        // This is alias for HEAD /api/files/download
+
+        $this->headDownload();
+    }
+
+    public function headDownload()
+    {
+        $this->getDownload(true);
     }
 
     public function getDownloadfile($headeronly = false)
+    {
+        // This is alias for GET /api/files/download
+
+        $this->getDownload($headeronly);
+    }
+
+    public function getDownload($headeronly = false)
     {
         $id = null;
         $userId = null;
@@ -759,11 +762,11 @@ class Files extends BaseController
         $now = time();
         $div = ($timestamp - $now);
 
-        //Log
+        // Log
         $this->log->log("Start Download (client: $file->client_id; salt: $salt; hash: $hash; hashGiven: $hashGiven)", LOG_NOTICE);
 
         if ($isFromOcsApi || ($hashGiven == $hash && $div > 0)) {
-            // link is ok, go on
+            // Link is ok, go on
             $collection = $this->models->collections->$collectionId;
 
             $collectionDir = '';
@@ -818,15 +821,7 @@ class Files extends BaseController
                 }
 
                 // If external URI has set, redirect to it
-                $externalUri = '';
-                $tags = explode(',', $file->tags);
-                foreach ($tags as $tag) {
-                    $tag = trim($tag);
-                    if (strpos($tag, 'link##') === 0) {
-                        $externalUri = urldecode(str_replace('link##', '', $tag));
-                        break;
-                    }
-                }
+                $externalUri = $this->_detectLinkInTags($file->tags);
                 if ($externalUri) {
                     $this->response->redirect($externalUri);
                 }
@@ -842,114 +837,12 @@ class Files extends BaseController
             );
         }
         else {
-            // link is not ok
-            //Log
+            // Link is not ok
+            // Log
             $this->log->log("Start Download failed (file: $file->id; time-div: $div;  client: $file->client_id; salt: $salt; hash: $hash; hashGiven: $hashGiven)", LOG_NOTICE);
-            // redirect to opendesktop project page
-            $defaultDomain = $this->appConfig->general['default_redir_domain'];
-            $this->response->redirect($defaultDomain . '/c/' . $collectionId);
+            // Redirect to opendesktop project page
+            $this->response->redirect($this->appConfig->general['redirectTargetServer'] . '/c/' . $collectionId);
         }
-    }
-
-    public function headDownload()
-    {
-        $this->getDownload(true);
-    }
-
-    /**
-     * Old styl downoad link without expired time
-     * @param type $headeronly
-     * @throws Flooer_Exception
-     */
-    public function getDownload($headeronly = false)
-    {
-        $id = null;
-        $userId = null;
-        $isFromOcsApi = false;
-
-        if (!empty($this->request->id)) {
-            $id = $this->request->id;
-        }
-        if (!empty($this->request->u)) {
-            $userId = $this->request->u;
-        }
-        if (!empty($this->request->o)) {
-            $isFromOcsApi = ($this->request->o == 1);
-        }
-
-        $file = $this->models->files->$id;
-
-        if (!$file) {
-            $this->response->setStatus(404);
-            throw new Flooer_Exception('Not found', LOG_NOTICE);
-        }
-
-        $collectionId = $file->collection_id;
-
-        /* 20171207 disable old style download link
-        $collection = $this->models->collections->$collectionId;
-
-        if (!$headeronly && $file->downloaded_ip != $this->server->REMOTE_ADDR) {
-            $this->models->files->updateDownloadedStatus($file->id);
-
-            $downloadedId = $this->models->files_downloaded->generateId();
-            $ref = null;
-            if ($isFromOcsApi) {
-              $ref = 'OCS-API-OLD';
-            }
-            $this->models->files_downloaded->$downloadedId = array(
-                'client_id' => $file->client_id,
-                'owner_id' => $file->owner_id,
-                'collection_id' => $file->collection_id,
-                'file_id' => $file->id,
-                'user_id' => $userId,
-                'referer' => $ref
-            );
-        }
-
-        // If external URI has set, redirect to it
-        $externalUri = '';
-        $tags = explode(',', $file->tags);
-        foreach ($tags as $tag) {
-            $tag = trim($tag);
-            if (strpos($tag, 'link##') === 0) {
-                $externalUri = urldecode(str_replace('link##', '', $tag));
-                break;
-            }
-        }
-        if ($externalUri) {
-            $this->response->redirect($externalUri);
-        }
-
-        $collectionDir = '';
-        if ($collection->active) {
-            $collectionDir = $this->appConfig->general['filesDir'] . '/' . $collection->name;
-        }
-        else {
-            $collectionDir = $this->appConfig->general['filesDir'] . '/.trash/' . $collection->id . '-' . $collection->name;
-        }
-
-        $filePath = '';
-        if ($file->active) {
-            $filePath = $collectionDir . '/' . $file->name;
-        }
-        else {
-            $filePath = $collectionDir . '/.trash/' . $file->id . '-' . $file->name;
-        }
-
-        $this->_sendFile(
-            $filePath,
-            $file->name,
-            $file->type,
-            $file->size,
-            true,
-            $headeronly
-        );
-         */
-
-        //redirect to opendesktop project page
-        $defaultDomain = $this->appConfig->general['default_redir_domain'];
-        $this->response->redirect($defaultDomain . '/c/' . $collectionId);
     }
 
     private function _fixFilenameInCollection($name, $collectionName)
@@ -1105,84 +998,18 @@ class Files extends BaseController
         }
     }
 
-    private function _remoteFilesize($url)
+    private function _detectLinkInTags($tagsString)
     {
-        static $regex = '/^Content-Length: *+\K\d++$/im';
-        if (!$fp = @fopen($url, 'rb')) {
-            return false;
+        $link = '';
+        $tags = explode(',', $tagsString);
+        foreach ($tags as $tag) {
+            $tag = trim($tag);
+            if (strpos($tag, 'link##') === 0) {
+                $link = urldecode(str_replace('link##', '', $tag));
+                break;
+            }
         }
-        if (isset($http_response_header)
-            && preg_match($regex, implode("\n", $http_response_header), $matches)
-        ) {
-            return (int)$matches[0];
-        }
-        return strlen(stream_get_contents($fp));
+        return $link;
     }
 
-    private function _mimeContentType($url)
-    {
-        $mime_types = array(
-          'txt'  => 'text/plain',
-          'htm'  => 'text/html',
-          'html' => 'text/html',
-          'php'  => 'text/html',
-          'css'  => 'text/css',
-          'js'   => 'application/javascript',
-          'json' => 'application/json',
-          'xml'  => 'application/xml',
-          'swf'  => 'application/x-shockwave-flash',
-          'flv'  => 'video/x-flv',
-          // images
-          'png'  => 'image/png',
-          'jpe'  => 'image/jpeg',
-          'jpeg' => 'image/jpeg',
-          'jpg'  => 'image/jpeg',
-          'gif'  => 'image/gif',
-          'bmp'  => 'image/bmp',
-          'ico'  => 'image/vnd.microsoft.icon',
-          'tiff' => 'image/tiff',
-          'tif'  => 'image/tiff',
-          'svg'  => 'image/svg+xml',
-          'svgz' => 'image/svg+xml',
-          // archives
-          'zip'  => 'application/zip',
-          'rar'  => 'application/x-rar-compressed',
-          'exe'  => 'application/x-msdownload',
-          'msi'  => 'application/x-msdownload',
-          'cab'  => 'application/vnd.ms-cab-compressed',
-          // audio/video
-          'mp3'  => 'audio/mpeg',
-          'qt'   => 'video/quicktime',
-          'mov'  => 'video/quicktime',
-          // adobe
-          'pdf'  => 'application/pdf',
-          'psd'  => 'image/vnd.adobe.photoshop',
-          'ai'   => 'application/postscript',
-          'eps'  => 'application/postscript',
-          'ps'   => 'application/postscript',
-          // ms office
-          'doc'  => 'application/msword',
-          'rtf'  => 'application/rtf',
-          'xls'  => 'application/vnd.ms-excel',
-          'ppt'  => 'application/vnd.ms-powerpoint',
-          // open office
-          'odt'  => 'application/vnd.oasis.opendocument.text',
-          'ods'  => 'application/vnd.oasis.opendocument.spreadsheet',
-        );
-
-        $filename_parts = explode('.', $url);
-        $ext = strtolower(array_pop($filename_parts));
-        if (array_key_exists($ext, $mime_types)) {
-            return $mime_types[$ext];
-        }
-        else {
-            $ch = curl_init($url);
-            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-            curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
-            curl_setopt($ch, CURLOPT_HEADER, 1);
-            curl_setopt($ch, CURLOPT_NOBODY, 1);
-            curl_exec($ch);
-            return curl_getinfo($ch, CURLINFO_CONTENT_TYPE);
-        }
-    }
 }

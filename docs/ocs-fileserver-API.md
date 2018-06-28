@@ -331,7 +331,8 @@ downloaded_count | - | 0-n | - | Download counter.
 
 ### Update file
 
-If a new file uploaded, old file has removed and replace to the new file with new file id.
+If a new file uploaded,
+old file has removed and replace to the new file with new file id.
 
 Request: PUT {baseURI}/files/file
 
@@ -364,13 +365,16 @@ id | Yes | File ID | - | File ID.
 
 ### Download file
 
+If request URI ended with .zsync,
+the response is zsync data of uploaded data.
+
 Request: GET {baseURI}/files/download
 
 Parameter | Required | Value | Default | Description
 ----------|----------|-------|---------|------------
 id | Yes | File ID | - | File ID.
 
-Response: Uploaded data or redirect to external URI
+Response: Uploaded data or zsync data or redirect to external URI
 
 
 ## Favorites

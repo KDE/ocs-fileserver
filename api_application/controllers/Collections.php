@@ -391,7 +391,6 @@ class Collections extends BaseController
         $this->_setResponseContent('success');
     }
 
-    /* Collection download has disabled for now
     public function headDownload()
     {
         $this->getDownload(true);
@@ -399,6 +398,10 @@ class Collections extends BaseController
 
     public function getDownload($headeronly = false)
     {
+        // Collection download is disabled
+        $this->response->setStatus(403);
+        throw new Flooer_Exception('Forbidden', LOG_NOTICE);
+
         $id = null;
         $userId = null;
 
@@ -465,6 +468,5 @@ class Collections extends BaseController
             $headeronly
         );
     }
-    */
 
 }

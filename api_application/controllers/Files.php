@@ -1131,7 +1131,6 @@ class Files extends BaseController
           'json' => 'application/json',
           'xml'  => 'application/xml',
           'swf'  => 'application/x-shockwave-flash',
-          'flv'  => 'video/x-flv',
           // images
           'png'  => 'image/png',
           'jpe'  => 'image/jpeg',
@@ -1145,15 +1144,27 @@ class Files extends BaseController
           'svg'  => 'image/svg+xml',
           'svgz' => 'image/svg+xml',
           // archives
+          'tar'  => 'application/x-tar',
+          'tgz'  => 'application/tar+gzip',
+          'gz'   => 'application/x-gzip',
+          'bz2'   => 'application/x-bzip2',
+          'xz'   => 'application/x-xz',
           'zip'  => 'application/zip',
+          '7z'   => 'application/x-7z-compressed',
           'rar'  => 'application/x-rar-compressed',
           'exe'  => 'application/x-msdownload',
           'msi'  => 'application/x-msdownload',
           'cab'  => 'application/vnd.ms-cab-compressed',
           // audio/video
+          'aac'  => 'audio/aac',
+          'm4a'  => 'audio/mp4',
           'mp3'  => 'audio/mpeg',
           'qt'   => 'video/quicktime',
           'mov'  => 'video/quicktime',
+          'mp4'  => 'video/mp4',
+          'm4v'  => 'video/mp4',
+          'ogv'  => 'video/ogg',
+          'flv'  => 'video/x-flv',
           // adobe
           'pdf'  => 'application/pdf',
           'psd'  => 'image/vnd.adobe.photoshop',
@@ -1167,7 +1178,7 @@ class Files extends BaseController
           'ppt'  => 'application/vnd.ms-powerpoint',
           // open office
           'odt'  => 'application/vnd.oasis.opendocument.text',
-          'ods'  => 'application/vnd.oasis.opendocument.spreadsheet',
+          'ods'  => 'application/vnd.oasis.opendocument.spreadsheet'
         );
 
         $filename_parts = explode('.', $url);

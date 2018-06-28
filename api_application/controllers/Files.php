@@ -236,20 +236,10 @@ class Files extends BaseController
         else if (isset($this->request->local_file_path)) {
             if (!empty($this->request->local_file_path)) {
                 $name = mb_substr(strip_tags(basename($this->request->local_file_path)), 0, 200);
-                // if this is a external link?
-                if ($name == 'empty' && str_word_count($tags, 0, 'link##') > 0) {
-                    $type = null;
-                    $size = null;
-                    $link = null;
-                    $tagArray = explode(",", $tags);
-                    foreach ($tagArray as $tag) {
-                        $tag = trim($tag);
-                        if (strpos($tag, 'link##') === 0) {
-                            $link = urldecode(str_replace('link##', '', $tag));
-                            $size = $this->_detectFilesizeFromUri($link);
-                            $type = $this->_detectMimeTypeFromUri($link);
-                        }
-                    }
+                $externalUri = $this->_detectLinkInTags($tags);
+                if ($name == 'empty' && $externalUri) {
+                    $type = $this->_detectMimeTypeFromUri($externalUri);
+                    $size = $this->_detectFilesizeFromUri($externalUri);
                 }
                 else {
                     $finfo = new finfo(FILEINFO_MIME_TYPE);
@@ -831,15 +821,7 @@ class Files extends BaseController
                 }
 
                 // If external URI has set, redirect to it
-                $externalUri = '';
-                $tags = explode(',', $file->tags);
-                foreach ($tags as $tag) {
-                    $tag = trim($tag);
-                    if (strpos($tag, 'link##') === 0) {
-                        $externalUri = urldecode(str_replace('link##', '', $tag));
-                        break;
-                    }
-                }
+                $externalUri = $this->_detectLinkInTags($file->tags);
                 if ($externalUri) {
                     $this->response->redirect($externalUri);
                 }
@@ -1014,6 +996,20 @@ class Files extends BaseController
                 imagedestroy($image);
             }
         }
+    }
+
+    private function _detectLinkInTags($tagsString)
+    {
+        $link = '';
+        $tags = explode(',', $tagsString);
+        foreach ($tags as $tag) {
+            $tag = trim($tag);
+            if (strpos($tag, 'link##') === 0) {
+                $link = urldecode(str_replace('link##', '', $tag));
+                break;
+            }
+        }
+        return $link;
     }
 
     private function _detectFilesizeFromUri($uri)

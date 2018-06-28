@@ -841,7 +841,7 @@ class Files extends BaseController
             // Log
             $this->log->log("Start Download failed (file: $file->id; time-div: $div;  client: $file->client_id; salt: $salt; hash: $hash; hashGiven: $hashGiven)", LOG_NOTICE);
             // Redirect to opendesktop project page
-            $this->response->redirect($this->appConfig->general['redirectServer'] . '/c/' . $collectionId);
+            $this->response->redirect($this->appConfig->general['redirectTargetServer'] . '/c/' . $collectionId);
         }
     }
 

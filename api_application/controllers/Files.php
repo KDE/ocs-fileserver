@@ -26,6 +26,7 @@ class Files extends BaseController
 
     public function getIndex()
     {
+        $originId = null;
         $status = 'active';
         $clientId = null;
         $ownerId = null;
@@ -48,6 +49,9 @@ class Files extends BaseController
         $perpage = $this->appConfig->general['perpage'];
         $page = 1;
 
+        if (!empty($this->request->origin_id)) {
+            $originId = $this->request->origin_id;
+        }
         if (!empty($this->request->status)) {
             $status = $this->request->status;
         }
@@ -126,6 +130,7 @@ class Files extends BaseController
         }
 
         $files = $this->models->files->getFiles(
+            $originId,
             $status,
             $clientId,
             $ownerId,

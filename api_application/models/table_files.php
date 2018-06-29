@@ -98,7 +98,7 @@ class table_files extends BaseModel
         parent::__set($key, $value);
     }
 
-    public function getFiles($status = 'active', $clientId = null, $ownerId = null, $collectionId = null, $collectionStatus = 'active', $collectionCategory = null, $collectionTags = null, $collectionContentId = null, $types = null, $category = null, $tags = null, $ocsCompatibility = 'all', $contentId = null, $search = null, $ids = null, array $favoriteIds = null, $downloadedTimeperiodBegin = null, $downloadedTimeperiodEnd = null, $sort = 'name', $perpage = 20, $page = 1)
+    public function getFiles($originId = null, $status = 'active', $clientId = null, $ownerId = null, $collectionId = null, $collectionStatus = 'active', $collectionCategory = null, $collectionTags = null, $collectionContentId = null, $types = null, $category = null, $tags = null, $ocsCompatibility = 'all', $contentId = null, $search = null, $ids = null, array $favoriteIds = null, $downloadedTimeperiodBegin = null, $downloadedTimeperiodEnd = null, $sort = 'name', $perpage = 20, $page = 1)
     {
         $prefix = $this->getPrefix();
         $name = $this->getName();
@@ -110,6 +110,10 @@ class table_files extends BaseModel
         $order = "{$prefix}files.name ASC";
         $offset = 0;
 
+        if ($originId) {
+            $where[] = "{$prefix}files.origin_id = :origin_id";
+            $values[':origin_id'] = $originId;
+        }
         if ($status != 'all') {
             $active = 1;
             if ($status == 'inactive') {

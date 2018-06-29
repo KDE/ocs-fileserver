@@ -265,6 +265,7 @@ Request: GET {baseURI}/files/index
 
 Parameter | Required | Value | Default | Description
 ----------|----------|-------|---------|------------
+origin_id | - | Original file ID | - | Original file ID.
 status | - | active/inactive/all | active | File status.
 client_id | - | Client ID | - | Client ID.
 owner_id | - | User ID | - | User ID.

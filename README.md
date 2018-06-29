@@ -8,11 +8,13 @@ Copyright 2016 by pling GmbH.
 ## Dependencies
 
 * apache2
+* libapache2-mod-php
 * mysql-server
-* php/php5
-* php-mysql/php5-mysql
-* php-curl/php5-curl
-* php-gd/php5-gd
+* php
+* php-mysql
+* php-xml
+* php-curl
+* php-gd
 * zsync
 
 

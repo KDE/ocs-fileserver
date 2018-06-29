@@ -540,9 +540,6 @@ class Files extends BaseController
             if (!empty($_FILES['file']['size'])) {
                 $size = $_FILES['file']['size'];
             }
-            if ($title === null) {
-                $title = $file->title;
-            }
             if ($description === null) {
                 $description = $file->description;
             }

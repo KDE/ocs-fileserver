@@ -12,6 +12,7 @@ Copyright 2016 by pling GmbH.
 * mysql-server
 * php
 * php-mysql
+* php-mbstring
 * php-xml
 * php-curl
 * php-gd

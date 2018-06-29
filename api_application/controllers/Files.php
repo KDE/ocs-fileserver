@@ -26,6 +26,7 @@ class Files extends BaseController
 
     public function getIndex()
     {
+        $originId = null;
         $status = 'active';
         $clientId = null;
         $ownerId = null;
@@ -48,6 +49,9 @@ class Files extends BaseController
         $perpage = $this->appConfig->general['perpage'];
         $page = 1;
 
+        if (!empty($this->request->origin_id)) {
+            $originId = $this->request->origin_id;
+        }
         if (!empty($this->request->status)) {
             $status = $this->request->status;
         }
@@ -126,6 +130,7 @@ class Files extends BaseController
         }
 
         $files = $this->models->files->getFiles(
+            $originId,
             $status,
             $clientId,
             $ownerId,
@@ -382,7 +387,7 @@ class Files extends BaseController
 
         $id = $this->models->files->generateId();
         $originId = $id;
-        $name = $this->_fixFilenameInCollection($name, $collectionName);
+        $name = $this->_fixFilename($name, $collectionName);
         if (!$title) {
             $title = $name;
         }
@@ -592,7 +597,7 @@ class Files extends BaseController
             );
 
             $id = $this->models->files->generateId();
-            $name = $this->_fixFilenameInCollection($name, $collectionName);
+            $name = $this->_fixFilename($name, $collectionName);
             if (!$title) {
                 $title = $name;
             }
@@ -845,7 +850,7 @@ class Files extends BaseController
         }
     }
 
-    private function _fixFilenameInCollection($name, $collectionName)
+    private function _fixFilename($name, $collectionName)
     {
         if (is_file($this->appConfig->general['filesDir'] . '/' . $collectionName . '/' . $name)) {
             $fix = date('YmdHis');
@@ -859,7 +864,7 @@ class Files extends BaseController
         return $name;
     }
 
-    private function _removeFile($file)
+    private function _removeFile(Flooer_Db_Table_Row &$file)
     {
         // Please be care the remove process in Collections::deleteCollection()
 
@@ -911,7 +916,7 @@ class Files extends BaseController
         return $id3Tags;
     }
 
-    private function _addMedia($id3Tags, $clientId, $ownerId, $collectionId, $fileId, $defaultTitle)
+    private function _addMedia(array $id3Tags, $clientId, $ownerId, $collectionId, $fileId, $defaultTitle)
     {
         // Get artist id or add new one
         $artistName = 'Unknown';
@@ -996,20 +1001,6 @@ class Files extends BaseController
                 imagedestroy($image);
             }
         }
-    }
-
-    private function _detectLinkInTags($tagsString)
-    {
-        $link = '';
-        $tags = explode(',', $tagsString);
-        foreach ($tags as $tag) {
-            $tag = trim($tag);
-            if (strpos($tag, 'link##') === 0) {
-                $link = urldecode(str_replace('link##', '', $tag));
-                break;
-            }
-        }
-        return $link;
     }
 
 }

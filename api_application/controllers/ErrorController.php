@@ -21,7 +21,7 @@
  * along with Foobar.  If not, see <http://www.gnu.org/licenses/>.
  **/
 
-class Error extends BaseController
+class ErrorController extends BaseController
 {
 
     public function catchError()

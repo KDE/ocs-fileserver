@@ -24,6 +24,79 @@
 class BaseController extends Flooer_Controller
 {
 
+    protected function _sendFile($filepath, $filename, $type, $size, $attachment = false, $headeronly = false)
+    {
+        $rangeBegin = 0;
+        $rangeEnd = $size - 1; // Content-Range: bytes 0-1023/1024
+        $disposition = 'inline';
+        if ($attachment) {
+            $disposition = 'attachment';
+        }
+
+        $this->response->setHeader('Access-Control-Allow-Headers', 'Range');
+        $this->response->setHeader(
+            'Access-Control-Expose-Headers',
+            'Accept-Ranges, Content-Length, Content-Range'
+        );
+        $this->response->setHeader('Accept-Ranges', 'bytes');
+        $this->response->setHeader('Cache-Control', 'public, must-revalidate, max-age=0');
+        $this->response->setHeader('Pragma', 'no-cache');
+        $this->response->setHeader('Last-Modified', date('r', filemtime($filepath)));
+        $this->response->setHeader('Content-Type', $type);
+        $this->response->setHeader('Content-Length', $size);
+        $this->response->setHeader(
+            'Content-Disposition',
+            $disposition . '; filename="' . $filename . '"'
+        );
+
+        if (isset($this->server->HTTP_RANGE)) {
+            if (preg_match(
+                '/bytes=\h*(\d+)-(\d*)[\D.*]?/i',
+                $this->server->HTTP_RANGE,
+                $matches
+            )) {
+                $rangeBegin = (int) $matches[1];
+                if (!empty($matches[2])) {
+                    $rangeEnd = (int) $matches[2];
+                }
+            }
+            $this->response->setStatus(206);
+            $this->response->setHeader(
+                'Content-Range',
+                'bytes ' . $rangeBegin . '-' . $rangeEnd . '/' . $size
+            );
+            $this->response->setHeader(
+                'Content-Length',
+                $rangeEnd - $rangeBegin + 1
+            );
+        }
+
+        $this->response->send();
+
+        if (!$headeronly) {
+            if (ob_get_level()) {
+                ob_end_flush();
+            }
+            $length = 1024 * 8;
+            $cur = $rangeBegin;
+            $end = $rangeEnd + 1;
+            $fp = fopen($filepath, 'rb');
+            fseek($fp, $cur, 0);
+            while (!feof($fp)
+                && $cur < $end
+                && connection_status() == 0
+            ) {
+                echo fread($fp, min($length, $end - $cur));
+                $cur += $length;
+                ob_flush();
+                flush();
+            }
+            fclose($fp);
+        }
+
+        exit;
+    }
+
     protected function _setResponseContent($status, array $data = null)
     {
         $status = strtolower($status);
@@ -206,77 +279,18 @@ class BaseController extends Flooer_Controller
         );
     }
 
-    protected function _sendFile($filepath, $filename, $type, $size, $attachment = false, $headeronly = false)
+    protected function _detectLinkInTags($tagsString)
     {
-        $rangeBegin = 0;
-        $rangeEnd = $size - 1; // Content-Range: bytes 0-1023/1024
-        $disposition = 'inline';
-        if ($attachment) {
-            $disposition = 'attachment';
-        }
-
-        $this->response->setHeader('Access-Control-Allow-Headers', 'Range');
-        $this->response->setHeader(
-            'Access-Control-Expose-Headers',
-            'Accept-Ranges, Content-Length, Content-Range'
-        );
-        $this->response->setHeader('Accept-Ranges', 'bytes');
-        $this->response->setHeader('Cache-Control', 'public, must-revalidate, max-age=0');
-        $this->response->setHeader('Pragma', 'no-cache');
-        $this->response->setHeader('Last-Modified', date('r', filemtime($filepath)));
-        $this->response->setHeader('Content-Type', $type);
-        $this->response->setHeader('Content-Length', $size);
-        $this->response->setHeader(
-            'Content-Disposition',
-            $disposition . '; filename="' . $filename . '"'
-        );
-
-        if (isset($this->server->HTTP_RANGE)) {
-            if (preg_match(
-                '/bytes=\h*(\d+)-(\d*)[\D.*]?/i',
-                $this->server->HTTP_RANGE,
-                $matches
-            )) {
-                $rangeBegin = (int) $matches[1];
-                if (!empty($matches[2])) {
-                    $rangeEnd = (int) $matches[2];
-                }
+        $link = '';
+        $tags = explode(',', $tagsString);
+        foreach ($tags as $tag) {
+            $tag = trim($tag);
+            if (strpos($tag, 'link##') === 0) {
+                $link = urldecode(str_replace('link##', '', $tag));
+                break;
             }
-            $this->response->setStatus(206);
-            $this->response->setHeader(
-                'Content-Range',
-                'bytes ' . $rangeBegin . '-' . $rangeEnd . '/' . $size
-            );
-            $this->response->setHeader(
-                'Content-Length',
-                $rangeEnd - $rangeBegin + 1
-            );
         }
-
-        $this->response->send();
-
-        if (!$headeronly) {
-            if (ob_get_level()) {
-                ob_end_flush();
-            }
-            $length = 1024 * 8;
-            $cur = $rangeBegin;
-            $end = $rangeEnd + 1;
-            $fp = fopen($filepath, 'rb');
-            fseek($fp, $cur, 0);
-            while (!feof($fp)
-                && $cur < $end
-                && connection_status() == 0
-            ) {
-                echo fread($fp, min($length, $end - $cur));
-                $cur += $length;
-                ob_flush();
-                flush();
-            }
-            fclose($fp);
-        }
-
-        exit;
+        return $link;
     }
 
     protected function _detectMimeTypeFromUri($uri)

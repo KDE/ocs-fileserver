@@ -1,12 +1,12 @@
 api_application/configs/application.ini
+api_application/configs/clients.ini
 api_application/configs/database.ini
 api_application/configs/models.ini
-api_application/configs/clients.ini
 data/database/*
-data/logs/*
 data/files/*
-data/zsync/*
+data/logs/*
 data/thumbnails/*
-public/robots.txt
-public/google*.html
+data/zsync/*
 public/.well-known/*
+public/google*.html
+public/robots.txt

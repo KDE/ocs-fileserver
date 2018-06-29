@@ -37,6 +37,7 @@ class Bootstrap extends Flooer_Application_Bootstrap
         parent::initDispatch();
         require_once 'controllers/BaseController.php';
         $dispatch = $this->getApplication()->getResource('dispatch');
+        $dispatch->setErrorController('ErrorController'); // Workaround for PHP7
         $dispatch->setLimitMethod(false);
         $dispatch->setRenderErrorPage(false);
         $dispatch->setViewFileSuffix('.xml');

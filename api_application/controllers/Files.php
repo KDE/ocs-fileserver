@@ -708,7 +708,7 @@ class Files extends BaseController
 
     public function headDownloadfile()
     {
-        // This is alias for HEAD /api/files/download
+        // This is alias for HEAD /files/download
 
         $this->headDownload();
     }
@@ -720,7 +720,7 @@ class Files extends BaseController
 
     public function getDownloadfile($headeronly = false)
     {
-        // This is alias for GET /api/files/download
+        // This is alias for GET /files/download
 
         $this->getDownload($headeronly);
     }
@@ -793,6 +793,12 @@ class Files extends BaseController
 
             // If request URI ended with .zsync, make a response as zsync data
             if (strtolower(substr($this->request->getUri(), -6)) == '.zsync') {
+                // Don't make zsync for external URI
+                if ($this->_detectLinkInTags($file->tags)) {
+                    $this->response->setStatus(404);
+                    throw new Flooer_Exception('Not found', LOG_NOTICE);
+                }
+
                 $zsyncPath = $this->appConfig->general['zsyncDir'] . '/' . $file->id . '.zsync';
                 if (!is_file($zsyncPath)) {
                     $this->_generateZsync($filePath, $zsyncPath, $fileName);

@@ -706,23 +706,21 @@ class Files extends BaseController
         $this->_setResponseContent('success');
     }
 
-    public function headDownloadfile()
+    public function headDownloadfile() // Deprecated
     {
         // This is alias for HEAD /files/download
-
         $this->headDownload();
+    }
+
+    public function getDownloadfile($headeronly = false) // Deprecated
+    {
+        // This is alias for GET /files/download
+        $this->getDownload($headeronly);
     }
 
     public function headDownload()
     {
         $this->getDownload(true);
-    }
-
-    public function getDownloadfile($headeronly = false)
-    {
-        // This is alias for GET /files/download
-
-        $this->getDownload($headeronly);
     }
 
     public function getDownload($headeronly = false)

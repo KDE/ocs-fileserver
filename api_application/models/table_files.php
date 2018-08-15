@@ -383,6 +383,28 @@ class table_files extends BaseModel
         return null;
     }
 
+    public function getFileId($id, $of = 'self')
+    {
+        $file = $this->$id;
+        if ($file) {
+            if ($of == 'self') {
+                return $file->id;
+            }
+            else if ($of == 'origin') {
+                return $file->origin_id;
+            }
+            else if ($of == 'latest') {
+                $latestFile = $this->fetchRow(
+                    'WHERE origin_id = :origin_id'
+                    . ' ORDER BY id DESC LIMIT 1',
+                    array(':origin_id' => $file->origin_id)
+                );
+                return $latestFile->id;
+            }
+        }
+        return null;
+    }
+
     public function updateDownloadedStatus($id)
     {
         if (isset($this->$id)) {

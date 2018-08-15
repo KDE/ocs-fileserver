@@ -726,6 +726,7 @@ class Files extends BaseController
     public function getDownload($headeronly = false)
     {
         $id = null;
+        $as = null;
         $userId = null;
         $hashGiven = null;
         $timestamp = null;
@@ -733,6 +734,9 @@ class Files extends BaseController
 
         if (!empty($this->request->id)) {
             $id = $this->request->id;
+        }
+        if (!empty($this->request->as)) {
+            $as = $this->request->as;
         }
         if (!empty($this->request->u)) {
             $userId = $this->request->u;
@@ -745,6 +749,10 @@ class Files extends BaseController
         }
         if (!empty($this->request->o)) {
             $isFromOcsApi = ($this->request->o == 1);
+        }
+
+        if ($id && $as) {
+            $id = $this->models->files->getFileId($id, $as);
         }
 
         $file = $this->models->files->$id;
@@ -765,7 +773,7 @@ class Files extends BaseController
         // Log
         $this->log->log("Start Download (client: $file->client_id; salt: $salt; hash: $hash; hashGiven: $hashGiven)", LOG_NOTICE);
 
-        if ($isFromOcsApi || ($hashGiven == $hash && $div > 0)) {
+        if ($as || $isFromOcsApi || ($hashGiven == $hash && $div > 0)) {
             // Link is ok, go on
             $collection = $this->models->collections->$collectionId;
 
@@ -789,9 +797,9 @@ class Files extends BaseController
             $fileType = $file->type;
             $fileSize = $file->size;
 
-            // If request URI ended with .zsync, make a response as zsync data
+            // If request URI ended with .zsync, make a response data as zsync data
             if (strtolower(substr($this->request->getUri(), -6)) == '.zsync') {
-                // Don't make zsync for external URI
+                // But don't make zsync for external URI
                 if ($this->_detectLinkInTags($file->tags)) {
                     $this->response->setStatus(404);
                     throw new Flooer_Exception('Not found', LOG_NOTICE);

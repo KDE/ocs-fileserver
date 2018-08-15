@@ -374,8 +374,18 @@ Request: GET {baseURI}/files/download
 Parameter | Required | Value | Default | Description
 ----------|----------|-------|---------|------------
 id | Yes | File ID | - | File ID.
+as | - | self/origin/latest | - | Downloads file as of specific version.
+u | - | User ID | - | User ID.
 
 Response: Uploaded data or zsync data or redirect to external URI
+
+Special parameters for security reason:
+
+Parameter | Required | Value | Default | Description
+----------|----------|-------|---------|------------
+s | - | Hash | - | Hash.
+t | - | Timestamp | - | Timestamp.
+o | - | 1 | - | Option for OCS-API.
 
 
 ## Favorites

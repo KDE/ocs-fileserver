@@ -242,7 +242,7 @@ class Files extends BaseController
             if (!empty($this->request->local_file_path)) {
                 $name = mb_substr(strip_tags(basename($this->request->local_file_path)), 0, 200);
                 $externalUri = $this->_detectLinkInTags($tags);
-                if ($name == 'empty' && $externalUri) {
+                if ($name == 'empty' && !empty($externalUri)) {
                     $type = $this->_detectMimeTypeFromUri($externalUri);
                     $size = $this->_detectFilesizeFromUri($externalUri);
                 }
@@ -800,7 +800,7 @@ class Files extends BaseController
             // If request URI ended with .zsync, make a response data as zsync data
             if (strtolower(substr($this->request->getUri(), -6)) == '.zsync') {
                 // But don't make zsync for external URI
-                if ($this->_detectLinkInTags($file->tags)) {
+                if (!empty($this->_detectLinkInTags($file->tags))) {
                     $this->response->setStatus(404);
                     throw new Flooer_Exception('Not found', LOG_NOTICE);
                 }
@@ -836,7 +836,7 @@ class Files extends BaseController
 
                 // If external URI has set, redirect to it
                 $externalUri = $this->_detectLinkInTags($file->tags);
-                if ($externalUri) {
+                if (!empty($externalUri)) {
                     $this->response->redirect($externalUri);
                 }
             }

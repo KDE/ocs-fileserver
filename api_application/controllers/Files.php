@@ -342,7 +342,7 @@ class Files extends BaseController
                 || $collection->owner_id != $ownerId
             ) {
                 $this->response->setStatus(403);
-                throw new Flooer_Exception('Forbidden - CollectionId: '.$collectionId.' || ClientId: '.$clientId.' != '.$collection->client_id.' || OwnerId: '.$ownerId.' != '.$collection->owner_id, LOG_NOTICE);
+                throw new Flooer_Exception('Forbidden', LOG_NOTICE);
             }
             $collectionName = $collection->name;
             $collectionData = array(

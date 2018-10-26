@@ -40,9 +40,9 @@ class BaseModel extends Flooer_Db_Table
      */
     public function generateId()
     {
-        $id = time();
+        $id = time() + mt_rand(1, 100);
         while (isset($this->$id)) {
-            $id++;
+            $id = time() + mt_rand(1, 100);
         }
         return $id;
     }

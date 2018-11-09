@@ -766,7 +766,11 @@ class Files extends BaseController
 
         // Check link if it is expired or old style
         $salt = $this->_getDownloadSecret($file->client_id);
-        $hash = md5($salt . $collectionId . $timestamp);
+        //20181009 ronald: change hash from MD5 to SHA512
+        //$hash = md5($salt . $collectionId . $timestamp);
+        $hash = hash('sha512',$salt . $collectionId . $timestamp);
+        
+        
         $now = time();
         $div = ($timestamp - $now);
 

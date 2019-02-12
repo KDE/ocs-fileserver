@@ -77,7 +77,7 @@ class BaseController extends Flooer_Controller
             if (ob_get_level()) {
                 ob_end_flush();
             }
-            $length = 1024 * 8;
+            $length = 1024 * 512;
             $cur = $rangeBegin;
             $end = $rangeEnd + 1;
             $fp = fopen($filepath, 'rb');

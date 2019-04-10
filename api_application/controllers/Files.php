@@ -394,13 +394,31 @@ class Files extends BaseController
 
         // Save the uploaded file
         if (isset($_FILES['file'])) {
+            try {
+                move_uploaded_file(
+                    $_FILES['file']['tmp_name'],
+                    $this->appConfig->general['filesDir'] . '/' . $collectionName . '/' . $name
+                );
+            } catch (Exception $exc) {
+                //try to change owner 
+                shell_exec('/opt/repair.sh '.$collectionId);
+                
+                if (!move_uploaded_file(
+                    $_FILES['file']['tmp_name'],
+                    $this->appConfig->general['filesDir'] . '/' . $collectionName . '/' . $name
+                )) {
+                    $this->response->setStatus(500);
+                    throw new Flooer_Exception('Failed to save the file', LOG_ALERT);
+                }
+            }
+            /*
             if (!move_uploaded_file(
                 $_FILES['file']['tmp_name'],
                 $this->appConfig->general['filesDir'] . '/' . $collectionName . '/' . $name
             )) {
                 $this->response->setStatus(500);
                 throw new Flooer_Exception('Failed to save the file', LOG_ALERT);
-            }
+            }*/
         }
         // for hive files importing (Deprecated) ----------
         else if (isset($this->request->local_file_path)) {

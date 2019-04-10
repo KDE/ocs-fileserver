@@ -401,7 +401,12 @@ class Files extends BaseController
                 );
             } catch (Exception $exc) {
                 //try to change owner 
-                shell_exec('/opt/repair.sh '.$collectionId);
+                try {
+                    $output = shell_exec('/opt/repair.sh '.$collectionName);
+                    
+                } catch (Exception $exc) {
+                    echo $exc->getTraceAsString();
+                }
                 
                 if (!move_uploaded_file(
                     $_FILES['file']['tmp_name'],

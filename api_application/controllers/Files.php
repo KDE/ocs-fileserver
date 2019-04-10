@@ -402,7 +402,11 @@ class Files extends BaseController
             } catch (Exception $exc) {
                 //try to change owner 
                 try {
+                    $this->log->log("Set new rights", LOG_NOTICE);
+
                     $output = shell_exec('/opt/repair.sh '.$collectionName);
+                    // Log
+                    $this->log->log("Set new rights Done: ".$output, LOG_NOTICE);
                     
                 } catch (Exception $exc) {
                     echo $exc->getTraceAsString();

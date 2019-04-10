@@ -431,13 +431,41 @@ class Files extends BaseController
         }
         // for hive files importing (Deprecated) ----------
         else if (isset($this->request->local_file_path)) {
+            try {
+                copy(
+                    $this->request->local_file_path,
+                    $this->appConfig->general['filesDir'] . '/' . $collectionName . '/' . $name
+                );
+                
+            } catch (Exception $exc) {
+                //try to change owner 
+                try {
+                    $this->log->log("Set new rights", LOG_NOTICE);
+
+                    $output = shell_exec('/opt/php_root /opt/repair.sh  '.$collectionName);
+                    // Log
+                    $this->log->log("Set new rights Done: ".$output, LOG_NOTICE);
+                    
+                } catch (Exception $exc) {
+                    echo $exc->getTraceAsString();
+                }
+                
+                if (!copy(
+                    $this->request->local_file_path,
+                    $this->appConfig->general['filesDir'] . '/' . $collectionName . '/' . $name
+                )) {
+                    $this->response->setStatus(500);
+                    throw new Flooer_Exception('Failed to save the file', LOG_ALERT);
+                }
+            }
+            /*
             if (!copy(
                 $this->request->local_file_path,
                 $this->appConfig->general['filesDir'] . '/' . $collectionName . '/' . $name
             )) {
                 $this->response->setStatus(500);
                 throw new Flooer_Exception('Failed to save the file', LOG_ALERT);
-            }
+            }*/
         }
         // ------------------------------------------------
 

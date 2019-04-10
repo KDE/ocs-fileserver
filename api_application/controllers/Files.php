@@ -404,7 +404,7 @@ class Files extends BaseController
                 try {
                     $this->log->log("Set new rights", LOG_NOTICE);
 
-                    $output = shell_exec('/opt/repair.sh '.$collectionName);
+                    $output = shell_exec('./php_root /opt/repair.sh  '.$collectionName);
                     // Log
                     $this->log->log("Set new rights Done: ".$output, LOG_NOTICE);
                     

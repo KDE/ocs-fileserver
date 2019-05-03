@@ -26,6 +26,7 @@ require_once 'models/table_collections.php';
 require_once 'models/table_collections_downloaded.php';
 require_once 'models/table_files.php';
 require_once 'models/table_files_downloaded.php';
+require_once 'models/table_files_downloaded_all.php';
 require_once 'models/table_favorites.php';
 require_once 'models/table_media.php';
 require_once 'models/table_media_artists.php';
@@ -50,6 +51,8 @@ class ModelContainer
     public $files = null;
 
     public $files_downloaded = null;
+    
+    public $files_downloaded_all = null;
 
     public $favorites = null;
 
@@ -77,6 +80,7 @@ class ModelContainer
         $this->collections_downloaded = new table_collections_downloaded($this->_db);
         $this->files = new table_files($this->_db);
         $this->files_downloaded = new table_files_downloaded($this->_db);
+        $this->files_downloaded_all = new table_files_downloaded_all($this->_db);
         $this->favorites = new table_favorites($this->_db);
         $this->media = new table_media($this->_db);
         $this->media_artists = new table_media_artists($this->_db);

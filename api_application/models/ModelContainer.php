@@ -26,6 +26,7 @@ require_once 'models/table_collections.php';
 require_once 'models/table_collections_downloaded.php';
 require_once 'models/table_files.php';
 require_once 'models/table_files_downloaded.php';
+require_once 'models/table_files_downloaded_all.php';
 require_once 'models/table_favorites.php';
 require_once 'models/table_media.php';
 require_once 'models/table_media_artists.php';
@@ -50,6 +51,8 @@ class ModelContainer
     public $files = null;
 
     public $files_downloaded = null;
+    
+    public $files_downloaded_all = null;
 
     public $favorites = null;
 
@@ -77,6 +80,7 @@ class ModelContainer
         $this->collections_downloaded = new table_collections_downloaded($this->_db);
         $this->files = new table_files($this->_db);
         $this->files_downloaded = new table_files_downloaded($this->_db);
+        $this->files_downloaded_all = new table_files_downloaded_all($this->_db);
         $this->favorites = new table_favorites($this->_db);
         $this->media = new table_media($this->_db);
         $this->media_artists = new table_media_artists($this->_db);
@@ -153,6 +157,20 @@ class ModelContainer
                 'referer' => 'VARCHAR(255)',
                 'downloaded_timestamp' => $timestampDifinition,
                 'downloaded_ip' => 'VARCHAR(39)'
+            );
+        }
+        
+        if (!isset($this->_db->collections_downloaded_all)) {
+            $this->_db->collections_downloaded_all = array(
+                'id' => $idDifinition,
+                'client_id' => 'INTEGER NOT NULL',
+                'owner_id' => 'VARCHAR(255) NOT NULL',
+                'collection_id' => 'INTEGER NOT NULL',
+                'user_id' => 'VARCHAR(255)',
+                'referer' => 'VARCHAR(255)',
+                'downloaded_timestamp' => $timestampDifinition,
+                'downloaded_ip' => 'VARCHAR(39)',
+                'source' => 'VARCHAR(39)'
             );
         }
 

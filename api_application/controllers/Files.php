@@ -831,6 +831,27 @@ class Files extends BaseController
 
         // Log
         $this->log->log("Start Download (client: $file->client_id; salt: $salt; hash: $hash; hashGiven: $hashGiven)", LOG_NOTICE);
+        
+        if($isFromOcsApi) {
+            try {
+                $downloadedId = $this->models->files_downloaded_all->generateId();
+                $ref = 'OCS-API';
+                $this->models->files_downloaded_all->$downloadedId = array(
+                    'client_id' => $file->client_id,
+                    'owner_id' => $file->owner_id,
+                    'collection_id' => $file->collection_id,
+                    'file_id' => $file->id,
+                    'user_id' => $userId,
+                    'referer' => $ref,
+                    'source'  => 'OCS-API'
+                );
+            } catch (Exception $exc) {
+                //echo $exc->getTraceAsString();
+                $this->log->log("ERROR saving Download Data to DB: $exc->getTraceAsString()", LOG_ERR);
+            }
+
+        }
+        
 
         if ($as || $isFromOcsApi || ($hashGiven == $hash && $div > 0)) {
             // Link is ok, go on
@@ -855,7 +876,7 @@ class Files extends BaseController
             $fileName = $file->name;
             $fileType = $file->type;
             $fileSize = $file->size;
-
+            
             // If request URI ended with .zsync, make a response data as zsync data
             if (strtolower(substr($this->request->getUri(), -6)) == '.zsync') {
                 // But don't make zsync for external URI

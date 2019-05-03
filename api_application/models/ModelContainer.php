@@ -51,7 +51,7 @@ class ModelContainer
     public $files = null;
 
     public $files_downloaded = null;
-    
+
     public $files_downloaded_all = null;
 
     public $favorites = null;
@@ -159,20 +159,6 @@ class ModelContainer
                 'downloaded_ip' => 'VARCHAR(39)'
             );
         }
-        
-        if (!isset($this->_db->collections_downloaded_all)) {
-            $this->_db->collections_downloaded_all = array(
-                'id' => $idDifinition,
-                'client_id' => 'INTEGER NOT NULL',
-                'owner_id' => 'VARCHAR(255) NOT NULL',
-                'collection_id' => 'INTEGER NOT NULL',
-                'user_id' => 'VARCHAR(255)',
-                'referer' => 'VARCHAR(255)',
-                'downloaded_timestamp' => $timestampDifinition,
-                'downloaded_ip' => 'VARCHAR(39)',
-                'source' => 'VARCHAR(39)'
-            );
-        }
 
         if (!isset($this->_db->files)) {
             $this->_db->files = array(
@@ -214,6 +200,21 @@ class ModelContainer
                 'referer' => 'VARCHAR(255)',
                 'downloaded_timestamp' => $timestampDifinition,
                 'downloaded_ip' => 'VARCHAR(39)'
+            );
+        }
+
+        if (!isset($this->_db->files_downloaded_all)) {
+            $this->_db->files_downloaded_all = array(
+                'id' => $idDifinition,
+                'client_id' => 'INTEGER NOT NULL',
+                'owner_id' => 'VARCHAR(255) NOT NULL',
+                'collection_id' => 'INTEGER NOT NULL',
+                'file_id' => 'INTEGER NOT NULL',
+                'user_id' => 'VARCHAR(255)',
+                'referer' => 'VARCHAR(255)',
+                'downloaded_timestamp' => $timestampDifinition,
+                'downloaded_ip' => 'VARCHAR(39)',
+                'source' => 'VARCHAR(39)'
             );
         }
 

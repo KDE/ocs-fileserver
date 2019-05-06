@@ -214,7 +214,8 @@ class ModelContainer
                 'referer' => 'VARCHAR(255)',
                 'downloaded_timestamp' => $timestampDifinition,
                 'downloaded_ip' => 'VARCHAR(39)',
-                'source' => 'VARCHAR(39)'
+                'source' => 'VARCHAR(39)',
+                'link_type' => 'VARCHAR(39)'
             );
         }
 

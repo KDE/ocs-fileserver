@@ -46,6 +46,13 @@ class BaseModel extends Flooer_Db_Table
         }
         return $id;
     }
+    
+    public function generateNewId()
+    {
+        $result = $this->_db->query("SELECT UUID_SHORT();");
+        $res = $result->fetchAll();
+        return $res[0]['UUID_SHORT()'];
+    }
 
     protected function _getTimestamp($time = null)
     {

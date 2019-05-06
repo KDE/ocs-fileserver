@@ -51,7 +51,7 @@ class BaseModel extends Flooer_Db_Table
     {
         $result = $this->_db->query("SELECT UUID_SHORT();");
         $res = $result->fetchAll();
-        return $res[0];
+        return $res[0]['UUID_SHORT()'];
     }
 
     protected function _getTimestamp($time = null)

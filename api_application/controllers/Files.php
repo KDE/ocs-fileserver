@@ -855,22 +855,15 @@ class Files extends BaseController
                     'file_id' => $file->id,
                     'user_id' => $userId,
                     'source'  => 'OCS-Webserver',
-                    'link_type' => $linkType
+                    'link_type' => $linkType,
+                    'referer' => null
                 );
         }
         try {
             //$downloadedId = $this->models->files_downloaded_all->generateId();
             $downloadedId = $this->models->files_downloaded_all->generateNewId();
             $ref = 'OCS-API';
-            $this->models->files_downloaded_all->$downloadedId = array(
-                'client_id' => $file->client_id,
-                'owner_id' => $file->owner_id,
-                'collection_id' => $file->collection_id,
-                'file_id' => $file->id,
-                'user_id' => $userId,
-                'referer' => $ref,
-                'source'  => 'OCS-API'
-            );
+            $this->models->files_downloaded_all->$downloadedId = $data;
         } catch (Exception $exc) {
             //echo $exc->getTraceAsString();
             $this->log->log("ERROR saving Download Data to DB: $exc->getTraceAsString()", LOG_ERR);

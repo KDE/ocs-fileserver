@@ -50,7 +50,7 @@ class BaseModel extends Flooer_Db_Table
     public function generateNewId()
     {
         $result = $this->_db->query("SELECT UUID_SHORT();");
-        $res = $result->fetch_array();
+        $res = $result->fetchAll();
         return $res[0];
     }
 

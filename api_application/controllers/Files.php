@@ -834,7 +834,8 @@ class Files extends BaseController
         
         if($isFromOcsApi) {
             try {
-                $downloadedId = $this->models->files_downloaded_all->generateId();
+                //$downloadedId = $this->models->files_downloaded_all->generateId();
+                $downloadedId = $this->models->files_downloaded_all->generateNewId();
                 $ref = 'OCS-API';
                 $this->models->files_downloaded_all->$downloadedId = array(
                     'client_id' => $file->client_id,

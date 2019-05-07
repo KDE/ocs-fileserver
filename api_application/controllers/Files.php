@@ -916,7 +916,8 @@ class Files extends BaseController
                 if (!$headeronly && $file->downloaded_ip != $this->server->REMOTE_ADDR) {
                     $this->models->files->updateDownloadedStatus($file->id);
 
-                    $downloadedId = $this->models->files_downloaded->generateId();
+                    //$downloadedId = $this->models->files_downloaded->generateId();
+                    $downloadedId = $this->models->files_downloaded->generateNewId();
                     $ref = null;
                     if ($isFromOcsApi) {
                       $ref = 'OCS-API';

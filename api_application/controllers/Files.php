@@ -934,7 +934,6 @@ class Files extends BaseController
                     } catch (Exception $exc) {
                         //echo $exc->getTraceAsString();
                         $this->log->log("ERROR saving Download Data to DB: $exc->getMessage()", LOG_ERR);
-                        $this->log->log("ERROR saving Download Data to DB: $exc->getMessage()", LOG_NOTICE);
                     }
                 }
 

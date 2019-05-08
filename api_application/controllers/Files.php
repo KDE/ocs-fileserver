@@ -916,19 +916,25 @@ class Files extends BaseController
                 if (!$headeronly && $file->downloaded_ip != $this->server->REMOTE_ADDR) {
                     $this->models->files->updateDownloadedStatus($file->id);
 
-                    $downloadedId = $this->models->files_downloaded->generateId();
-                    $ref = null;
-                    if ($isFromOcsApi) {
-                      $ref = 'OCS-API';
+                    try {
+                        //$downloadedId = $this->models->files_downloaded->generateId();
+                        $downloadedId = $this->models->files_downloaded->generateNewId();
+                        $ref = null;
+                        if ($isFromOcsApi) {
+                          $ref = 'OCS-API';
+                        }
+                        $this->models->files_downloaded->$downloadedId = array(
+                            'client_id' => $file->client_id,
+                            'owner_id' => $file->owner_id,
+                            'collection_id' => $file->collection_id,
+                            'file_id' => $file->id,
+                            'user_id' => $userId,
+                            'referer' => $ref
+                        );
+                    } catch (Exception $exc) {
+                        //echo $exc->getTraceAsString();
+                        $this->log->log("ERROR saving Download Data to DB: $exc->getMessage()", LOG_ERR);
                     }
-                    $this->models->files_downloaded->$downloadedId = array(
-                        'client_id' => $file->client_id,
-                        'owner_id' => $file->owner_id,
-                        'collection_id' => $file->collection_id,
-                        'file_id' => $file->id,
-                        'user_id' => $userId,
-                        'referer' => $ref
-                    );
                 }
 
                 // If external URI has set, redirect to it

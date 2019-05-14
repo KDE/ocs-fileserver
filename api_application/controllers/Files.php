@@ -786,6 +786,7 @@ class Files extends BaseController
         $hashGiven = null;
         $timestamp = null;
         $isFromOcsApi = false;
+        $isFilepreview = false;
         
         $linkType = null;
 
@@ -809,6 +810,9 @@ class Files extends BaseController
         }
         if (!empty($this->request->lt)) {
             $linkType = $this->request->lt;
+            if($linkType === 'filepreview') {
+                $isFilepreview = true;
+            }
         }
 
         if ($id && $as) {
@@ -837,40 +841,43 @@ class Files extends BaseController
         // Log
         $this->log->log("Start Download (client: $file->client_id; salt: $salt; hash: $hash; hashGiven: $hashGiven)", LOG_NOTICE);
         
-        if($isFromOcsApi) {
-            $data = array(
-                    'client_id' => $file->client_id,
-                    'owner_id' => $file->owner_id,
-                    'collection_id' => $file->collection_id,
-                    'file_id' => $file->id,
-                    'user_id' => $userId,
-                    'referer' => $ref,
-                    'source'  => 'OCS-API'
-                );
-        } else {
-            $data = array(
-                    'client_id' => $file->client_id,
-                    'owner_id' => $file->owner_id,
-                    'collection_id' => $file->collection_id,
-                    'file_id' => $file->id,
-                    'user_id' => $userId,
-                    'source'  => 'OCS-Webserver',
-                    'link_type' => $linkType,
-                    'referer' => null
-                );
-        }
-        try {
-            //$downloadedId = $this->models->files_downloaded_all->generateId();
-            $downloadedId = $this->models->files_downloaded_all->generateNewId();
-            $ref = 'OCS-API';
-            $this->models->files_downloaded_all->$downloadedId = $data;
-        } catch (Exception $exc) {
-            //echo $exc->getTraceAsString();
-            $this->log->log("ERROR saving Download Data to DB: $exc->getTraceAsString()", LOG_ERR);
+        //Save downloads, but not for perview downloads
+        if(!$isFilepreview) {
+            if($isFromOcsApi) {
+                $data = array(
+                        'client_id' => $file->client_id,
+                        'owner_id' => $file->owner_id,
+                        'collection_id' => $file->collection_id,
+                        'file_id' => $file->id,
+                        'user_id' => $userId,
+                        'referer' => 'OCS-API',
+                        'source'  => 'OCS-API'
+                    );
+            } else {
+                $data = array(
+                        'client_id' => $file->client_id,
+                        'owner_id' => $file->owner_id,
+                        'collection_id' => $file->collection_id,
+                        'file_id' => $file->id,
+                        'user_id' => $userId,
+                        'source'  => 'OCS-Webserver',
+                        'link_type' => $linkType,
+                        'referer' => null
+                    );
+            }
+            try {
+                //$downloadedId = $this->models->files_downloaded_all->generateId();
+                $downloadedId = $this->models->files_downloaded_all->generateNewId();
+                $ref = 'OCS-API';
+                $this->models->files_downloaded_all->$downloadedId = $data;
+            } catch (Exception $exc) {
+                //echo $exc->getTraceAsString();
+                $this->log->log("ERROR saving Download Data to DB: $exc->getTraceAsString()", LOG_ERR);
+            }
         }
         
 
-        if ($as || $isFromOcsApi || ($hashGiven == $hash && $div > 0)) {
+        if ($as || $isFromOcsApi || $isFilepreview || ($hashGiven == $hash && $div > 0)) {
             // Link is ok, go on
             $collection = $this->models->collections->$collectionId;
 
@@ -913,7 +920,7 @@ class Files extends BaseController
                 $fileSize = filesize($zsyncPath);
             }
             else {
-                if (!$headeronly && $file->downloaded_ip != $this->server->REMOTE_ADDR) {
+                if (!$isFilepreview && !$headeronly && $file->downloaded_ip != $this->server->REMOTE_ADDR) {
                     $this->models->files->updateDownloadedStatus($file->id);
 
                     try {

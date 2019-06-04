@@ -54,7 +54,8 @@ class Flooer_Db_Table
         'prefix' => null,
         'columns' => '*',
         'primary' => 'id',
-        'primaryInsert' => false
+        'primaryInsert' => false,
+        'insertIgnore' => false
     );
 
     /**
@@ -138,7 +139,11 @@ class Flooer_Db_Table
                 }
                 $columnNamesSet = implode(',', $columnNames);
                 $columnValuesSet = implode(',', $columnValues);
-                $sql = "INSERT INTO {$this->_config['prefix']}{$this->_config['name']}"
+                $sql = "INSERT ";
+                if($this->_config['insertIgnore']) {
+                    $sql .= " IGNORE ";
+                }
+                $sql .= " INTO {$this->_config['prefix']}{$this->_config['name']}"
                     . " ($columnNamesSet)"
                     . " VALUES ($columnValuesSet);";
                 $this->_db->addStatementLog($sql);
@@ -453,6 +458,27 @@ class Flooer_Db_Table
     public function getPrimaryInsert()
     {
         return $this->_config['primaryInsert'];
+    }
+    
+    /**
+     * Set an option for a insert irgnore
+     *
+     * @param   bool $bool
+     * @return  void
+     */
+    public function setInsertIgnore($bool)
+    {
+        $this->_config['insertIgnore'] = $bool;
+    }
+
+    /**
+     * Get an option for a primary key inserting
+     *
+     * @return  bool
+     */
+    public function getInsertIgnore()
+    {
+        return $this->_config['insertIgnore'];
     }
 
 }

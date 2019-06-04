@@ -27,6 +27,7 @@ require_once 'models/table_collections_downloaded.php';
 require_once 'models/table_files.php';
 require_once 'models/table_files_downloaded.php';
 require_once 'models/table_files_downloaded_all.php';
+require_once 'models/table_files_downloaded_unique.php';
 require_once 'models/table_favorites.php';
 require_once 'models/table_media.php';
 require_once 'models/table_media_artists.php';

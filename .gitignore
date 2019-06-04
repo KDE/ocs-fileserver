@@ -10,3 +10,4 @@ data/zsync/*
 public/.well-known/*
 public/google*.html
 public/robots.txt
+.idea

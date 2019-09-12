@@ -199,6 +199,7 @@ class Files extends BaseController
         $name = null; // Auto generated
         $type = null; // Auto detect
         $size = null; // Auto detect
+        $md5sum = null; // Auto detect
         $title = null; // Name as default
         $description = null;
         $category = null;
@@ -232,6 +233,7 @@ class Files extends BaseController
                 if (!$type) {
                     $type = 'application/octet-stream';
                 }
+                $md5sum = md5_file($_FILES['file']['tmp_name']);
             }
             if (!empty($_FILES['file']['size'])) {
                 $size = $_FILES['file']['size'];

@@ -858,7 +858,7 @@ class Files extends BaseController
                         'collection_id' => $file->collection_id,
                         'file_id' => $file->id,
                         'user_id' => $userId,
-                        'anonymous_cookie' => $anonymousCookie,
+                        //'anonymous_cookie' => $anonymousCookie,
                         'referer' => 'OCS-API',
                         'source'  => 'OCS-API'
                     );
@@ -869,7 +869,7 @@ class Files extends BaseController
                         'collection_id' => $file->collection_id,
                         'file_id' => $file->id,
                         'user_id' => $userId,
-                        'anonymous_cookie' => $anonymousCookie,
+                        //'anonymous_cookie' => $anonymousCookie,
                         'source'  => 'OCS-Webserver',
                         'link_type' => $linkType,
                         'referer' => null

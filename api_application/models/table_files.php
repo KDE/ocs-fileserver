@@ -54,6 +54,7 @@ class table_files extends BaseModel
             . "{$prefix}files.name AS name,"
             . "{$prefix}files.type AS type,"
             . "{$prefix}files.size AS size,"
+            . "{$prefix}files.md5sum AS md5sum,"
             . "{$prefix}files.title AS title,"
             . "{$prefix}files.description AS description,"
             . "{$prefix}files.category AS category,"

@@ -175,6 +175,7 @@ class ModelContainer
                 'name' => 'VARCHAR(255) NOT NULL',
                 'type' => 'VARCHAR(255) NOT NULL',
                 'size' => 'BIGINT UNSIGNED NOT NULL',
+                'md5sum' => 'VARCHAR(200)',
                 'title' => 'VARCHAR(200)',
                 'description' => 'TEXT',
                 'category' => 'VARCHAR(64)',

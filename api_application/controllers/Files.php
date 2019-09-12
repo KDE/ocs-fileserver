@@ -199,6 +199,7 @@ class Files extends BaseController
         $name = null; // Auto generated
         $type = null; // Auto detect
         $size = null; // Auto detect
+        $md5sum = null; // Auto detect
         $title = null; // Name as default
         $description = null;
         $category = null;
@@ -232,6 +233,7 @@ class Files extends BaseController
                 if (!$type) {
                     $type = 'application/octet-stream';
                 }
+                $md5sum = md5_file($_FILES['file']['tmp_name']);
             }
             if (!empty($_FILES['file']['size'])) {
                 $size = $_FILES['file']['size'];
@@ -482,6 +484,7 @@ class Files extends BaseController
             'name' => $name,
             'type' => $type,
             'size' => $size,
+            'md5sum' => $md5sum,
             'title' => $title,
             'description' => $description,
             'category' => $category,
@@ -790,6 +793,8 @@ class Files extends BaseController
         
         $linkType = null;
 
+        $anonymousCookie = null;
+
         if (!empty($this->request->id)) {
             $id = $this->request->id;
         }
@@ -799,6 +804,9 @@ class Files extends BaseController
         if (!empty($this->request->u)) {
             $userId = $this->request->u;
         }
+        if (!empty($this->request->c)) {
+            $anonymousCookie = $this->request->c;
+        }        
         if (!empty($this->request->s)) {
             $hashGiven = $this->request->s;
         }
@@ -850,6 +858,7 @@ class Files extends BaseController
                         'collection_id' => $file->collection_id,
                         'file_id' => $file->id,
                         'user_id' => $userId,
+                        'anonymous_cookie' => $anonymousCookie,
                         'referer' => 'OCS-API',
                         'source'  => 'OCS-API'
                     );
@@ -860,6 +869,7 @@ class Files extends BaseController
                         'collection_id' => $file->collection_id,
                         'file_id' => $file->id,
                         'user_id' => $userId,
+                        'anonymous_cookie' => $anonymousCookie,
                         'source'  => 'OCS-Webserver',
                         'link_type' => $linkType,
                         'referer' => null

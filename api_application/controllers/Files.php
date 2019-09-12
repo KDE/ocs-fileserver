@@ -484,6 +484,7 @@ class Files extends BaseController
             'name' => $name,
             'type' => $type,
             'size' => $size,
+            'md5sum' => $md5sum,
             'title' => $title,
             'description' => $description,
             'category' => $category,

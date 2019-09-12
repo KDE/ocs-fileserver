@@ -792,6 +792,8 @@ class Files extends BaseController
         
         $linkType = null;
 
+        $anonymousCookie = null;
+
         if (!empty($this->request->id)) {
             $id = $this->request->id;
         }
@@ -801,6 +803,9 @@ class Files extends BaseController
         if (!empty($this->request->u)) {
             $userId = $this->request->u;
         }
+        if (!empty($this->request->c)) {
+            $anonymousCookie = $this->request->c;
+        }        
         if (!empty($this->request->s)) {
             $hashGiven = $this->request->s;
         }
@@ -852,6 +857,7 @@ class Files extends BaseController
                         'collection_id' => $file->collection_id,
                         'file_id' => $file->id,
                         'user_id' => $userId,
+                        'anonymous_cookie' => $anonymousCookie,
                         'referer' => 'OCS-API',
                         'source'  => 'OCS-API'
                     );
@@ -862,6 +868,7 @@ class Files extends BaseController
                         'collection_id' => $file->collection_id,
                         'file_id' => $file->id,
                         'user_id' => $userId,
+                        'anonymous_cookie' => $anonymousCookie,
                         'source'  => 'OCS-Webserver',
                         'link_type' => $linkType,
                         'referer' => null

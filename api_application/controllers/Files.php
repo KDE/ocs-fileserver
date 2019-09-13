@@ -783,6 +783,8 @@ class Files extends BaseController
 
     public function getDownload($headeronly = false)
     {
+        $this->log->log(print_r($_SERVER, true));
+
         $id = null;
         $as = null;
         $userId = null;
@@ -930,7 +932,7 @@ class Files extends BaseController
                 $fileSize = filesize($zsyncPath);
             }
             else {
-                if (!$isFilepreview && !$headeronly && $file->downloaded_ip != $this->server->REMOTE_ADDR) {
+                if (!$isFilepreview && !$headeronly) {
                     $this->models->files->updateDownloadedStatus($file->id);
 
                     try {

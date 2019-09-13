@@ -64,7 +64,7 @@ class BaseModel extends Flooer_Db_Table
 
     protected function _getIp()
     {
-        return $_SERVER['REMOTE_ADDR'];
+        return isset($_SERVER['[HTTP_X_FORWARDED_FOR']) ? explode(',',$_SERVER['[HTTP_X_FORWARDED_FOR'])[0] : $_SERVER['REMOTE_ADDR'];
     }
 
     protected function _getReferer()

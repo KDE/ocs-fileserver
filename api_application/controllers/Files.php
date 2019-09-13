@@ -932,7 +932,7 @@ class Files extends BaseController
                 $fileSize = filesize($zsyncPath);
             }
             else {
-                if (!$isFilepreview && !$headeronly && $file->downloaded_ip != $this->server->REMOTE_ADDR) {
+                if (!$isFilepreview && !$headeronly) {
                     $this->models->files->updateDownloadedStatus($file->id);
 
                     try {

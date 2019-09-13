@@ -582,6 +582,7 @@ class Files extends BaseController
             $name = null; // Auto generated
             $type = null; // Auto detect
             $size = null; // Auto detect
+            $md5sum = null; // Auto detect
 
             $downloadedCount = 0; // for hive files importing (Deprecated)
 
@@ -591,6 +592,7 @@ class Files extends BaseController
             if (!empty($_FILES['file']['tmp_name'])) {
                 $finfo = new finfo(FILEINFO_MIME_TYPE);
                 $type = $finfo->file($_FILES['file']['tmp_name']);
+                $md5sum = md5_file($_FILES['file']['tmp_name']);
                 if (!$type) {
                     $type = 'application/octet-stream';
                 }
@@ -598,6 +600,7 @@ class Files extends BaseController
             if (!empty($_FILES['file']['size'])) {
                 $size = $_FILES['file']['size'];
             }
+            
             if ($description === null) {
                 $description = $file->description;
             }
@@ -676,6 +679,7 @@ class Files extends BaseController
                 'name' => $name,
                 'type' => $type,
                 'size' => $size,
+                'md5sum' => $md5sum,
                 'title' => $title,
                 'description' => $description,
                 'category' => $category,

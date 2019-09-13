@@ -783,6 +783,8 @@ class Files extends BaseController
 
     public function getDownload($headeronly = false)
     {
+        $this->log->log(print_r($_SERVER, true));
+
         $id = null;
         $as = null;
         $userId = null;

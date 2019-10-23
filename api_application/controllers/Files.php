@@ -784,6 +784,192 @@ class Files extends BaseController
     {
         $this->getDownload(true);
     }
+    
+    public function getDownloadTorrent($headeronly = false) {
+        
+        $id = null;
+        $as = null;
+        $userId = null;
+        $hashGiven = null;
+        $timestamp = null;
+        $isFromOcsApi = false;
+        $isFilepreview = false;
+        
+        $linkType = null;
+
+        $anonymousCookie = null;
+
+        if (!empty($this->request->id)) {
+            $id = $this->request->id;
+        }
+        if (!empty($this->request->as)) {
+            $as = $this->request->as;
+        }
+        if (!empty($this->request->u)) {
+            $userId = $this->request->u;
+        }
+        if (!empty($this->request->c)) {
+            $anonymousCookie = $this->request->c;
+        }        
+        if (!empty($this->request->s)) {
+            $hashGiven = $this->request->s;
+        }
+        if (!empty($this->request->t)) {
+            $timestamp = $this->request->t;
+        }
+        if (!empty($this->request->o)) {
+            $isFromOcsApi = ($this->request->o == 1);
+        }
+        if (!empty($this->request->lt)) {
+            $linkType = $this->request->lt;
+            if($linkType === 'torrent') {
+                $isFilepreview = true;
+            }
+        }
+
+        if ($id && $as) {
+            $id = $this->models->files->getFileId($id, $as);
+        }
+
+        $file = $this->models->files->$id;
+
+        if (!$file) {
+            $this->response->setStatus(404);
+            throw new Flooer_Exception('Not found', LOG_NOTICE);
+        }
+
+        $collectionId = $file->collection_id;
+        
+        $torrent = $this->appConfig->general['torrentsDir'] . '/' . $collectionId . '/' . $file->name . '.torrent';
+        if (is_file($torrent . '.added')) {
+            $torrent = $torrent . '.added';
+        }
+        else if (!is_file($torrent)) {
+            $this->_generateTorrent(
+                $this->appConfig->general['filesDir'] . '/' . $collectionId . '/' . $file->name,
+                $torrent
+            );
+        }
+        
+        //Save downloads, but not for perview downloads
+        if($isFilepreview) {
+            if($isFromOcsApi) {
+                $data = array(
+                        'client_id' => $file->client_id,
+                        'owner_id' => $file->owner_id,
+                        'collection_id' => $file->collection_id,
+                        'file_id' => $file->id,
+                        'user_id' => $userId,
+                        //'anonymous_cookie' => $anonymousCookie,
+                        'referer' => 'OCS-API',
+                        'source'  => 'OCS-API'
+                    );
+            } else {
+                $data = array(
+                        'client_id' => $file->client_id,
+                        'owner_id' => $file->owner_id,
+                        'collection_id' => $file->collection_id,
+                        'file_id' => $file->id,
+                        'user_id' => $userId,
+                        //'anonymous_cookie' => $anonymousCookie,
+                        'source'  => 'OCS-Webserver',
+                        'link_type' => $linkType,
+                        'referer' => null
+                    );
+            }
+            try {
+                //$downloadedId = $this->models->files_downloaded_all->generateId();
+                $downloadedId = $this->models->files_downloaded_all->generateNewId();
+                $ref = 'OCS-API';
+                $this->models->files_downloaded_all->$downloadedId = $data;
+            } catch (Exception $exc) {
+                //echo $exc->getTraceAsString();
+                $this->log->log("ERROR saving Download Data to DB: $exc->getTraceAsString()", LOG_ERR);
+            }
+        }
+        
+        
+        if ($isFilepreview) {
+            // Link is ok, go on
+            $collection = $this->models->collections->$collectionId;
+
+            $collectionDir = '';
+            if ($collection->active) {
+                $collectionDir = $this->appConfig->general['filesDir'] . '/' . $collection->name;
+            }
+            else {
+                $collectionDir = $this->appConfig->general['filesDir'] . '/.trash/' . $collection->id . '-' . $collection->name;
+            }
+
+            $filePath = '';
+            if ($file->active) {
+                $filePath = $collectionDir . '/' . $file->name;
+            }
+            else {
+                $filePath = $collectionDir . '/.trash/' . $file->id . '-' . $file->name;
+            }
+
+            $fileName = $file->name;
+            $fileType = $file->type;
+            $fileSize = $file->size;
+            
+            if ($isFilepreview && !$headeronly) {
+                $this->models->files->updateDownloadedStatus($file->id);
+
+                try {
+                    //$downloadedId = $this->models->files_downloaded->generateId();
+                    $downloadedId = $this->models->files_downloaded->generateNewId();
+                    $ref = null;
+                    if ($isFromOcsApi) {
+                      $ref = 'OCS-API';
+                    }
+                    $this->models->files_downloaded->$downloadedId = array(
+                        'client_id' => $file->client_id,
+                        'owner_id' => $file->owner_id,
+                        'collection_id' => $file->collection_id,
+                        'file_id' => $file->id,
+                        'user_id' => $userId,
+                        'referer' => $ref
+                    );
+
+                    //save unique dataset
+                    $downloadedId = $this->models->files_downloaded_unique->generateNewId();
+                    $ref = null;
+                    if ($isFromOcsApi) {
+                      $ref = 'OCS-API';
+                    }
+                    $this->models->files_downloaded_unique->$downloadedId = array(
+                        'client_id' => $file->client_id,
+                        'owner_id' => $file->owner_id,
+                        'collection_id' => $file->collection_id,
+                        'file_id' => $file->id,
+                        'user_id' => $userId,
+                        'referer' => $ref
+                    );
+                } catch (Exception $exc) {
+                    //echo $exc->getTraceAsString();
+                    $this->log->log("ERROR saving Download Data to DB: $exc->getMessage()", LOG_ERR);
+                }
+            }
+
+            $this->_sendFile(
+                $filePath,
+                $fileName,
+                'application/x-bittorrent',
+                $fileSize,
+                true,
+                $headeronly
+            );
+        }
+        else {
+            // Link is not ok
+            // Log
+            $this->log->log("Start Download failed (file: $file->id; time-div: $div;  client: $file->client_id; salt: $salt; hash: $hash; hashGiven: $hashGiven)", LOG_NOTICE);
+            // Redirect to opendesktop project page
+            $this->response->redirect($this->appConfig->general['redirectTargetServer'] . '/co/' . $collectionId);
+        }
+        
+    }
 
     public function getDownload($headeronly = false)
     {

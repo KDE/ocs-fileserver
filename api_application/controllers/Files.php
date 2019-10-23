@@ -793,7 +793,7 @@ class Files extends BaseController
         $hashGiven = null;
         $timestamp = null;
         $isFromOcsApi = false;
-        $isFilepreview = false;
+        $isFilepreview = true;
         
         $linkType = null;
 
@@ -840,7 +840,7 @@ class Files extends BaseController
 
         $collectionId = $file->collection_id;
         
-        $torrent = $this->appConfig->general['torrentsDir'] . '/' . $collectionId . '/' . $file->name . '.torrent';
+        $torrent = $this->appConfig->general['torrentsDir'] . '/' . $collectionId . '_' . $file->name . '.torrent';
         if (is_file($torrent . '.added')) {
             $torrent = $torrent . '.added';
         }

@@ -790,7 +790,7 @@ class Files extends BaseController
         $id = null;
         $isFromOcsApi = false;
         $isTorrent = true;
-        $as = null;
+        $as = 'self';
         
         $linkType = null;
 

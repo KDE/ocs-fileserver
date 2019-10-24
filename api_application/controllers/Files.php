@@ -785,7 +785,7 @@ class Files extends BaseController
         $this->getDownload(true);
     }
     
-    public function getDownloadTorrent($headeronly = false) {
+    public function getDownloadtorrent($headeronly = false) {
         
         $id = null;
         $as = null;

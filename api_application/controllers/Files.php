@@ -790,6 +790,7 @@ class Files extends BaseController
         $id = null;
         $isFromOcsApi = false;
         $isTorrent = true;
+        $as = null;
         
         $linkType = null;
 
@@ -804,7 +805,7 @@ class Files extends BaseController
         }
 
         if ($id) {
-            $id = $this->models->files->getFileId($id, $as);
+            $id = $this->models->files->getFileId($id);
         }
 
         $file = $this->models->files->$id;

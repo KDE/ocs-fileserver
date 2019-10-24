@@ -788,46 +788,22 @@ class Files extends BaseController
     public function getDownloadtorrent($headeronly = false) {
         
         $id = null;
-        $as = null;
-        $userId = null;
-        $hashGiven = null;
-        $timestamp = null;
         $isFromOcsApi = false;
-        $isFilepreview = true;
+        $isTorrent = true;
         
         $linkType = null;
-
-        $anonymousCookie = null;
 
         if (!empty($this->request->id)) {
             $id = $this->request->id;
         }
-        if (!empty($this->request->as)) {
-            $as = $this->request->as;
-        }
-        if (!empty($this->request->u)) {
-            $userId = $this->request->u;
-        }
-        if (!empty($this->request->c)) {
-            $anonymousCookie = $this->request->c;
-        }        
-        if (!empty($this->request->s)) {
-            $hashGiven = $this->request->s;
-        }
-        if (!empty($this->request->t)) {
-            $timestamp = $this->request->t;
-        }
-        if (!empty($this->request->o)) {
-            $isFromOcsApi = ($this->request->o == 1);
-        }
         if (!empty($this->request->lt)) {
             $linkType = $this->request->lt;
             if($linkType === 'torrent') {
-                $isFilepreview = true;
+                $isTorrent = true;
             }
         }
 
-        if ($id && $as) {
+        if ($id) {
             $id = $this->models->files->getFileId($id, $as);
         }
 
@@ -841,18 +817,39 @@ class Files extends BaseController
         $collectionId = $file->collection_id;
         
         $torrent = $this->appConfig->general['torrentsDir'] . '/' . $collectionId . '_' . $file->name . '.torrent';
+        $fileName = $collectionId . '_' . $file->name . '.torrent';
         if (is_file($torrent . '.added')) {
             $torrent = $torrent . '.added';
+            $fileName = $fileName  . '.added';
         }
         else if (!is_file($torrent)) {
+            
+            $collection = $this->models->collections->$collectionId;
+
+            $collectionDir = '';
+            if ($collection->active) {
+                $collectionDir = $this->appConfig->general['filesDir'] . '/' . $collection->name;
+            }
+            else {
+                $collectionDir = $this->appConfig->general['filesDir'] . '/.trash/' . $collection->id . '-' . $collection->name;
+            }
+
+            $filePath = '';
+            if ($file->active) {
+                $filePath = $collectionDir . '/' . $file->name;
+            }
+            else {
+                $filePath = $collectionDir . '/.trash/' . $file->id . '-' . $file->name;
+            }
+            
             $this->_generateTorrent(
-                $this->appConfig->general['filesDir'] . '/' . $collectionId . '/' . $file->name,
+                $filePath,
                 $torrent
             );
         }
         
         //Save downloads, but not for perview downloads
-        if($isFilepreview) {
+        if($isTorrent) {
             if($isFromOcsApi) {
                 $data = array(
                         'client_id' => $file->client_id,
@@ -889,31 +886,8 @@ class Files extends BaseController
         }
         
         
-        if ($isFilepreview) {
-            // Link is ok, go on
-            $collection = $this->models->collections->$collectionId;
-
-            $collectionDir = '';
-            if ($collection->active) {
-                $collectionDir = $this->appConfig->general['filesDir'] . '/' . $collection->name;
-            }
-            else {
-                $collectionDir = $this->appConfig->general['filesDir'] . '/.trash/' . $collection->id . '-' . $collection->name;
-            }
-
-            $filePath = '';
-            if ($file->active) {
-                $filePath = $collectionDir . '/' . $file->name;
-            }
-            else {
-                $filePath = $collectionDir . '/.trash/' . $file->id . '-' . $file->name;
-            }
-
-            $fileName = $file->name;
-            $fileType = $file->type;
-            $fileSize = $file->size;
-            
-            if ($isFilepreview && !$headeronly) {
+        if ($isTorrent) {
+            if ($isTorrent && !$headeronly) {
                 $this->models->files->updateDownloadedStatus($file->id);
 
                 try {
@@ -953,10 +927,10 @@ class Files extends BaseController
             }
 
             $this->_sendFile(
-                $filePath,
+                $torrent,
                 $fileName,
                 'application/x-bittorrent',
-                $fileSize,
+                filesize($torrent),
                 true,
                 $headeronly
             );

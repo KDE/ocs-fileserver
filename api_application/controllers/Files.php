@@ -957,8 +957,8 @@ class Files extends BaseController
 
     public function optionsDownloadTorrent()
     {
-        $this->response->setHeader('User-Agent',$this->request->getHeader('User-Agent'));
-        $this->getDownloadTorrent(true);
+        $this->response->setStatus(200);
+        $this->response->send();
     }
 
     public function getDownload($headeronly = false)

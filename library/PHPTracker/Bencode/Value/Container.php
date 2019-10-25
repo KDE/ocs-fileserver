@@ -14,8 +14,9 @@ abstract class PHPTracker_Bencode_Value_Container extends PHPTracker_Bencode_Val
      * Value is iterated and its values (and keys) are getting contained by the object.
      *
      * @param array $value
+     * @throws PHPTracker_Bencode_Error_InvalidType
      */
-    public function __construct( array $value = null )
+    public function __construct( $value = null )
     {
         $this->value = array();
 

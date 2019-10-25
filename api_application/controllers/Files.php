@@ -955,6 +955,11 @@ class Files extends BaseController
         
     }
 
+    public function optionsDownloadTorrent()
+    {
+        $this->getDownloadTorrent(true);
+    }
+
     public function getDownload($headeronly = false)
     {
         $this->log->log(print_r($_SERVER, true));

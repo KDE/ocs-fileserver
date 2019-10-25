@@ -822,7 +822,12 @@ class Files extends BaseController
         if (is_file($torrent . '.added')) {
             $torrent = $torrent . '.added';
             $fileName = $fileName  . '.added';
+        } else {
+            $this->response->setStatus(404);
+            throw new Flooer_Exception('Not found', LOG_NOTICE);
         }
+        
+        /*
         else if (!is_file($torrent)) {
             
             $collection = $this->models->collections->$collectionId;
@@ -848,6 +853,8 @@ class Files extends BaseController
                 $torrent
             );
         }
+         * 
+         */
         
         //Save downloads, but not for perview downloads
         if($isTorrent) {

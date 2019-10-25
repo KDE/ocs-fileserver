@@ -912,7 +912,7 @@ class Files extends BaseController
                         'owner_id' => $file->owner_id,
                         'collection_id' => $file->collection_id,
                         'file_id' => $file->id,
-                        'user_id' => $userId,
+//                        'user_id' => $userId,
                         'referer' => $ref
                     );
 
@@ -927,7 +927,7 @@ class Files extends BaseController
                         'owner_id' => $file->owner_id,
                         'collection_id' => $file->collection_id,
                         'file_id' => $file->id,
-                        'user_id' => $userId,
+//                        'user_id' => $userId,
                         'referer' => $ref
                     );
                 } catch (Exception $exc) {
@@ -959,6 +959,7 @@ class Files extends BaseController
     {
         $this->response->setStatus(200);
         $this->response->send();
+        exit;
     }
 
     public function getDownload($headeronly = false)

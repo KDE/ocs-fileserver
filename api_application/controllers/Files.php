@@ -866,7 +866,7 @@ class Files extends BaseController
                         'owner_id' => $file->owner_id,
                         'collection_id' => $file->collection_id,
                         'file_id' => $file->id,
-                        'user_id' => $userId,
+//                        'user_id' => $userId,
                         //'anonymous_cookie' => $anonymousCookie,
                         'referer' => 'OCS-API',
                         'source'  => 'OCS-API'
@@ -877,7 +877,7 @@ class Files extends BaseController
                         'owner_id' => $file->owner_id,
                         'collection_id' => $file->collection_id,
                         'file_id' => $file->id,
-                        'user_id' => $userId,
+//                        'user_id' => $userId,
                         //'anonymous_cookie' => $anonymousCookie,
                         'source'  => 'OCS-Webserver',
                         'link_type' => $linkType,
@@ -957,6 +957,7 @@ class Files extends BaseController
 
     public function optionsDownloadTorrent()
     {
+        $this->response->setHeader('User-Agent',$this->request->getHeader('User-Agent'));
         $this->getDownloadTorrent(true);
     }
 

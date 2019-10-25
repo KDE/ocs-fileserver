@@ -788,6 +788,7 @@ class Files extends BaseController
     public function getDownloadtorrent($headeronly = false) {
         
         $id = null;
+        $userId = null;
         $isFromOcsApi = false;
         $isTorrent = true;
         $as = 'self';
@@ -866,7 +867,7 @@ class Files extends BaseController
                         'owner_id' => $file->owner_id,
                         'collection_id' => $file->collection_id,
                         'file_id' => $file->id,
-//                        'user_id' => $userId,
+                        'user_id' => $userId,
                         //'anonymous_cookie' => $anonymousCookie,
                         'referer' => 'OCS-API',
                         'source'  => 'OCS-API'
@@ -877,7 +878,7 @@ class Files extends BaseController
                         'owner_id' => $file->owner_id,
                         'collection_id' => $file->collection_id,
                         'file_id' => $file->id,
-//                        'user_id' => $userId,
+                        'user_id' => $userId,
                         //'anonymous_cookie' => $anonymousCookie,
                         'source'  => 'OCS-Webserver',
                         'link_type' => $linkType,
@@ -912,7 +913,7 @@ class Files extends BaseController
                         'owner_id' => $file->owner_id,
                         'collection_id' => $file->collection_id,
                         'file_id' => $file->id,
-//                        'user_id' => $userId,
+                        'user_id' => $userId,
                         'referer' => $ref
                     );
 
@@ -927,7 +928,7 @@ class Files extends BaseController
                         'owner_id' => $file->owner_id,
                         'collection_id' => $file->collection_id,
                         'file_id' => $file->id,
-//                        'user_id' => $userId,
+                        'user_id' => $userId,
                         'referer' => $ref
                     );
                 } catch (Exception $exc) {
@@ -958,6 +959,7 @@ class Files extends BaseController
     public function optionsDownloadTorrent()
     {
         $this->response->setStatus(200);
+        $this->response->setHeader('Access-Control-Allow-Headers', 'User-Agent');
         $this->response->send();
         exit;
     }
@@ -1176,6 +1178,14 @@ class Files extends BaseController
             // Redirect to opendesktop project page
             $this->response->redirect($this->appConfig->general['redirectTargetServer'] . '/co/' . $collectionId);
         }
+    }
+
+    public function optionsDownload()
+    {
+        $this->response->setStatus(200);
+        $this->response->setHeader('Access-Control-Allow-Headers', 'Range, User-Agent');
+        $this->response->send();
+        exit;
     }
 
     private function _fixFilename($name, $collectionName)

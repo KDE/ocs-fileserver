@@ -822,7 +822,9 @@ class Files extends BaseController
         if (is_file($torrent . '.added')) {
             $torrent = $torrent . '.added';
             $fileName = $fileName  . '.added';
-        } else {
+        }
+        
+        if (!is_file($torrent)) {
             $this->response->setStatus(404);
             throw new Flooer_Exception('Not found', LOG_NOTICE);
         }

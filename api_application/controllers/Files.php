@@ -939,7 +939,7 @@ class Files extends BaseController
             $this->_sendFile(
                 $torrent,
                 $fileName,
-                'application/x-bittorrent',
+                'text/html',
                 filesize($torrent),
                 true,
                 $headeronly

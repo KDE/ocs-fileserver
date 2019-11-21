@@ -220,7 +220,11 @@ class ModelContainer
                 'downloaded_timestamp' => $timestampDifinition,
                 'downloaded_ip' => 'VARCHAR(39)',
                 'source' => 'VARCHAR(39)',
-                'link_type' => 'VARCHAR(39)'
+                'link_type' => 'VARCHAR(39)',
+                'user_agent' => 'VARCHAR(255)',
+                'app_id' => 'INT',
+                'fingerprint' => 'VARCHAR(255)',
+                
             );
         }
         

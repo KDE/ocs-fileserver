@@ -856,6 +856,11 @@ class Files extends BaseController
         // Log
         $this->log->log("Start Download (client: $file->client_id; salt: $salt; hash: $hash; hashGiven: $hashGiven)", LOG_NOTICE);
         
+        $agent = null;
+        if ( isset( $_SERVER ) ) {
+            $agent = $_SERVER['HTTP_USER_AGENT'];
+        }
+        
         //Save downloads, but not for perview downloads
         if(!$isFilepreview) {
             if($isFromOcsApi) {
@@ -867,7 +872,8 @@ class Files extends BaseController
                         'user_id' => $userId,
                         //'anonymous_cookie' => $anonymousCookie,
                         'referer' => 'OCS-API',
-                        'source'  => 'OCS-API'
+                        'source'  => 'OCS-API',
+                        'user_agent' => $agent
                     );
             } else {
                 $data = array(
@@ -879,7 +885,8 @@ class Files extends BaseController
                         //'anonymous_cookie' => $anonymousCookie,
                         'source'  => 'OCS-Webserver',
                         'link_type' => $linkType,
-                        'referer' => null
+                        'referer' => null,
+                        'user_agent' => $agent
                     );
             }
             try {

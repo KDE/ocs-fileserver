@@ -973,6 +973,9 @@ class Files extends BaseController
             $this->response->setStatus(404);
             throw new Flooer_Exception('Not found', LOG_NOTICE);
         }
+        
+        $this->log->log("Start Create torrent (file: $file->id;)", LOG_NOTICE);
+            
 
         $collectionId = $file->collection_id;
         
@@ -985,6 +988,9 @@ class Files extends BaseController
         
         
         if (!is_file($torrent)) {
+            
+            $this->log->log("Start Create New torrent", LOG_NOTICE);
+
             
             $collection = $this->models->collections->$collectionId;
 
@@ -1008,7 +1014,11 @@ class Files extends BaseController
                 $filePath,
                 $torrent
             );
+            
+            $this->log->log("Update File", LOG_NOTICE);
             $this->models->files->updateHasTorrent($file->id);
+            
+            $this->log->log("Done Create Torrent: $torrent", LOG_NOTICE);
             
         }
         

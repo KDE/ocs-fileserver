@@ -1018,6 +1018,7 @@ class Files extends BaseController
             $this->log->log("Update File", LOG_NOTICE);
             $this->models->files->updateHasTorrent($file->id);
             
+            
             $this->log->log("Done Create Torrent: $torrent", LOG_NOTICE);
             
         }

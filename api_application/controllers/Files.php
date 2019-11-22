@@ -818,7 +818,7 @@ class Files extends BaseController
 
         $collectionId = $file->collection_id;
         
-        $torrent = $this->appConfig->general['torrentsDir'] . '/' . $collectionId . '/' . $file->id . '_' . $file->name . '.torrent';
+        $torrent = $this->appConfig->general['torrentsDir'] . '/' . $collectionId . '_' . $file->id . '_' . $file->name . '.torrent';
         $fileName = $collectionId . '_' . $file->name . '.torrent';
         if (is_file($torrent . '.added')) {
             $torrent = $torrent . '.added';
@@ -979,7 +979,7 @@ class Files extends BaseController
 
         $collectionId = $file->collection_id;
         
-        $torrent = $this->appConfig->general['torrentsDir'] . '/' . $collectionId . '/' . $file->id . '_' . $file->name . '.torrent';
+        $torrent = $this->appConfig->general['torrentsDir'] . '/' . $collectionId . '_' . $file->id . '_' . $file->name . '.torrent';
         $fileName = $collectionId . '_' . $file->name . '.torrent';
         if (is_file($torrent . '.added')) {
             $torrent = $torrent . '.added';

@@ -261,7 +261,29 @@ class BaseController extends Flooer_Controller
 
         return $ids;
     }
-    
+
+    protected function _generateTorrent($file, $torrent)
+    {
+        /*exec('ctorrent'
+            . ' -t'
+            . ' -u "' . $this->appConfig->general['announceUri'] . '"'
+            . ' -s "' . $torrent . '"'
+            . ' "' . $source . '"'
+        );*/
+        
+        //create-torrent 
+        //--urlList "https://torrent.opendesktop.cc/api/files/download/id/1568302531/s/1/t/1/c/1/lt/filepreview/filename" 
+        //'90727-meditation at 6600 ft - presolana.jpg'
+        // > /mnt/s3/files/data/torrents/1568302531_90727-meditation-at-6600-ft-presolana-v3.torrent
+        
+        exec('create-torrent'
+                . ' --urlList "' .$this->appConfig->general['previewUri'] .'/api/files/download/id/'.$file->name.'/lt/filepreview/"'
+                . ' \''.$file->name.'\''
+                . ' > ' . $torrent
+        );
+    }
+
+    /*
     protected function _generateTorrent($source, $torrent)
     {
         exec('ctorrent'
@@ -270,7 +292,8 @@ class BaseController extends Flooer_Controller
             . ' -s "' . $torrent . '"'
             . ' "' . $source . '"'
         );
-    }
+        
+    }*/
 
     protected function _generateArchive($source, $archive)
     {

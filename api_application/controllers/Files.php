@@ -992,8 +992,27 @@ class Files extends BaseController
             $this->log->log("Start Create New torrent", LOG_NOTICE);
 
             
+            $collection = $this->models->collections->$collectionId;
+
+            $collectionDir = '';
+            if ($collection->active) {
+                $collectionDir = $this->appConfig->general['filesDir'] . '/' . $collection->name;
+            }
+            else {
+                $collectionDir = $this->appConfig->general['filesDir'] . '/.trash/' . $collection->id . '-' . $collection->name;
+            }
+
+            $filePath = '';
+            if ($file->active) {
+                $filePath = $collectionDir . '/' . $file->name;
+            }
+            else {
+                $filePath = $collectionDir . '/.trash/' . $file->id . '-' . $file->name;
+            }
+            
             $this->_generateTorrent(
                 $file,
+                $filePath,
                 $torrent
             );
             

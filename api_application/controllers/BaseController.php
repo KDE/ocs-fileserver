@@ -262,7 +262,7 @@ class BaseController extends Flooer_Controller
         return $ids;
     }
 
-    protected function _generateTorrent($file, $torrent)
+    protected function _generateTorrent($file, $filePath, $torrent)
     {
         /*exec('ctorrent'
             . ' -t'
@@ -277,8 +277,8 @@ class BaseController extends Flooer_Controller
         // > /mnt/s3/files/data/torrents/1568302531_90727-meditation-at-6600-ft-presolana-v3.torrent
         
         exec('create-torrent'
-                . ' --urlList "' .$this->appConfig->general['previewUri'] .'/api/files/download/id/'.$file->name.'/lt/filepreview/"'
-                . ' \''.$file->name.'\''
+                . ' --urlList "' .$this->appConfig->general['previewUri'] .'/api/files/download/id/'.$file->name.'/lt/filepreview/"'.$file->name
+                . ' \''.$filePath.'\''
                 . ' > ' . $torrent
         );
     }

@@ -278,7 +278,7 @@ class BaseController extends Flooer_Controller
         
         exec('create-torrent'
                 . ' --urlList "' .$this->appConfig->general['previewUri'] .'/api/files/download/id/'.$file->id.'/lt/filepreview/'.$file->name.'"'
-                . ' --announce "'.$this->appConfig->general['anounceUri'] . '"'
+                . ' --announce "'.$this->appConfig->general['announceUri'] . '"'
                 . ' \''.$filePath.'\''
                 . ' > ' . $torrent
         );

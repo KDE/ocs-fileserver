@@ -956,7 +956,7 @@ class Files extends BaseController
         
     }
     
-    public function getCreateTorrent() {
+    public function getCreatetorrent() {
         
         $id = null;
         if (!empty($this->request->id)) {

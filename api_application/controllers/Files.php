@@ -1029,6 +1029,57 @@ class Files extends BaseController
         $this->response->send();
         exit;
     }
+    
+    public function getDeletetorrent() {
+        
+        $id = null;
+        if (!empty($this->request->id)) {
+            $id = $this->request->id;
+        }
+
+        if ($id) {
+            $id = $this->models->files->getFileId($id);
+        }
+
+        $file = $this->models->files->$id;
+
+        if (!$file) {
+            $this->response->setStatus(404);
+            throw new Flooer_Exception('Not found', LOG_NOTICE);
+        }
+        
+        $this->log->log("Start Create torrent (file: $file->id;)", LOG_NOTICE);
+            
+
+        $collectionId = $file->collection_id;
+        
+        $torrent = $this->appConfig->general['torrentsDir'] . '/' . $collectionId . '_' . $file->id . '_' . $file->name . '.torrent';
+        $fileName = $collectionId . '_' . $file->name . '.torrent';
+        if (is_file($torrent . '.added')) {
+            $torrent = $torrent . '.added';
+            $fileName = $fileName  . '.added';
+        }
+        
+        
+        if (is_file($torrent)) {
+            
+            $this->log->log("Start Delete torrent", LOG_NOTICE);
+            
+            unlink($torrent);
+            
+            $this->log->log("Update File", LOG_NOTICE);
+            $this->models->files->updateHasTorrent($file->id, false);
+            
+            
+            $this->log->log("Done Delete Torrent: $torrent", LOG_NOTICE);
+            
+        }
+        
+        $this->response->setStatus(200);
+        $this->response->setHeader('Access-Control-Allow-Headers', 'User-Agent');
+        $this->response->send();
+        exit;
+    }
 
     public function optionsDownloadTorrent()
     {

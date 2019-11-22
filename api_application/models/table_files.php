@@ -418,12 +418,18 @@ class table_files extends BaseModel
         }
     }
     
-    public function updateHasTorrent($id)
+    public function updateHasTorrent($id, $hasTorrent = true)
     {
         if (isset($this->$id)) {
-            parent::__set($id, array(
-                'has_torrent' => 1
-            ));
+            if($hasTorrent) {
+                parent::__set($id, array(
+                    'has_torrent' => 1
+                ));
+            } else {
+                parent::__set($id, array(
+                    'has_torrent' => 0
+                ));
+            }
         }
     }
 

@@ -75,11 +75,13 @@ class BaseModel extends Flooer_Db_Table
 
     protected function _getReferer()
     {
-        $referer = null;
-        if (!empty($_SERVER['HTTP_REFERER'])) {
-            $referer = $_SERVER['HTTP_REFERER'];
+        if (isset($_SERVER['HTTP_X_FORWARDED_REFERRER'])) {
+            return $_SERVER['HTTP_X_FORWARDED_REFERRER'];
         }
-        return $referer;
+        if (!empty($_SERVER['HTTP_REFERER'])) {
+            return $_SERVER['HTTP_REFERER'];
+        }
+        return null;
     }
 
     protected function _convertArrayToObject($values)

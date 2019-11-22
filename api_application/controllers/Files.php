@@ -1009,7 +1009,13 @@ class Files extends BaseController
                 $torrent
             );
             $this->models->files->updateHasTorrent($file->id);
+            
         }
+        
+        $this->response->setStatus(200);
+        $this->response->setHeader('Access-Control-Allow-Headers', 'User-Agent');
+        $this->response->send();
+        exit;
     }
 
     public function optionsDownloadTorrent()

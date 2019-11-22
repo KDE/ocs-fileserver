@@ -67,7 +67,8 @@ class table_files extends BaseModel
             . "{$prefix}files.downloaded_count AS downloaded_count,"
             . "{$prefix}files.downloaded_count AS downloaded_timeperiod_count,"
             . "{$prefix}files.created_timestamp AS created_timestamp,"
-            . "{$prefix}files.updated_timestamp AS updated_timestamp";
+            . "{$prefix}files.updated_timestamp AS updated_timestamp,"
+            . "{$prefix}files.has_torrent AS has_torrent";
 
         $this->_join = "LEFT OUTER JOIN {$prefix}profiles"
             . " ON {$prefix}profiles.client_id = {$prefix}files.client_id"
@@ -413,6 +414,15 @@ class table_files extends BaseModel
                 'downloaded_timestamp' => $this->_getTimestamp(),
                 'downloaded_ip' => $this->_getIp(),
                 'downloaded_count' => $this->$id->downloaded_count + 1
+            ));
+        }
+    }
+    
+    public function updateHasTorrent($id)
+    {
+        if (isset($this->$id)) {
+            parent::__set($id, array(
+                'has_torrent' => 1
             ));
         }
     }

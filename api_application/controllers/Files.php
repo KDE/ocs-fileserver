@@ -955,6 +955,62 @@ class Files extends BaseController
         }
         
     }
+    
+    public function createTorrent() {
+        
+        $id = null;
+        if (!empty($this->request->id)) {
+            $id = $this->request->id;
+        }
+
+        if ($id) {
+            $id = $this->models->files->getFileId($id);
+        }
+
+        $file = $this->models->files->$id;
+
+        if (!$file) {
+            $this->response->setStatus(404);
+            throw new Flooer_Exception('Not found', LOG_NOTICE);
+        }
+
+        $collectionId = $file->collection_id;
+        
+        $torrent = $this->appConfig->general['torrentsDir'] . '/' . $collectionId . '_' . $file->name . '.torrent';
+        $fileName = $collectionId . '_' . $file->name . '.torrent';
+        if (is_file($torrent . '.added')) {
+            $torrent = $torrent . '.added';
+            $fileName = $fileName  . '.added';
+        }
+        
+        
+        if (!is_file($torrent)) {
+            
+            $collection = $this->models->collections->$collectionId;
+
+            $collectionDir = '';
+            if ($collection->active) {
+                $collectionDir = $this->appConfig->general['filesDir'] . '/' . $collection->name;
+            }
+            else {
+                $collectionDir = $this->appConfig->general['filesDir'] . '/.trash/' . $collection->id . '-' . $collection->name;
+            }
+
+            $filePath = '';
+            if ($file->active) {
+                $filePath = $collectionDir . '/' . $file->name;
+            }
+            else {
+                $filePath = $collectionDir . '/.trash/' . $file->id . '-' . $file->name;
+            }
+            
+            $this->_generateTorrent(
+                $filePath,
+                $torrent
+            );
+            $this->models->files->updateHasTorrent($file->id);
+        }
+    }
 
     public function optionsDownloadTorrent()
     {

@@ -190,7 +190,8 @@ class ModelContainer
                 'created_timestamp' => $timestampDifinition,
                 'created_ip' => 'VARCHAR(39)',
                 'updated_timestamp' => $timestampDifinition,
-                'updated_ip' => 'VARCHAR(39)'
+                'updated_ip' => 'VARCHAR(39)',
+                'has_torrent' => 'INTEGER(1) UNSIGNED NULL DEFAULT 0'
             );
         }
 

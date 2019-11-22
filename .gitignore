@@ -11,3 +11,4 @@ public/.well-known/*
 public/google*.html
 public/robots.txt
 .idea
+/nbproject/private/

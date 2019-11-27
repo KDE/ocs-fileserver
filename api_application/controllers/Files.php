@@ -818,7 +818,7 @@ class Files extends BaseController
 
         $collectionId = $file->collection_id;
         
-        $torrent = $this->appConfig->general['torrentsDir'] . '/' . $collectionId . '_' . $file->id . '_' . $this->formatFileName($file->name) . '.torrent';
+        $torrent = $this->appConfig->general['torrentsDir'] . '/' . $collectionId . '_' . $file->id . '_' . $this->normalizeString($file->name) . '.torrent';
         $fileName = $collectionId . '_' . $file->name . '.torrent';
         if (is_file($torrent . '.added')) {
             $torrent = $torrent . '.added';
@@ -979,7 +979,7 @@ class Files extends BaseController
 
         $collectionId = $file->collection_id;
         
-        $torrent = $this->appConfig->general['torrentsDir'] . '/' . $collectionId . '_' . $file->id . '_' . $this->formatFileName($file->name) . '.torrent';
+        $torrent = $this->appConfig->general['torrentsDir'] . '/' . $collectionId . '_' . $file->id . '_' . $this->normalizeString($file->name) . '.torrent';
         
         $this->log->log("Torrent-Path: $torrent;)", LOG_NOTICE);
         
@@ -1467,22 +1467,19 @@ class Files extends BaseController
         }
     }
     
-    private function formatFileName($fileName) {
-        $result = "";
-        
-        if(null != $fileName) {
-            $result = $fileName;
-            // Remove anything which isn't a word, whitespace, number
-            // or any of the following caracters -_~,;[]().
-            // If you don't need to handle multi-byte characters
-            // you can use preg_replace rather than mb_ereg_replace
-            // Thanks @Łukasz Rysiak!
-            $result = mb_ereg_replace("([^\w\s\d\-_~,;\[\]\(\).])", '', $result);
-            // Remove any runs of periods (thanks falstro!)
-            $result = mb_ereg_replace("([\.]{2,})", '', $result);
-        }
-        
-        return result;
+    public static function normalizeString ($str = '')
+    {
+        $str = strip_tags($str); 
+        $str = preg_replace('/[\r\n\t ]+/', ' ', $str);
+        $str = preg_replace('/[\"\*\/\:\<\>\?\'\|]+/', ' ', $str);
+        $str = strtolower($str);
+        $str = html_entity_decode( $str, ENT_QUOTES, "utf-8" );
+        $str = htmlentities($str, ENT_QUOTES, "utf-8");
+        $str = preg_replace("/(&)([a-z])([a-z]+;)/i", '$2', $str);
+        $str = str_replace(' ', '-', $str);
+        $str = rawurlencode($str);
+        $str = str_replace('%', '-', $str);
+        return $str;
     }
 
 }

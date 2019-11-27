@@ -981,6 +981,8 @@ class Files extends BaseController
         
         $torrent = $this->appConfig->general['torrentsDir'] . '/' . $collectionId . '_' . $file->id . '_' . $this->formatFileName($file->name) . '.torrent';
         
+        $this->log->log("Torrent-Path: $torrent;)", LOG_NOTICE);
+        
         if (is_file($torrent)) {
             $this->log->log("Torrent exists: $torrent;)", LOG_NOTICE);
             unlink($torrent);

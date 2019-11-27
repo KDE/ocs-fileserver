@@ -818,7 +818,7 @@ class Files extends BaseController
 
         $collectionId = $file->collection_id;
         
-        $torrent = $this->appConfig->general['torrentsDir'] . '/' . $collectionId . '_' . $file->id . '_' . $file->name . '.torrent';
+        $torrent = $this->appConfig->general['torrentsDir'] . '/' . $collectionId . '_' . $file->id . '_' . $this->formatFileName($file->name) . '.torrent';
         $fileName = $collectionId . '_' . $file->name . '.torrent';
         if (is_file($torrent . '.added')) {
             $torrent = $torrent . '.added';
@@ -979,7 +979,8 @@ class Files extends BaseController
 
         $collectionId = $file->collection_id;
         
-        $torrent = $this->appConfig->general['torrentsDir'] . '/' . $collectionId . '_' . $file->id . '_' . $file->name . '.torrent';
+        $torrent = $this->appConfig->general['torrentsDir'] . '/' . $collectionId . '_' . $file->id . '_' . $this->formatFileName($file->name) . '.torrent';
+        
         $fileName = $collectionId . '_' . $file->name . '.torrent';
         if (is_file($torrent . '.added')) {
             $torrent = $torrent . '.added';
@@ -1464,6 +1465,24 @@ class Files extends BaseController
                 imagedestroy($image);
             }
         }
+    }
+    
+    private function formatFileName($fileName) {
+        $result = "";
+        
+        if(null != $fileName) {
+            $result = $fileName;
+            // Remove anything which isn't a word, whitespace, number
+            // or any of the following caracters -_~,;[]().
+            // If you don't need to handle multi-byte characters
+            // you can use preg_replace rather than mb_ereg_replace
+            // Thanks @Łukasz Rysiak!
+            $result = mb_ereg_replace("([^\w\s\d\-_~,;\[\]\(\).])", '', $result);
+            // Remove any runs of periods (thanks falstro!)
+            $result = mb_ereg_replace("([\.]{2,})", '', $result);
+        }
+        
+        return result;
     }
 
 }

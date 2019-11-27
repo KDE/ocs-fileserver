@@ -279,7 +279,7 @@ class BaseController extends Flooer_Controller
         exec('create-torrent'
                 . ' --urlList "' .$this->appConfig->general['previewUri'] .'/api/files/download/id/'.$file->id.'/lt/filepreview/'.$file->name.'"'
                 //. ' --announce "'.$this->appConfig->general['announceUri'] . '"'
-                . ' --announce "wss://tracker.openwebtorrent.com,'.$this->appConfig->general['announceUri'] . ',udp://tracker.leechers-paradise.org:6969/announce,udp://tracker.coppersurfer.tk:6969/announce"'
+                . ' --announce "[[wss://tracker.openwebtorrent.com],['.$this->appConfig->general['announceUri'] . '],[udp://tracker.leechers-paradise.org:6969/announce],[udp://tracker.coppersurfer.tk:6969/announce]"'
                 . ' \''.$filePath.'\''
                 . ' > ' . $torrent
         );

@@ -981,12 +981,10 @@ class Files extends BaseController
         
         $torrent = $this->appConfig->general['torrentsDir'] . '/' . $collectionId . '_' . $file->id . '_' . $this->formatFileName($file->name) . '.torrent';
         
-        $fileName = $collectionId . '_' . $file->name . '.torrent';
-        if (is_file($torrent . '.added')) {
-            $torrent = $torrent . '.added';
-            $fileName = $fileName  . '.added';
+        if (is_file($torrent)) {
+            $this->log->log("Torrent exists: $torrent;)", LOG_NOTICE);
+            unlink($torrent);
         }
-        
         
         if (!is_file($torrent)) {
             

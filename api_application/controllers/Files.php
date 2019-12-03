@@ -1163,7 +1163,6 @@ class Files extends BaseController
     
     
     public function getExtractcomic() {
-        
         $id = null;
         if (!empty($this->request->id)) {
             $id = $this->request->id;
@@ -1208,7 +1207,7 @@ class Files extends BaseController
             throw new Flooer_Exception('Failed to create comic folder', LOG_ALERT);
         }
         
-        $filePath = $this->appConfig->general['filesDir'] . '/' . $collectionId;
+        $filePath = $this->appConfig->general['filesDir'] . '/' . $collectionId . '/';
         
         $comicPath = $this->appConfig->general['comicsDir'] . '/' . $collectionId . '/' . $file->id . '/';
         
@@ -1217,7 +1216,7 @@ class Files extends BaseController
         
         if ($this->endsWith($file->name, ".cbz"))
         {
-            $zip = new \ZipArchive();
+            $zip = new ZipArchive();
             if ($zip->open($filePath . $file->name))
             {
                 for ($i = 0; $i < $zip->numFiles; $i++)

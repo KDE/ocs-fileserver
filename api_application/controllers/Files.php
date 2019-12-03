@@ -1256,5 +1256,11 @@ class Files extends BaseController
         $this->response->send();
         exit;
     }
+    
+    
+    function endsWith($haystack, $needle)
+    {
+        return $needle === "" || substr(strtolower($haystack), -strlen($needle)) === strtolower($needle);
+    }
 
 }

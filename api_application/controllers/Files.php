@@ -1190,7 +1190,10 @@ class Files extends BaseController
             throw new Flooer_Exception('Collection not found', LOG_NOTICE);
         }
         
-        $this->log->log("Create folders (colelction: $this->appConfig->general['comisDir'] . '/' . $collectionId;)", LOG_NOTICE);
+        $testPath = $this->appConfig->general['comisDir'] . '/' . $collectionId;
+        
+        $this->log->log("Create folders (collction: $testPath;)", LOG_NOTICE);
+        
         if (!is_dir($this->appConfig->general['comisDir'] . '/' . $collectionId)
             && !mkdir($this->appConfig->general['comisDir'] . '/' . $collectionId, 0777)
         ) {

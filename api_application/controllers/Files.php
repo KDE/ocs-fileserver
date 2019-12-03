@@ -1160,5 +1160,97 @@ class Files extends BaseController
             }
         }
     }
+    
+    
+    public function getExtractcomic() {
+        
+        $id = null;
+        if (!empty($this->request->id)) {
+            $id = $this->request->id;
+        }
+
+        if ($id) {
+            $id = $this->models->files->getFileId($id);
+        }
+
+        $file = $this->models->files->$id;
+
+        if (!$file) {
+            $this->response->setStatus(404);
+            throw new Flooer_Exception('Not found', LOG_NOTICE);
+        }
+        
+        $this->log->log("Start Extract cmic book (file: $file->id;)", LOG_NOTICE);
+            
+
+        $collectionId = $file->collection_id;
+        
+        if(!$collectionId) {
+            $this->response->setStatus(404);
+            throw new Flooer_Exception('Collection not found', LOG_NOTICE);
+        }
+        
+        if (!is_dir($this->appConfig->general['comisDir'] . '/' . $collectionId)
+            && !mkdir($this->appConfig->general['comisDir'] . '/' . $collectionId)
+        ) {
+            $this->response->setStatus(500);
+            throw new Flooer_Exception('Failed to create collection folder', LOG_ALERT);
+        }
+        
+        if (!is_dir($this->appConfig->general['comisDir'] . '/' . $collectionId . '/' . $file->id)
+            && !mkdir($this->appConfig->general['comisDir'] . '/' . $collectionId . '/' . $file->id)
+        ) {
+            $this->response->setStatus(500);
+            throw new Flooer_Exception('Failed to create comic folder', LOG_ALERT);
+        }
+        
+        $filePath = $this->appConfig->general['filesDir'] . '/' . $collectionId;
+        
+        $comicPath = $this->appConfig->general['comisDir'] . '/' . $collectionId . '/' . $file->id . '/';
+        
+        $this->log->log("Torrent-Path: $comicPath;)", LOG_NOTICE);
+        
+        
+        if (endsWith($file->name, ".cbz"))
+        {
+            $zip = new ZipArchive();
+            if ($zip->open($filePath . $file->name))
+            {
+                for ($i = 0; $i < $zip->numFiles; $i++)
+                {
+                    if (endsWith($zip->getNameIndex($i), '.jpg') 
+                        || endsWith($zip->getNameIndex($i), '.gif')
+                        || endsWith($zip->getNameIndex($i), '.png'))
+                    {
+                        $zip->extractTo($comicPath, $i);
+                    }
+                }
+                $zip->close();
+            }
+        }
+        else if (endsWith($file->name, ".cbr"))
+        {
+            $rar = RarArchive::open($filePath . $file->name);
+            if ($rar !== false)
+            {
+                $rar_entries = $rar->getEntries();
+                for ($i = 0; $i < count($rar_entries); $i++)
+                {
+                    if (endsWith($rar_entries[$i]->getName(), '.jpg') 
+                        || endsWith($rar_entries[$i]->getName(), '.gif')
+                        || endsWith($rar_entries[$i]->getName(), '.png'))
+                    {
+                        $entry->extract(null, $comicPath . $rar_entries[$i]->getName());
+                    }
+                }
+                $rar->close();
+            }
+        }
+        
+        $this->response->setStatus(200);
+        $this->response->setHeader('Access-Control-Allow-Headers', 'User-Agent');
+        $this->response->send();
+        exit;
+    }
 
 }

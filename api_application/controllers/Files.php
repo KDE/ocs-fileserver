@@ -1217,7 +1217,7 @@ class Files extends BaseController
         
         if ($this->endsWith($file->name, ".cbz"))
         {
-            $zip = new ZipArchive();
+            $zip = new \ZipArchive();
             if ($zip->open($filePath . $file->name))
             {
                 for ($i = 0; $i < $zip->numFiles; $i++)

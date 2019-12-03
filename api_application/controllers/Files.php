@@ -1225,7 +1225,7 @@ class Files extends BaseController
                         || $this->endsWith($zip->getNameIndex($i), '.gif')
                         || $this->endsWith($zip->getNameIndex($i), '.png'))
                     {
-                        $zip->extractTo($comicPath, $i);
+                        $zip->extractTo($comicPath . $zip->getNameIndex($i));
                     }
                 }
                 $zip->close();

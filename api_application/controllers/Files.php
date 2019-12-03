@@ -1211,7 +1211,7 @@ class Files extends BaseController
         
         $comicPath = $this->appConfig->general['comicsDir'] . '/' . $collectionId . '/' . $file->id . '/';
         
-        $this->log->log("Torrent-Path: $comicPath;)", LOG_NOTICE);
+        $this->log->log("Comic-Path: $comicPath;)", LOG_NOTICE);
         
         
         if ($this->endsWith($file->name, ".cbz"))
@@ -1225,7 +1225,11 @@ class Files extends BaseController
                         || $this->endsWith($zip->getNameIndex($i), '.gif')
                         || $this->endsWith($zip->getNameIndex($i), '.png'))
                     {
+                        
+                        $this->log->log("Extract to: $zip->getNameIndex($i);)", LOG_NOTICE);
+                        
                         $zip->extractTo($comicPath . $zip->getNameIndex($i));
+                        
                     }
                 }
                 $zip->close();

@@ -1215,16 +1215,16 @@ class Files extends BaseController
         $this->log->log("Torrent-Path: $comicPath;)", LOG_NOTICE);
         
         
-        if (endsWith($file->name, ".cbz"))
+        if ($this->endsWith($file->name, ".cbz"))
         {
             $zip = new ZipArchive();
             if ($zip->open($filePath . $file->name))
             {
                 for ($i = 0; $i < $zip->numFiles; $i++)
                 {
-                    if (endsWith($zip->getNameIndex($i), '.jpg') 
-                        || endsWith($zip->getNameIndex($i), '.gif')
-                        || endsWith($zip->getNameIndex($i), '.png'))
+                    if ($this->endsWith($zip->getNameIndex($i), '.jpg') 
+                        || $this->endsWith($zip->getNameIndex($i), '.gif')
+                        || $this->endsWith($zip->getNameIndex($i), '.png'))
                     {
                         $zip->extractTo($comicPath, $i);
                     }
@@ -1232,7 +1232,7 @@ class Files extends BaseController
                 $zip->close();
             }
         }
-        else if (endsWith($file->name, ".cbr"))
+        else if ($this->endsWith($file->name, ".cbr"))
         {
             $rar = RarArchive::open($filePath . $file->name);
             if ($rar !== false)
@@ -1240,9 +1240,9 @@ class Files extends BaseController
                 $rar_entries = $rar->getEntries();
                 for ($i = 0; $i < count($rar_entries); $i++)
                 {
-                    if (endsWith($rar_entries[$i]->getName(), '.jpg') 
-                        || endsWith($rar_entries[$i]->getName(), '.gif')
-                        || endsWith($rar_entries[$i]->getName(), '.png'))
+                    if ($this->endsWith($rar_entries[$i]->getName(), '.jpg') 
+                        || $this->endsWith($rar_entries[$i]->getName(), '.gif')
+                        || $this->endsWith($rar_entries[$i]->getName(), '.png'))
                     {
                         $entry->extract(null, $comicPath . $rar_entries[$i]->getName());
                     }
@@ -1258,7 +1258,7 @@ class Files extends BaseController
     }
     
     
-    function endsWith($haystack, $needle)
+    private function endsWith($haystack, $needle)
     {
         return $needle === "" || substr(strtolower($haystack), -strlen($needle)) === strtolower($needle);
     }

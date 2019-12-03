@@ -1190,19 +1190,19 @@ class Files extends BaseController
             throw new Flooer_Exception('Collection not found', LOG_NOTICE);
         }
         
-        $testPath = $this->appConfig->general['comisDir'] . '/' . $collectionId;
+        $testPath = $this->appConfig->general['comicsDir'] . '/' . $collectionId;
         
         $this->log->log("Create folders (collction: $testPath;)", LOG_NOTICE);
         
-        if (!is_dir($this->appConfig->general['comisDir'] . '/' . $collectionId)
-            && !mkdir($this->appConfig->general['comisDir'] . '/' . $collectionId, 0777)
+        if (!is_dir($this->appConfig->general['comicsDir'] . '/' . $collectionId)
+            && !mkdir($this->appConfig->general['comicsDir'] . '/' . $collectionId, 0777)
         ) {
             $this->response->setStatus(500);
             throw new Flooer_Exception('Failed to create collection folder', LOG_ALERT);
         }
         
-        if (!is_dir($this->appConfig->general['comisDir'] . '/' . $collectionId . '/' . $file->id)
-            && !mkdir($this->appConfig->general['comisDir'] . '/' . $collectionId . '/' . $file->id)
+        if (!is_dir($this->appConfig->general['comicsDir'] . '/' . $collectionId . '/' . $file->id)
+            && !mkdir($this->appConfig->general['comicsDir'] . '/' . $collectionId . '/' . $file->id)
         ) {
             $this->response->setStatus(500);
             throw new Flooer_Exception('Failed to create comic folder', LOG_ALERT);
@@ -1210,7 +1210,7 @@ class Files extends BaseController
         
         $filePath = $this->appConfig->general['filesDir'] . '/' . $collectionId;
         
-        $comicPath = $this->appConfig->general['comisDir'] . '/' . $collectionId . '/' . $file->id . '/';
+        $comicPath = $this->appConfig->general['comicsDir'] . '/' . $collectionId . '/' . $file->id . '/';
         
         $this->log->log("Torrent-Path: $comicPath;)", LOG_NOTICE);
         

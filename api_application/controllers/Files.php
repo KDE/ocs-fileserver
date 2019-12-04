@@ -1297,9 +1297,9 @@ class Files extends BaseController
         foreach (new DirectoryIterator($comicPath) as $fn) {
             print $fn->getFilename();
             $nameString = $fn->getFilename();
-            if (endsWith($nameString, '.jpg')
-                || endsWith($nameString, '.gif')
-                || endsWith($nameString, '.png'))
+            if ($this->endsWith($nameString, '.jpg')
+                || $this->endsWith($nameString, '.gif')
+                || $this->endsWith($nameString, '.png'))
             {
                 $toc[] = $nameString;
             }

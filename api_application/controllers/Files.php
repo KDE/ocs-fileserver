@@ -1289,7 +1289,7 @@ class Files extends BaseController
             throw new Flooer_Exception('Collection not found', LOG_NOTICE);
         }
         
-        $comicPath = $this->appConfig->general['comicsDir'] . '/' . $collectionId . '/' . $file->id . '/';
+        $comicPath = $this->appConfig->general['comicsDir'] . '/' . $collectionId . '/' . $file->id;
         
         $this->log->log("Comic-Path: $comicPath;)", LOG_NOTICE);
         

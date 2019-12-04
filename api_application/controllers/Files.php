@@ -1223,6 +1223,9 @@ class Files extends BaseController
                     $filename = $zip->getNameIndex($i);
                     $fileinfo = pathinfo($filename);
                     
+                    $this->log->log("Comic-Page-Path: ".$filename, LOG_NOTICE);
+                    $this->log->log("Comic-Page-Path2: ".$fileinfo['dirname'], LOG_NOTICE);
+                    
                     if ($this->endsWith($zip->getNameIndex($i), '.jpg') 
                         || $this->endsWith($zip->getNameIndex($i), '.gif')
                         || $this->endsWith($zip->getNameIndex($i), '.png')

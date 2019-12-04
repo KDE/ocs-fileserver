@@ -1304,11 +1304,13 @@ class Files extends BaseController
                 $toc[] = $nameString;
             }
         }
-        //natcasesort($toc);
-        //$toc = array_values($toc);
-
+        natcasesort($toc);
+        $toc = array_values($toc);
         
-        $this->_setResponseContent('success', $toc);
+        $this->_setResponseContent(
+            'success',
+            array('toc' => $toc)
+        );
     }
     
     

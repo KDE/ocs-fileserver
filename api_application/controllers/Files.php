@@ -1306,7 +1306,7 @@ class Files extends BaseController
         natcasesort($toc);
         $toc = array_values($toc);
         
-        $this->log->log("Done", LOG_NOTICE);
+        $this->log->log("Done, found ".count($toc)." pages", LOG_NOTICE);
         
         $this->_setResponseContent(
             'success',

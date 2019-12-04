@@ -1295,7 +1295,7 @@ class Files extends BaseController
         
         $toc = array();
         
-        $toc = $this->listFolderFiles($comicPath, $toc);
+        $toc = $this->listFolderFiles($comicPath, '', $toc);
         
         /*
         foreach (new DirectoryIterator($comicPath) as $fn) {
@@ -1323,8 +1323,8 @@ class Files extends BaseController
         );
     }
     
-    function listFolderFiles($dir, $fileNameList){
-        $ffs = scandir($dir);
+    function listFolderFiles($baseDir, $dir='', $fileNameList){
+        $ffs = scandir($baseDir.'/'.$dir);
         
         unset($ffs[array_search('.', $ffs, true)]);
         unset($ffs[array_search('..', $ffs, true)]);
@@ -1340,11 +1340,11 @@ class Files extends BaseController
                 || $this->endsWith($nameString, '.png')
                 || $this->endsWith($nameString, '.webp'))
             {
-                $fileNameList[] = $ff;
+                $fileNameList[] = $dir.'/'.$ff;
             }
             
             
-            if(is_dir($dir.'/'.$ff)) $fileNameList = $this->listFolderFiles($dir.'/'.$ff, $fileNameList);
+            if(is_dir($baseDir.'/'.$dir.'/'.$ff)) $fileNameList = $this->listFolderFiles($baseDir, $dir.'/'.$ff, $fileNameList);
         }
         
         return $fileNameList;

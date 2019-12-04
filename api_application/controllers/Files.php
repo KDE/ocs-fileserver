@@ -1247,12 +1247,14 @@ class Files extends BaseController
                         || $this->endsWith($rar_entries[$i]->getName(), '.gif')
                         || $this->endsWith($rar_entries[$i]->getName(), '.png'))
                     {
-                        $entry->extract(null, $comicPath . $rar_entries[$i]->getName());
+                        $entry->extract(null, $comicPath);
                     }
                 }
                 $rar->close();
             }
         }
+        
+        $this->log->log("Extract: Done", LOG_NOTICE);
         
         $this->response->setStatus(200);
         $this->response->setHeader('Access-Control-Allow-Headers', 'User-Agent');

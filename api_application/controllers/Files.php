@@ -1217,6 +1217,25 @@ class Files extends BaseController
         if ($this->endsWith($file->name, ".cbz"))
         {
             $zip = new ZipArchive();
+            
+            if ($zip->open($filePath . $file->name) === true) {
+                for($i = 0; $i < $zip->numFiles; $i++) {
+                    $filename = $zip->getNameIndex($i);
+                    $fileinfo = pathinfo($filename);
+                    
+                    if ($this->endsWith($zip->getNameIndex($i), '.jpg') 
+                        || $this->endsWith($zip->getNameIndex($i), '.gif')
+                        || $this->endsWith($zip->getNameIndex($i), '.png')
+                        || $this->endsWith($zip->getNameIndex($i), '.webp'))
+                    {
+                    
+                        copy("zip://".$filePath . $file->name."#".$filename, $comicPath.$fileinfo['basename']);
+                    }
+                }                  
+                $zip->close();                  
+            }
+            
+            /*
             if ($zip->open($filePath . $file->name))
             {
                 for ($i = 0; $i < $zip->numFiles; $i++)
@@ -1235,6 +1254,8 @@ class Files extends BaseController
                 }
                 $zip->close();
             }
+             * 
+             */
         }
         else if ($this->endsWith($file->name, ".cbr"))
         {
@@ -1295,9 +1316,6 @@ class Files extends BaseController
         
         $toc = array();
         
-        $toc = $this->listFolderFiles($comicPath, '', $toc);
-        
-        /*
         foreach (new DirectoryIterator($comicPath) as $fn) {
             
             $nameString = $fn->getFilename();
@@ -1309,8 +1327,6 @@ class Files extends BaseController
                 $toc[] = $nameString;
             }
         }
-         * 
-         */
         
         natcasesort($toc);
         $toc = array_values($toc);

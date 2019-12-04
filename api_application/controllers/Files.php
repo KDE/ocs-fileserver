@@ -1300,7 +1300,8 @@ class Files extends BaseController
             $nameString = $fn->getFilename();
             if ($this->endsWith($nameString, '.jpg')
                 || $this->endsWith($nameString, '.gif')
-                || $this->endsWith($nameString, '.png'))
+                || $this->endsWith($nameString, '.png')
+                || $this->endsWith($nameString, '.webp'))
             {
                 $toc[] = $nameString;
             }

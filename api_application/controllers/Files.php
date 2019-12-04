@@ -1373,6 +1373,9 @@ class Files extends BaseController
             fpassthru($page);
         }
         $this->log->log("Done", LOG_NOTICE);
+        
+        $this->_setResponseContent('success');
+        exit;
     }
     
     

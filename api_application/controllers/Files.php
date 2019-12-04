@@ -1344,7 +1344,7 @@ class Files extends BaseController
             }
             
             
-            if(is_dir($dir.'/'.$ff)) listFolderFiles($dir.'/'.$ff, $fileNameList);
+            if(is_dir($dir.'/'.$ff)) $this->listFolderFiles($dir.'/'.$ff, $fileNameList);
         }
     }
     

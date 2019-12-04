@@ -1277,7 +1277,7 @@ class Files extends BaseController
             throw new Flooer_Exception('Not found', LOG_NOTICE);
         }
         
-        $this->log->log("Start Extract cmic book (file: $file->id;)", LOG_NOTICE);
+        $this->log->log("Start get cmic book toc (file: $file->id;)", LOG_NOTICE);
             
 
         $collectionId = $file->collection_id;
@@ -1305,6 +1305,8 @@ class Files extends BaseController
         }
         natcasesort($toc);
         $toc = array_values($toc);
+        
+        $this->log->log("Done", LOG_NOTICE);
         
         $this->_setResponseContent(
             'success',
@@ -1370,6 +1372,7 @@ class Files extends BaseController
             header('Content-type: image/gif');
             fpassthru($page);
         }
+        $page->close();
     }
     
     

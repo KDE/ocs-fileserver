@@ -1309,7 +1309,7 @@ class Files extends BaseController
         
         $this->_setResponseContent(
             'success',
-            array('toc' => $toc)
+            array('files' => $toc)
         );
     }
     

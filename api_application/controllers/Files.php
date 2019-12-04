@@ -1337,7 +1337,7 @@ class Files extends BaseController
             throw new Flooer_Exception('Not found', LOG_NOTICE);
         }
         
-        $this->log->log("Start Extract cmic book (file: $file->id;)", LOG_NOTICE);
+        $this->log->log("Start show comic book page (file: $file->id;)", LOG_NOTICE);
             
 
         $collectionId = $file->collection_id;
@@ -1349,7 +1349,7 @@ class Files extends BaseController
         
         $comicPath = $this->appConfig->general['comicsDir'] . '/' . $collectionId . '/' . $file->id . '/';
         
-        $this->log->log("Comic-Path: $comicPath;)", LOG_NOTICE);
+        $this->log->log("Comic-Path: ".$comicPath.$filename, LOG_NOTICE);
         
         $page = fopen($comicPath.$filename, 'rb');
         
@@ -1373,6 +1373,8 @@ class Files extends BaseController
             fpassthru($page);
         }
         $page->close();
+        
+        $this->log->log("Done", LOG_NOTICE);
     }
     
     

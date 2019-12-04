@@ -1295,7 +1295,6 @@ class Files extends BaseController
         
         
         foreach (new DirectoryIterator($comicPath) as $fn) {
-            print $fn->getFilename();
             $nameString = $fn->getFilename();
             if ($this->endsWith($nameString, '.jpg')
                 || $this->endsWith($nameString, '.gif')

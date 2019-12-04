@@ -1297,13 +1297,62 @@ class Files extends BaseController
         
         
         foreach (new DirectoryIterator($comicPath) as $fn) {
-            $nameString = $fn->getFilename();
-            if ($this->endsWith($nameString, '.jpg')
-                || $this->endsWith($nameString, '.gif')
-                || $this->endsWith($nameString, '.png')
-                || $this->endsWith($nameString, '.webp'))
-            {
-                $toc[] = $nameString;
+            
+            if($fn->isDir()) {
+                
+                foreach (new DirectoryIterator($fn->getPath()) as $fn2) {
+            
+                    if($fn2->isDir()) {
+                        
+                        foreach (new DirectoryIterator($fn2->getPath()) as $fn3) {
+            
+                            if($fn3->isDir()) {
+                                foreach (new DirectoryIterator($fn3->getPath()) as $fn4) {
+                                    $nameString = $fn4->getFilename();
+                                    if ($this->endsWith($nameString, '.jpg')
+                                        || $this->endsWith($nameString, '.gif')
+                                        || $this->endsWith($nameString, '.png')
+                                        || $this->endsWith($nameString, '.webp'))
+                                    {
+                                        $toc[] = $nameString;
+                                    }
+                                }
+                            } else {
+
+                                $nameString = $fn3->getFilename();
+                                if ($this->endsWith($nameString, '.jpg')
+                                    || $this->endsWith($nameString, '.gif')
+                                    || $this->endsWith($nameString, '.png')
+                                    || $this->endsWith($nameString, '.webp'))
+                                {
+                                    $toc[] = $nameString;
+                                }
+                            }
+                        }
+                    } else {
+
+                        $nameString = $fn2->getFilename();
+                        if ($this->endsWith($nameString, '.jpg')
+                            || $this->endsWith($nameString, '.gif')
+                            || $this->endsWith($nameString, '.png')
+                            || $this->endsWith($nameString, '.webp'))
+                        {
+                            $toc[] = $nameString;
+                        }
+                    }
+                }
+
+                
+            } else {
+            
+                $nameString = $fn->getFilename();
+                if ($this->endsWith($nameString, '.jpg')
+                    || $this->endsWith($nameString, '.gif')
+                    || $this->endsWith($nameString, '.png')
+                    || $this->endsWith($nameString, '.webp'))
+                {
+                    $toc[] = $nameString;
+                }
             }
         }
         natcasesort($toc);

@@ -1256,10 +1256,59 @@ class Files extends BaseController
         
         $this->log->log("Extract: Done", LOG_NOTICE);
         
-        $this->response->setStatus(200);
-        $this->response->setHeader('Access-Control-Allow-Headers', 'User-Agent');
-        $this->response->send();
+        $this->_setResponseContent('success');
         exit;
+    }
+    
+    public function getToc() {
+        $id = null;
+        if (!empty($this->request->id)) {
+            $id = $this->request->id;
+        }
+
+        if ($id) {
+            $id = $this->models->files->getFileId($id);
+        }
+
+        $file = $this->models->files->$id;
+
+        if (!$file) {
+            $this->response->setStatus(404);
+            throw new Flooer_Exception('Not found', LOG_NOTICE);
+        }
+        
+        $this->log->log("Start Extract cmic book (file: $file->id;)", LOG_NOTICE);
+            
+
+        $collectionId = $file->collection_id;
+        
+        if(!$collectionId) {
+            $this->response->setStatus(404);
+            throw new Flooer_Exception('Collection not found', LOG_NOTICE);
+        }
+        
+        $comicPath = $this->appConfig->general['comicsDir'] . '/' . $collectionId . '/' . $file->id . '/';
+        
+        $this->log->log("Comic-Path: $comicPath;)", LOG_NOTICE);
+        
+        $toc = array();
+        
+        
+        foreach (new DirectoryIterator($comicPath) as $fn) {
+            print $fn->getFilename();
+            $nameString = $fn->getFilename();
+            if (endsWith($nameString, '.jpg')
+                || endsWith($nameString, '.gif')
+                || endsWith($nameString, '.png'))
+            {
+                $toc[] = $nameString;
+            }
+        }
+        natcasesort($toc);
+        $toc = array_values($toc);
+
+        
+        $this->_setResponseContent('success', $toc);
     }
     
     

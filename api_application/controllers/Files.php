@@ -1313,6 +1313,66 @@ class Files extends BaseController
     }
     
     
+    public function getPage() {
+        $id = null;
+        if (!empty($this->request->id)) {
+            $id = $this->request->id;
+        }
+        
+        $filename = null;
+        if (!empty($this->request->filename)) {
+            $filename = $this->request->filename;
+        }
+
+        if ($id) {
+            $id = $this->models->files->getFileId($id);
+        }
+
+        $file = $this->models->files->$id;
+
+        if (!$file) {
+            $this->response->setStatus(404);
+            throw new Flooer_Exception('Not found', LOG_NOTICE);
+        }
+        
+        $this->log->log("Start Extract cmic book (file: $file->id;)", LOG_NOTICE);
+            
+
+        $collectionId = $file->collection_id;
+        
+        if(!$collectionId) {
+            $this->response->setStatus(404);
+            throw new Flooer_Exception('Collection not found', LOG_NOTICE);
+        }
+        
+        $comicPath = $this->appConfig->general['comicsDir'] . '/' . $collectionId . '/' . $file->id . '/';
+        
+        $this->log->log("Comic-Path: $comicPath;)", LOG_NOTICE);
+        
+        $page = fopen($comicPath.$filename, 'rb');
+        
+        if ($this->endsWith($filename, ".jpg"))
+        {
+            //file_put_contents($saveName,$zip->getFromIndex(0));
+            //imagejpeg($zip->getStream($page), "cache/test.jpg", 75);
+            header('Content-type: image/jpeg');
+            fpassthru($page);
+        }
+        else if ($this->endsWith($filename, ".png"))
+        {
+            //imagepng(($zip->getStream($page), $saveName);
+            header('Content-type: image/png');
+            fpassthru($page);
+        }
+        else if ($this->endsWith($filename, ".gif"))
+        {
+            //imagegif($zip->getStream($page), $saveName);
+            header('Content-type: image/gif');
+            fpassthru($page);
+        }
+    }
+    
+    
     private function endsWith($haystack, $needle)
     {
         return $needle === "" || substr(strtolower($haystack), -strlen($needle)) === strtolower($needle);

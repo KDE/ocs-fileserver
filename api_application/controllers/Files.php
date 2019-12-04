@@ -1295,7 +1295,7 @@ class Files extends BaseController
         
         $toc = array();
         
-        $this->listFolderFiles($comicPath, $toc);
+        $toc = $this->listFolderFiles($comicPath, $toc);
         
         /*
         foreach (new DirectoryIterator($comicPath) as $fn) {
@@ -1346,6 +1346,8 @@ class Files extends BaseController
             
             if(is_dir($dir.'/'.$ff)) $this->listFolderFiles($dir.'/'.$ff, $fileNameList);
         }
+        
+        return $fileNameList;
     }
     
     

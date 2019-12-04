@@ -1295,66 +1295,23 @@ class Files extends BaseController
         
         $toc = array();
         
+        $toc = $this->listFolderFiles($comicPath, $toc);
         
+        /*
         foreach (new DirectoryIterator($comicPath) as $fn) {
             
-            if($fn->isDir()) {
-                
-                foreach (new DirectoryIterator($fn->getPath()) as $fn2) {
-            
-                    if($fn2->isDir()) {
-                        
-                        foreach (new DirectoryIterator($fn2->getPath()) as $fn3) {
-            
-                            if($fn3->isDir()) {
-                                foreach (new DirectoryIterator($fn3->getPath()) as $fn4) {
-                                    $nameString = $fn4->getFilename();
-                                    if ($this->endsWith($nameString, '.jpg')
-                                        || $this->endsWith($nameString, '.gif')
-                                        || $this->endsWith($nameString, '.png')
-                                        || $this->endsWith($nameString, '.webp'))
-                                    {
-                                        $toc[] = $nameString;
-                                    }
-                                }
-                            } else {
-
-                                $nameString = $fn3->getFilename();
-                                if ($this->endsWith($nameString, '.jpg')
-                                    || $this->endsWith($nameString, '.gif')
-                                    || $this->endsWith($nameString, '.png')
-                                    || $this->endsWith($nameString, '.webp'))
-                                {
-                                    $toc[] = $nameString;
-                                }
-                            }
-                        }
-                    } else {
-
-                        $nameString = $fn2->getFilename();
-                        if ($this->endsWith($nameString, '.jpg')
-                            || $this->endsWith($nameString, '.gif')
-                            || $this->endsWith($nameString, '.png')
-                            || $this->endsWith($nameString, '.webp'))
-                        {
-                            $toc[] = $nameString;
-                        }
-                    }
-                }
-
-                
-            } else {
-            
-                $nameString = $fn->getFilename();
-                if ($this->endsWith($nameString, '.jpg')
-                    || $this->endsWith($nameString, '.gif')
-                    || $this->endsWith($nameString, '.png')
-                    || $this->endsWith($nameString, '.webp'))
-                {
-                    $toc[] = $nameString;
-                }
+            $nameString = $fn->getFilename();
+            if ($this->endsWith($nameString, '.jpg')
+                || $this->endsWith($nameString, '.gif')
+                || $this->endsWith($nameString, '.png')
+                || $this->endsWith($nameString, '.webp'))
+            {
+                $toc[] = $nameString;
             }
         }
+         * 
+         */
+        
         natcasesort($toc);
         $toc = array_values($toc);
         
@@ -1364,6 +1321,31 @@ class Files extends BaseController
             'success',
             array('files' => $toc)
         );
+    }
+    
+    function listFolderFiles($dir, $fileNameList){
+        $ffs = scandir($dir);
+        
+        unset($ffs[array_search('.', $ffs, true)]);
+        unset($ffs[array_search('..', $ffs, true)]);
+
+        // prevent empty ordered elements
+        if (count($ffs) < 1)
+            return;
+
+        foreach($ffs as $ff){
+            $nameString = $ff;
+            if ($this->endsWith($nameString, '.jpg')
+                || $this->endsWith($nameString, '.gif')
+                || $this->endsWith($nameString, '.png')
+                || $this->endsWith($nameString, '.webp'))
+            {
+                $fileNameList[] = $ff;
+            }
+            
+            
+            if(is_dir($dir.'/'.$ff)) listFolderFiles($dir.'/'.$ff, $fileNameList);
+        }
     }
     
     

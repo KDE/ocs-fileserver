@@ -1223,16 +1223,18 @@ class Files extends BaseController
                     $filename = $zip->getNameIndex($i);
                     $fileinfo = pathinfo($filename);
                     
-                    $this->log->log("Comic-Page-Path: ".$filename, LOG_NOTICE);
-                    $this->log->log("Comic-Page-Path2: ".$fileinfo['dirname'], LOG_NOTICE);
+                    $folderName = $fileinfo['dirname'];
+                    $folderName = urlencode($folderName);
                     
+                    $this->log->log("Comic-Page-Path: ".$filename, LOG_NOTICE);
+
                     if ($this->endsWith($zip->getNameIndex($i), '.jpg') 
                         || $this->endsWith($zip->getNameIndex($i), '.gif')
                         || $this->endsWith($zip->getNameIndex($i), '.png')
                         || $this->endsWith($zip->getNameIndex($i), '.webp'))
                     {
                     
-                        copy("zip://".$filePath . $file->name."#".$filename, $comicPath.$fileinfo['basename']);
+                        copy("zip://".$filePath . $file->name."#".$filename, $comicPath.$folderName.$fileinfo['basename']);
                     }
                 }                  
                 $zip->close();                  

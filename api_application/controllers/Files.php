@@ -1372,8 +1372,6 @@ class Files extends BaseController
             header('Content-type: image/gif');
             fpassthru($page);
         }
-        $page->close();
-        
         $this->log->log("Done", LOG_NOTICE);
     }
     

@@ -1223,7 +1223,8 @@ class Files extends BaseController
                 {
                     if ($this->endsWith($zip->getNameIndex($i), '.jpg') 
                         || $this->endsWith($zip->getNameIndex($i), '.gif')
-                        || $this->endsWith($zip->getNameIndex($i), '.png'))
+                        || $this->endsWith($zip->getNameIndex($i), '.png')
+                        || $this->endsWith($zip->getNameIndex($i), '.webp'))
                     {
                         
                         $this->log->log("Extract: $zip->getNameIndex($i)", LOG_NOTICE);
@@ -1245,7 +1246,8 @@ class Files extends BaseController
                 {
                     if ($this->endsWith($rar_entries[$i]->getName(), '.jpg') 
                         || $this->endsWith($rar_entries[$i]->getName(), '.gif')
-                        || $this->endsWith($rar_entries[$i]->getName(), '.png'))
+                        || $this->endsWith($rar_entries[$i]->getName(), '.png')
+                        || $this->endsWith($rar_entries[$i]->getName(), '.webp'))
                     {
                         $entry->extract(null, $comicPath);
                     }
@@ -1370,6 +1372,12 @@ class Files extends BaseController
         {
             //imagegif($zip->getStream($page), $saveName);
             header('Content-type: image/gif');
+            fpassthru($page);
+        }
+        else if ($this->endsWith($filename, ".webp"))
+        {
+            //imagegif($zip->getStream($page), $saveName);
+            header('Content-type: image/webp');
             fpassthru($page);
         }
         $this->log->log("Done", LOG_NOTICE);

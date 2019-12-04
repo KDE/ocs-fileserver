@@ -1224,6 +1224,9 @@ class Files extends BaseController
                     $fileinfo = pathinfo($filename);
                     
                     $folderName = $fileinfo['dirname'];
+                    if($folderName == '.') {
+                        $folderName = '';
+                    }
                     $folderName = urlencode($folderName);
                     
                     $this->log->log("Comic-Page-Path: ".$filename, LOG_NOTICE);

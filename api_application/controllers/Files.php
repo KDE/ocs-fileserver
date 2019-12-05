@@ -1263,14 +1263,15 @@ class Files extends BaseController
                 || $this->endsWith($nameString, '.png')
                 || $this->endsWith($nameString, '.webp'))
             {
+                if($nameString != $this->normalizeString($nameString)) {
+                    $cmd = 'mv '
+                            .'\''.$comicPath . $nameString.'\''
+                            .' '
+                            .'\''.$comicPath . $this->normalizeString($nameString).'\'';
+                    //$this->log->log("Rename file: ".$cmd, LOG_NOTICE);
 
-                $cmd = 'mv '
-                        .'\''.$comicPath . $nameString.'\''
-                        .' '
-                        .'\''.$comicPath . $this->normalizeString($nameString).'\'';
-                //$this->log->log("Rename file: ".$cmd, LOG_NOTICE);
-
-                exec($cmd);
+                    exec($cmd);
+                }
             }
         }
         

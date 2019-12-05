@@ -1261,6 +1261,9 @@ class Files extends BaseController
                     || $this->endsWith($nameString, '.png')
                     || $this->endsWith($nameString, '.webp'))
                 {
+                    
+                    $this->log->log("Rename file from ".$comicPath . $nameString.' to '.$comicPath . $this->normalizeString($nameString), LOG_NOTICE);
+                    
                     exec('mv '
                             .$comicPath . $nameString
                             .' '

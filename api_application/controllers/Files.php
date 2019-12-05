@@ -1245,7 +1245,7 @@ class Files extends BaseController
         }
         else if ($this->endsWith($file->name, ".cbr"))
         {
-            
+            /*
             $rar_file = rar_open($filePath . $file->name);
             $list = rar_list($rar_file);
             foreach($list as $file) {
@@ -1260,8 +1260,7 @@ class Files extends BaseController
                 
             }
             rar_close($rar_file);
-            
-            /*
+            */
             $rar = RarArchive::open($filePath . $file->name);
             if ($rar !== false)
             {
@@ -1278,8 +1277,6 @@ class Files extends BaseController
                 }
                 $rar->close();
             }
-             * 
-             */
         }
         
         $this->log->log("Extract: Done", LOG_NOTICE);

@@ -1229,7 +1229,7 @@ class Files extends BaseController
                     }
                     $folderName = $this->normalizeString($folderName);
                     
-                    $this->log->log("Comic-Page-Path: ".$filename, LOG_NOTICE);
+                    //$this->log->log("Comic-Page-Path: ".$filename, LOG_NOTICE);
 
                     if ($this->endsWith($zip->getNameIndex($i), '.jpg') 
                         || $this->endsWith($zip->getNameIndex($i), '.gif')
@@ -1252,61 +1252,26 @@ class Files extends BaseController
                     .$comicPath
             );
             
-            //normaize file names
-            foreach (new DirectoryIterator($comicPath) as $fn) {
-            
-                $nameString = $fn->getFilename();
-                if ($this->endsWith($nameString, '.jpg')
-                    || $this->endsWith($nameString, '.gif')
-                    || $this->endsWith($nameString, '.png')
-                    || $this->endsWith($nameString, '.webp'))
-                {
-                    
-                    $cmd = 'mv '
-                            .'\''.$comicPath . $nameString.'\''
-                            .' '
-                            .'\''.$comicPath . $this->normalizeString($nameString).'\'';
-                    $this->log->log("Rename file: ".$cmd, LOG_NOTICE);
-                    
-                    exec($cmd);
-                }
-            }
-            
-            /*
-            $rar_file = rar_open($filePath . $file->name);
-            $list = rar_list($rar_file);
-            foreach($list as $file) {
-                $entry = rar_entry_get($rar_file, $file);
-                if ($this->endsWith($rar_entries[$i]->getName(), '.jpg') 
-                    || $this->endsWith($rar_entries[$i]->getName(), '.gif')
-                    || $this->endsWith($rar_entries[$i]->getName(), '.png')
-                    || $this->endsWith($rar_entries[$i]->getName(), '.webp'))
-                {
-                    $entry->extract($comicPath); // extract to the current dir
-                }
-                
-            }
-            rar_close($rar_file);
-            */
-            /*
-            $rar = RarArchive::open($filePath . $file->name);
-            if ($rar !== false)
+        }
+        
+        //normaize file names
+        foreach (new DirectoryIterator($comicPath) as $fn) {
+
+            $nameString = $fn->getFilename();
+            if ($this->endsWith($nameString, '.jpg')
+                || $this->endsWith($nameString, '.gif')
+                || $this->endsWith($nameString, '.png')
+                || $this->endsWith($nameString, '.webp'))
             {
-                $rar_entries = $rar->getEntries();
-                for ($i = 0; $i < count($rar_entries); $i++)
-                {
-                    if ($this->endsWith($rar_entries[$i]->getName(), '.jpg') 
-                        || $this->endsWith($rar_entries[$i]->getName(), '.gif')
-                        || $this->endsWith($rar_entries[$i]->getName(), '.png')
-                        || $this->endsWith($rar_entries[$i]->getName(), '.webp'))
-                    {
-                        $entry->extract(null, $comicPath);
-                    }
-                }
-                $rar->close();
+
+                $cmd = 'mv '
+                        .'\''.$comicPath . $nameString.'\''
+                        .' '
+                        .'\''.$comicPath . $this->normalizeString($nameString).'\'';
+                //$this->log->log("Rename file: ".$cmd, LOG_NOTICE);
+
+                exec($cmd);
             }
-             * 
-             */
         }
         
         $this->log->log("Extract: Done", LOG_NOTICE);

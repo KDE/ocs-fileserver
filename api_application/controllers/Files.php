@@ -1339,7 +1339,7 @@ class Files extends BaseController
                 || $this->endsWith($nameString, '.png')
                 || $this->endsWith($nameString, '.webp'))
             {
-                $toc[] = $this->normalizeString($nameString);
+                $toc[] = $this->$nameString;
             }
         }
         
@@ -1392,7 +1392,6 @@ class Files extends BaseController
         if (!empty($this->request->filename)) {
             $filename = $this->request->filename;
         }
-        $filename = $this->normalizeString($filename);
 
         if ($id) {
             $id = $this->models->files->getFileId($id);

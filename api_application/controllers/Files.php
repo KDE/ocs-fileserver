@@ -1242,31 +1242,26 @@ class Files extends BaseController
                 }                  
                 $zip->close();                  
             }
-            
-            /*
-            if ($zip->open($filePath . $file->name))
-            {
-                for ($i = 0; $i < $zip->numFiles; $i++)
-                {
-                    if ($this->endsWith($zip->getNameIndex($i), '.jpg') 
-                        || $this->endsWith($zip->getNameIndex($i), '.gif')
-                        || $this->endsWith($zip->getNameIndex($i), '.png')
-                        || $this->endsWith($zip->getNameIndex($i), '.webp'))
-                    {
-                        
-                        $this->log->log("Extract: $zip->getNameIndex($i)", LOG_NOTICE);
-                        
-                        $zip->extractTo($comicPath, array($zip->getNameIndex($i)));
-                        
-                    }
-                }
-                $zip->close();
-            }
-             * 
-             */
         }
         else if ($this->endsWith($file->name, ".cbr"))
         {
+            
+            $rar_file = rar_open($filePath . $file->name);
+            $list = rar_list($rar_file);
+            foreach($list as $file) {
+                $entry = rar_entry_get($rar_file, $file);
+                if ($this->endsWith($rar_entries[$i]->getName(), '.jpg') 
+                    || $this->endsWith($rar_entries[$i]->getName(), '.gif')
+                    || $this->endsWith($rar_entries[$i]->getName(), '.png')
+                    || $this->endsWith($rar_entries[$i]->getName(), '.webp'))
+                {
+                    $entry->extract($comicPath); // extract to the current dir
+                }
+                
+            }
+            rar_close($rar_file);
+            
+            /*
             $rar = RarArchive::open($filePath . $file->name);
             if ($rar !== false)
             {
@@ -1283,6 +1278,8 @@ class Files extends BaseController
                 }
                 $rar->close();
             }
+             * 
+             */
         }
         
         $this->log->log("Extract: Done", LOG_NOTICE);

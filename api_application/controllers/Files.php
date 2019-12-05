@@ -1253,7 +1253,21 @@ class Files extends BaseController
             );
             
             //normaize file names
+            foreach (new DirectoryIterator($comicPath) as $fn) {
             
+                $nameString = $fn->getFilename();
+                if ($this->endsWith($nameString, '.jpg')
+                    || $this->endsWith($nameString, '.gif')
+                    || $this->endsWith($nameString, '.png')
+                    || $this->endsWith($nameString, '.webp'))
+                {
+                    exec('mv '
+                            .$comicPath . $nameString
+                            .' '
+                            .$comicPath . $this->normalizeString($nameString)
+                    );
+                }
+            }
             
             /*
             $rar_file = rar_open($filePath . $file->name);

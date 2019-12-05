@@ -1252,6 +1252,9 @@ class Files extends BaseController
                     .$comicPath
             );
             
+            //normaize file names
+            
+            
             /*
             $rar_file = rar_open($filePath . $file->name);
             $list = rar_list($rar_file);
@@ -1336,7 +1339,7 @@ class Files extends BaseController
                 || $this->endsWith($nameString, '.png')
                 || $this->endsWith($nameString, '.webp'))
             {
-                $toc[] = $nameString;
+                $toc[] = $this->normalizeString($nameString);
             }
         }
         
@@ -1389,6 +1392,7 @@ class Files extends BaseController
         if (!empty($this->request->filename)) {
             $filename = $this->request->filename;
         }
+        $filename = $this->normalizeString($filename);
 
         if ($id) {
             $id = $this->models->files->getFileId($id);

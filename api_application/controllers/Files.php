@@ -1312,7 +1312,7 @@ class Files extends BaseController
         
         $this->log->log("Comic-Path: $comicPath;)", LOG_NOTICE);
         
-        $tocFile = $comicPath.'toc.txt';
+        $tocFile = $comicPath.'/toc.txt';
         
         if (file_exists($tocFile)) {
             //Retrieve the data from our text file.

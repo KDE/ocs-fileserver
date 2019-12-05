@@ -1312,22 +1312,40 @@ class Files extends BaseController
         
         $this->log->log("Comic-Path: $comicPath;)", LOG_NOTICE);
         
-        $toc = array();
+        $tocFile = $comicPath.'toc.txt';
         
-        foreach (new DirectoryIterator($comicPath) as $fn) {
-            
-            $nameString = $fn->getFilename();
-            if ($this->endsWith($nameString, '.jpg')
-                || $this->endsWith($nameString, '.gif')
-                || $this->endsWith($nameString, '.png')
-                || $this->endsWith($nameString, '.webp'))
-            {
-                $toc[] = $nameString;
+        if (file_exists($tocFile)) {
+            //Retrieve the data from our text file.
+            $fileContents = file_get_contents($tocFile);
+
+            //Convert the JSON string back into an array.
+            $toc = json_decode($fileContents, true);
+        } else {
+            $toc = array();
+        
+            foreach (new DirectoryIterator($comicPath) as $fn) {
+
+                $nameString = $fn->getFilename();
+                if ($this->endsWith($nameString, '.jpg')
+                    || $this->endsWith($nameString, '.gif')
+                    || $this->endsWith($nameString, '.png')
+                    || $this->endsWith($nameString, '.webp'))
+                {
+                    $toc[] = $nameString;
+                }
             }
+
+            natcasesort($toc);
+            $toc = array_values($toc);
+
+            
+            //Encode the array into a JSON string.
+            $encodedString = json_encode($toc);
+
+            //Save the JSON string to a text file.
+            file_put_contents($tocFile, $encodedString);
         }
         
-        natcasesort($toc);
-        $toc = array_values($toc);
         
         $this->log->log("Done, found ".count($toc)." pages", LOG_NOTICE);
         

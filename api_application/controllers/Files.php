@@ -1320,6 +1320,8 @@ class Files extends BaseController
 
             //Convert the JSON string back into an array.
             $toc = json_decode($fileContents, true);
+            
+            $this->log->log("Read from Toc-File: $tocFile", LOG_NOTICE);
         } else {
             $toc = array();
         
@@ -1344,6 +1346,8 @@ class Files extends BaseController
 
             //Save the JSON string to a text file.
             file_put_contents($tocFile, $encodedString);
+            
+            $this->log->log("Read from Folder", LOG_NOTICE);
         }
         
         

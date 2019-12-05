@@ -1339,7 +1339,7 @@ class Files extends BaseController
                 || $this->endsWith($nameString, '.png')
                 || $this->endsWith($nameString, '.webp'))
             {
-                $toc[] = $this->$nameString;
+                $toc[] = $nameString;
             }
         }
         

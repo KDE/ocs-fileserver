@@ -1620,7 +1620,7 @@ class Files extends BaseController
             if(!$page) {
                 $this->log->log("Page Item not found:" .$pagePath, LOG_NOTICE);
             } else {
-                //header('Content-type: text/html');
+                header('Content-type: '.mime_content_type($pagePath));
                 fpassthru($page);
             }
         } 

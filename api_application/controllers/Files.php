@@ -1522,6 +1522,9 @@ class Files extends BaseController
             if(!$page) {
                 $this->log->log("Page not found:" .$pagePath, LOG_NOTICE);
             } else {
+                
+                //replace href links with links to /api/files/pageitem?FILE_ID&filename=FILENAME
+                
                 header('Content-type: text/html');
                 fpassthru($page);
             }
@@ -1566,6 +1569,62 @@ class Files extends BaseController
 
             $this->_setResponseContent('success');
         }
+        exit;
+    }
+    
+    
+    public function getPageitem() {
+        $id = null;
+        if (!empty($this->request->id)) {
+            $id = $this->request->id;
+        }
+        
+        $filename = null;
+        if (!empty($this->request->filename)) {
+            $filename = $this->request->filename;
+        }
+
+        if ($id) {
+            $id = $this->models->files->getFileId($id);
+        }
+
+        $file = $this->models->files->$id;
+
+        if (!$file) {
+            $this->response->setStatus(404);
+            throw new Flooer_Exception('Not found', LOG_NOTICE);
+        }
+        
+        $this->log->log("Start show book page (file: $file->id;)", LOG_NOTICE);
+            
+
+        $collectionId = $file->collection_id;
+        
+        if(!$collectionId) {
+            $this->response->setStatus(404);
+            throw new Flooer_Exception('Collection not found', LOG_NOTICE);
+        }
+        
+        
+        //ebook or epub?
+        if($this->endsWith($file->name, '.epub')) {
+            $ebook = new Readepub();
+            $comicPath = $this->appConfig->general['ebooksDir'] . '/' . $collectionId . '/' . $file->id . '/';
+            $ebook->init($comicPath);
+            
+            //$this->log->log("Eboock Object:" . print_r($ebook, true), LOG_NOTICE);
+            $pagePath = $comicPath.$ebook->getOPFDir().'/'.$filename;
+            
+            $page = fopen($pagePath, 'rb');
+            
+            if(!$page) {
+                $this->log->log("Page Item not found:" .$pagePath, LOG_NOTICE);
+            } else {
+                //header('Content-type: text/html');
+                fpassthru($page);
+            }
+        } 
+        
         exit;
     }
     

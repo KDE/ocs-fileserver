@@ -56,7 +56,7 @@ class Readepub {
         $this->_getSpine();
         $this->_getTOC();
         
-        //$this->debug();
+        $this->debug();
     }
     
     /**

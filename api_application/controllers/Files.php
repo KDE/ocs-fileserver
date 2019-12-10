@@ -1497,7 +1497,7 @@ class Files extends BaseController
             throw new Flooer_Exception('Not found', LOG_NOTICE);
         }
         
-        $this->log->log("Start show comic book page (file: $file->id;)", LOG_NOTICE);
+        $this->log->log("Start show book page (file: $file->id;)", LOG_NOTICE);
             
 
         $collectionId = $file->collection_id;
@@ -1507,40 +1507,57 @@ class Files extends BaseController
             throw new Flooer_Exception('Collection not found', LOG_NOTICE);
         }
         
-        $comicPath = $this->appConfig->general['comicsDir'] . '/' . $collectionId . '/' . $file->id . '/';
         
-        $this->log->log("Comic-Path: ".$comicPath.$filename, LOG_NOTICE);
+        //ebook or epub?
+        if($this->endsWith($file->name, '.epub')) {
+            $ebook = new Readepub();
+            $comicPath = $this->appConfig->general['ebooksDir'] . '/' . $collectionId . '/' . $file->id;
+            $ebook->init($comicPath);
+            
+            //$this->log->log("Eboock Object:" . print_r($ebook, true), LOG_NOTICE);
+            
+            $page = $ebook->getDcItem($filename);
+            header('Content-type: text/html');
+            fpassthru($page);
+            
+        } else {
         
-        $page = fopen($comicPath.$filename, 'rb');
         
-        if ($this->endsWith($filename, ".jpg"))
-        {
-            //file_put_contents($saveName,$zip->getFromIndex(0));
-            //imagejpeg($zip->getStream($page), "cache/test.jpg", 75);
-            header('Content-type: image/jpeg');
-            fpassthru($page);
+            $comicPath = $this->appConfig->general['comicsDir'] . '/' . $collectionId . '/' . $file->id . '/';
+
+            $this->log->log("Comic-Path: ".$comicPath.$filename, LOG_NOTICE);
+
+            $page = fopen($comicPath.$filename, 'rb');
+
+            if ($this->endsWith($filename, ".jpg"))
+            {
+                //file_put_contents($saveName,$zip->getFromIndex(0));
+                //imagejpeg($zip->getStream($page), "cache/test.jpg", 75);
+                header('Content-type: image/jpeg');
+                fpassthru($page);
+            }
+            else if ($this->endsWith($filename, ".png"))
+            {
+                //imagepng(($zip->getStream($page), $saveName);
+                header('Content-type: image/png');
+                fpassthru($page);
+            }
+            else if ($this->endsWith($filename, ".gif"))
+            {
+                //imagegif($zip->getStream($page), $saveName);
+                header('Content-type: image/gif');
+                fpassthru($page);
+            }
+            else if ($this->endsWith($filename, ".webp"))
+            {
+                //imagegif($zip->getStream($page), $saveName);
+                header('Content-type: image/webp');
+                fpassthru($page);
+            }
+            $this->log->log("Done", LOG_NOTICE);
+
+            $this->_setResponseContent('success');
         }
-        else if ($this->endsWith($filename, ".png"))
-        {
-            //imagepng(($zip->getStream($page), $saveName);
-            header('Content-type: image/png');
-            fpassthru($page);
-        }
-        else if ($this->endsWith($filename, ".gif"))
-        {
-            //imagegif($zip->getStream($page), $saveName);
-            header('Content-type: image/gif');
-            fpassthru($page);
-        }
-        else if ($this->endsWith($filename, ".webp"))
-        {
-            //imagegif($zip->getStream($page), $saveName);
-            header('Content-type: image/webp');
-            fpassthru($page);
-        }
-        $this->log->log("Done", LOG_NOTICE);
-        
-        $this->_setResponseContent('success');
         exit;
     }
     

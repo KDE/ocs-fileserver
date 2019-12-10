@@ -1526,18 +1526,18 @@ class Files extends BaseController
                 $serverUri = $this->appConfig->general['ebookUri'].'/api/files/pageitem?id='.$file->id.'&filename='.$filename.'/';
                 
                 //replace href links with links to /api/files/pageitem?FILE_ID&filename=FILENAME
-                $result = "";
+                /*$result = "";
                 # read the contents in
                 $file_contents = fgets($page, filesize($pagePath));
                 
                 while ($file_contents) {
                     # apply the translation
                     $result .= str_replace(" href='", " href='".$serverUri, $file_contents);
-                }
+                }*/
                 
                 header('Content-type: text/html');
-                //fpassthru($file_contents);
-                print_r($result);
+                fpassthru($page);
+                //print_r($result);
             }
             
             

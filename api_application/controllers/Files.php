@@ -1523,10 +1523,17 @@ class Files extends BaseController
                 $this->log->log("Page not found:" .$pagePath, LOG_NOTICE);
             } else {
                 
+                $serverUri = $this->appConfig->general['ebookUri'].'/api/files/pageitem?id='.$file->id.'&filename='.$filename.'/';
+                
                 //replace href links with links to /api/files/pageitem?FILE_ID&filename=FILENAME
+                # read the contents in
+                $file_contents = fgets($page, filesize($pagePath));
+                # apply the translation
+                $file_contents = preg_replace(" href='", " href='".$serverUri, $file_contents);
+                
                 
                 header('Content-type: text/html');
-                fpassthru($page);
+                fpassthru($file_contents);
             }
             
             

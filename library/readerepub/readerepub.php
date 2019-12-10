@@ -130,7 +130,14 @@ class Readepub {
     private function _getOPF() {
         $opfContents = simplexml_load_file($this->ebookDir . '/META-INF/container.xml');
         $opfAttributes = $opfContents->rootfiles->rootfile->attributes();
-        $this->opfFile = (string) $opfAttributes[0]; // Typecasting to string to get rid of the XML object
+        
+        foreach($opfAttributes as $key => $value) {
+            if($key == "full-path") {
+                $this->opfFile = (string) $value;
+            }
+        }
+        
+        //$this->opfFile = (string) $opfAttributes[0]; // Typecasting to string to get rid of the XML object
         
         // Set also the dir to the OPF (and ePub files)
         $opfDirParts = explode('/',$this->opfFile);

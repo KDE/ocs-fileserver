@@ -1536,7 +1536,7 @@ class Files extends BaseController
                 }*/
                 
                 header('Content-type: text/html');
-                header('Access-Control-Allow-Origin: https://www.pling.cc');
+                header('Access-Control-Allow-Origin: *');
                 fpassthru($page);
                 //print_r($result);
             }

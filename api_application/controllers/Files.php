@@ -1537,7 +1537,7 @@ class Files extends BaseController
                 
                 header('Content-type: text/html');
                 //fpassthru($file_contents);
-                print_r($file_contents);
+                print_r($result);
             }
             
             

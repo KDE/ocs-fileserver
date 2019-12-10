@@ -22,6 +22,7 @@
  **/
 
 require_once '../../library/Flooer/Application.php';
+require_once '../../library/readerepub/readerepub.php';
 
 $application = new Flooer_Application(array(
     'baseDir' => '../../api_application',

@@ -1281,6 +1281,75 @@ class Files extends BaseController
         exit;
     }
     
+    
+    public function getExtractebook() {
+        $id = null;
+        if (!empty($this->request->id)) {
+            $id = $this->request->id;
+        }
+
+        if ($id) {
+            $id = $this->models->files->getFileId($id);
+        }
+
+        $file = $this->models->files->$id;
+
+        if (!$file) {
+            $this->response->setStatus(404);
+            throw new Flooer_Exception('Not found', LOG_NOTICE);
+        }
+        
+        $this->log->log("Start Extract ebook (file: $file->id;)", LOG_NOTICE);
+            
+
+        $collectionId = $file->collection_id;
+        
+        if(!$collectionId) {
+            $this->response->setStatus(404);
+            throw new Flooer_Exception('Collection not found', LOG_NOTICE);
+        }
+        
+        $testPath = $this->appConfig->general['ebooksDir'] . '/' . $collectionId;
+        
+        $this->log->log("Create folders (collction: $testPath;)", LOG_NOTICE);
+        
+        if (!is_dir($this->appConfig->general['ebooksDir'] . '/' . $collectionId)
+            && !mkdir($this->appConfig->general['ebooksDir'] . '/' . $collectionId, 0777)
+        ) {
+            $this->response->setStatus(500);
+            throw new Flooer_Exception('Failed to create collection folder', LOG_ALERT);
+        }
+        
+        if (!is_dir($this->appConfig->general['ebooksDir'] . '/' . $collectionId . '/' . $file->id)
+            && !mkdir($this->appConfig->general['ebooksDir'] . '/' . $collectionId . '/' . $file->id)
+        ) {
+            $this->response->setStatus(500);
+            throw new Flooer_Exception('Failed to create ebooks folder', LOG_ALERT);
+        }
+        
+        $filePath = $this->appConfig->general['filesDir'] . '/' . $collectionId . '/';
+        
+        $ebookPath = $this->appConfig->general['ebooksDir'] . '/' . $collectionId . '/' . $file->id . '/';
+        
+        $this->log->log("Ebook-Path: $ebookPath;)", LOG_NOTICE);
+        
+        
+        if ($this->endsWith($file->name, ".epub"))
+        {
+            $zip = new ZipArchive();
+            
+            if ($zip->open($filePath . $file->name) === true) {
+                $zip->extractTo($ebookPath);
+                $zip->close();                  
+            }
+        }
+        
+        $this->log->log("Extract: Done", LOG_NOTICE);
+        
+        $this->_setResponseContent('success');
+        exit;
+    }
+    
     public function getToc() {
         $id = null;
         if (!empty($this->request->id)) {
@@ -1308,56 +1377,73 @@ class Files extends BaseController
             throw new Flooer_Exception('Collection not found', LOG_NOTICE);
         }
         
-        $comicPath = $this->appConfig->general['comicsDir'] . '/' . $collectionId . '/' . $file->id;
+        $toc = array();
         
-        $this->log->log("Comic-Path: $comicPath;)", LOG_NOTICE);
         
-        $tocFile = $comicPath.'/toc.txt';
-        
-        if (file_exists($tocFile)) {
-            //Retrieve the data from our text file.
-            $fileContents = file_get_contents($tocFile);
-
-            //Convert the JSON string back into an array.
-            $toc = json_decode($fileContents, true);
+        //ebook or epub?
+        if($this->endsWith($file->name, '.epub')) {
+            $ebook = new Readepub();
+            $comicPath = $this->appConfig->general['ebooksDir'] . '/' . $collectionId . '/' . $file->id;
+            $ebook->init($comicPath);
             
-            $this->log->log("Read from Toc-File: $tocFile", LOG_NOTICE);
+            $toc = $ebook->getTOC();
+            
         } else {
-            $toc = array();
+            $comicPath = $this->appConfig->general['comicsDir'] . '/' . $collectionId . '/' . $file->id;
         
-            foreach (new DirectoryIterator($comicPath) as $fn) {
+            $this->log->log("Comic-Path: $comicPath;)", LOG_NOTICE);
 
-                $nameString = $fn->getFilename();
-                if ($this->endsWith($nameString, '.jpg')
-                    || $this->endsWith($nameString, '.gif')
-                    || $this->endsWith($nameString, '.png')
-                    || $this->endsWith($nameString, '.webp'))
-                {
-                    $toc[] = $nameString;
+            $tocFile = $comicPath.'/toc.txt';
+
+            if (file_exists($tocFile)) {
+                //Retrieve the data from our text file.
+                $fileContents = file_get_contents($tocFile);
+
+                //Convert the JSON string back into an array.
+                $toc = json_decode($fileContents, true);
+
+                $this->log->log("Read from Toc-File: $tocFile", LOG_NOTICE);
+            } else {
+                $toc = array();
+
+                foreach (new DirectoryIterator($comicPath) as $fn) {
+
+                    $nameString = $fn->getFilename();
+                    if ($this->endsWith($nameString, '.jpg')
+                        || $this->endsWith($nameString, '.gif')
+                        || $this->endsWith($nameString, '.png')
+                        || $this->endsWith($nameString, '.webp'))
+                    {
+                        $toc[] = $nameString;
+                    }
                 }
+
+                natcasesort($toc);
+                $toc = array_values($toc);
+
+
+                //Encode the array into a JSON string.
+                $encodedString = json_encode($toc);
+
+                //Save the JSON string to a text file.
+                file_put_contents($tocFile, $encodedString);
+
+                $this->log->log("Read from Folder", LOG_NOTICE);
             }
 
-            natcasesort($toc);
-            $toc = array_values($toc);
 
-            
-            //Encode the array into a JSON string.
-            $encodedString = json_encode($toc);
-
-            //Save the JSON string to a text file.
-            file_put_contents($tocFile, $encodedString);
-            
-            $this->log->log("Read from Folder", LOG_NOTICE);
+            $this->log->log("Done, found ".count($toc)." pages", LOG_NOTICE);
         }
         
         
-        $this->log->log("Done, found ".count($toc)." pages", LOG_NOTICE);
+        
         
         $this->_setResponseContent(
             'success',
             array('files' => $toc)
         );
     }
+    
     
     function listFolderFiles($baseDir, $dir='', $fileNameList){
         $ffs = scandir($baseDir.'/'.$dir);

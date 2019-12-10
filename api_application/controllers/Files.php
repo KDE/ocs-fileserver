@@ -1514,11 +1514,17 @@ class Files extends BaseController
             $comicPath = $this->appConfig->general['ebooksDir'] . '/' . $collectionId . '/' . $file->id;
             $ebook->init($comicPath);
             
-            //$this->log->log("Eboock Object:" . print_r($ebook, true), LOG_NOTICE);
+            $this->log->log("Eboock Object:" . print_r($ebook, true), LOG_NOTICE);
             
             $page = $ebook->getDcItem($filename);
-            header('Content-type: text/html');
-            fpassthru($page);
+            if(!$page) {
+                $this->log->log("Page not found", LOG_NOTICE);
+            } else {
+                print_r($page, true);
+            }
+            
+            //header('Content-type: text/html');
+            //fpassthru($page);
             
         } else {
         

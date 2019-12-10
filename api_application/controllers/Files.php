@@ -1388,7 +1388,7 @@ class Files extends BaseController
             
             $this->log->log("Eboock Object:" . print_r($ebook, true), LOG_NOTICE);
             
-            $toc = $ebook->getTOC();
+            //$toc = $ebook->getTOC();
             
         } else {
             $comicPath = $this->appConfig->general['comicsDir'] . '/' . $collectionId . '/' . $file->id;

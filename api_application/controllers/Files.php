@@ -1511,20 +1511,22 @@ class Files extends BaseController
         //ebook or epub?
         if($this->endsWith($file->name, '.epub')) {
             $ebook = new Readepub();
-            $comicPath = $this->appConfig->general['ebooksDir'] . '/' . $collectionId . '/' . $file->id;
+            $comicPath = $this->appConfig->general['ebooksDir'] . '/' . $collectionId . '/' . $file->id . '/';
             $ebook->init($comicPath);
             
-            $this->log->log("Eboock Object:" . print_r($ebook, true), LOG_NOTICE);
+            //$this->log->log("Eboock Object:" . print_r($ebook, true), LOG_NOTICE);
+            $pagePath = $comicPath.$ebook->getOPFDir().'/'.$filename;
             
-            $page = $ebook->getDcItem($filename);
+            $page = fopen($pagePath, 'rb');
+            
             if(!$page) {
-                $this->log->log("Page not found", LOG_NOTICE);
+                $this->log->log("Page not found:" .$pagePath, LOG_NOTICE);
             } else {
-                print_r($page, true);
+                header('Content-type: text/html');
+                fpassthru($page);
             }
             
-            //header('Content-type: text/html');
-            //fpassthru($page);
+            
             
         } else {
         

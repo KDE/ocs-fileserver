@@ -1595,7 +1595,7 @@ class Files extends BaseController
             throw new Flooer_Exception('Not found', LOG_NOTICE);
         }
         
-        $this->log->log("Start show book page (file: $file->id;)", LOG_NOTICE);
+        $this->log->log("Start show book page item (file: $file->id, filename: $filename)", LOG_NOTICE);
             
 
         $collectionId = $file->collection_id;

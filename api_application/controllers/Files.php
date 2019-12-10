@@ -1529,7 +1529,7 @@ class Files extends BaseController
                 # read the contents in
                 $file_contents = fgets($page, filesize($pagePath));
                 # apply the translation
-                $file_contents = preg_replace(" href='", " href='".$serverUri, $file_contents);
+                $file_contents = str_replace(" href='", " href='".$serverUri, $file_contents);
                 
                 
                 header('Content-type: text/html');

@@ -802,6 +802,21 @@ class Files extends BaseController
 
         $anonymousCookie = null;
 
+        if (!empty($this->request->j)) {
+            require_once '../../library/JWT.php';
+            $payload = JWT::decode($this->request->j, $this->appConfig->general['jwt_secret'], true);
+            $id = isset($payload->id)?$payload->id:null;
+            $hashGiven = isset($payload->s)?$payload->s:null;
+            $timestamp = isset($payload->t)?$payload->t:null;
+            $anonymousCookie = isset($payload->c)?$payload->c:null;
+            $linkType = isset($payload->lt)?$payload->lt:null;
+            $userId = isset($payload->u)?$payload->u:null;
+            if($linkType === 'filepreview') {
+                $isFilepreview = true;
+            }
+            $fp = isset($payload->stfp)?$payload->stfp:null;
+            $ip = isset($payload->stip)?$payload->stip:null;
+        }
         if (!empty($this->request->id)) {
             $id = $this->request->id;
         }
@@ -977,6 +992,9 @@ class Files extends BaseController
                             'user_id' => $userId,
                             'referer' => $ref
                         );
+
+                        // save download in impression table
+                        $this->modelOcs->impressions->save(array('file_id'=>$file->id, 'ip'=>$ip, 'fp'=>$fp, 'u' => $userId));
                     } catch (Exception $exc) {
                         //echo $exc->getTraceAsString();
                         $this->log->log("ERROR saving Download Data to DB: $exc->getMessage()", LOG_ERR);

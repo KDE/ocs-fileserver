@@ -1287,8 +1287,7 @@ class Files extends BaseController
 
                     exec($cmd);
                     
-                    $cmd = 'rm '.$comicPath . $nameString;
-                    exec($cmd);
+                    unlink($comicPath . $nameString);
                     
                 }
                 

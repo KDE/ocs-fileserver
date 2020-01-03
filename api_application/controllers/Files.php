@@ -1239,6 +1239,7 @@ class Files extends BaseController
                     
                         copy("zip://".$filePath . $file->name."#".$filename, $comicPath.$folderName.$fileinfo['basename']);
                     }
+                    
                 }                  
                 $zip->close();                  
             }
@@ -1271,8 +1272,26 @@ class Files extends BaseController
                     //$this->log->log("Rename file: ".$cmd, LOG_NOTICE);
 
                     exec($cmd);
+                    
+                    $nameString = $this->normalizeString($nameString);
                 }
+                
+                //Convert webp to png
+                if ($this->endsWith($nameString, '.webp'))
+                {
+                    $cmd = 'dwebp '
+                            .'\''.$comicPath . $nameString.'\''
+                            .' -o '
+                            .'\''.$comicPath . $nameString.'.png\'';
+                    //$this->log->log("Rename file: ".$cmd, LOG_NOTICE);
+
+                    exec($cmd);
+                }
+                
             }
+            
+            
+            
         }
         
         $this->log->log("Extract: Done", LOG_NOTICE);

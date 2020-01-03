@@ -1286,6 +1286,10 @@ class Files extends BaseController
                     //$this->log->log("Rename file: ".$cmd, LOG_NOTICE);
 
                     exec($cmd);
+                    
+                    $cmd = 'rm '.$comicPath . $nameString;
+                    exec($cmd);
+                    
                 }
                 
             }

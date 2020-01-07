@@ -18,8 +18,8 @@ class JWT
     /**
      * Decodes a JWT string into a PHP object.
      *
-     * @param string      $jwt    The JWT
-     * @param string|null $key    The secret key
+     * @param string      $jwt The JWT
+     * @param string|null $key The secret key
      * @param bool        $verify Don't skip verification process
      *
      * @return object      The JWT's payload as a PHP object
@@ -68,8 +68,10 @@ class JWT
         $obj = json_decode($input);
         if (function_exists('json_last_error') && $errno = json_last_error()) {
             JWT::_handleJsonError($errno);
-        } else if ($obj === null && $input !== 'null') {
-            throw new DomainException('Null result with non-null input');
+        } else {
+            if ($obj === null && $input !== 'null') {
+                throw new DomainException('Null result with non-null input');
+            }
         }
 
         return $obj;
@@ -113,8 +115,8 @@ class JWT
     /**
      * Sign a string with a given key and algorithm.
      *
-     * @param string $msg    The message to sign
-     * @param string $key    The secret key
+     * @param string $msg The message to sign
+     * @param string $key The secret key
      * @param string $method The signing algorithm. Supported
      *                       algorithms are 'HS256', 'HS384' and 'HS512'
      *
@@ -139,8 +141,8 @@ class JWT
      * Converts and signs a PHP object or array into a JWT string.
      *
      * @param object|array $payload PHP object or array
-     * @param string       $key     The secret key
-     * @param string       $algo    The signing algorithm. Supported
+     * @param string       $key The secret key
+     * @param string       $algo The signing algorithm. Supported
      *                              algorithms are 'HS256', 'HS384' and 'HS512'
      *
      * @return string      A signed JWT
@@ -185,8 +187,10 @@ class JWT
         $json = json_encode($input);
         if (function_exists('json_last_error') && $errno = json_last_error()) {
             JWT::_handleJsonError($errno);
-        } else if ($json === 'null' && $input !== null) {
-            throw new DomainException('Null result with non-null input');
+        } else {
+            if ($json === 'null' && $input !== null) {
+                throw new DomainException('Null result with non-null input');
+            }
         }
 
         return $json;

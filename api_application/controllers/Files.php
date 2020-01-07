@@ -238,27 +238,27 @@ class Files extends BaseController
             if (!empty($_FILES['file']['size'])) {
                 $size = $_FILES['file']['size'];
             }
-        }
-        // for hive files importing (Deprecated) ----------
-        else if (isset($this->request->local_file_path)) {
-            if (!empty($this->request->local_file_path)) {
-                $name = mb_substr(strip_tags(basename($this->request->local_file_path)), 0, 200);
-                $externalUri = $this->_detectLinkInTags($tags);
-                if ($name == 'empty' && !empty($externalUri)) {
-                    $type = $this->_detectMimeTypeFromUri($externalUri);
-                    $size = $this->_detectFilesizeFromUri($externalUri);
-                }
-                else {
-                    $finfo = new finfo(FILEINFO_MIME_TYPE);
-                    $type = $finfo->file($this->request->local_file_path);
-                    if (!$type) {
-                        $type = 'application/octet-stream';
+        } // for hive files importing (Deprecated) ----------
+        else {
+            if (isset($this->request->local_file_path)) {
+                if (!empty($this->request->local_file_path)) {
+                    $name = mb_substr(strip_tags(basename($this->request->local_file_path)), 0, 200);
+                    $externalUri = $this->_detectLinkInTags($tags);
+                    if ($name == 'empty' && !empty($externalUri)) {
+                        $type = $this->_detectMimeTypeFromUri($externalUri);
+                        $size = $this->_detectFilesizeFromUri($externalUri);
+                    } else {
+                        $finfo = new finfo(FILEINFO_MIME_TYPE);
+                        $type = $finfo->file($this->request->local_file_path);
+                        if (!$type) {
+                            $type = 'application/octet-stream';
+                        }
+                        $size = filesize($this->request->local_file_path);
                     }
-                    $size = filesize($this->request->local_file_path);
                 }
-            }
-            if (!empty($this->request->local_file_name)) {
-                $name = mb_substr(strip_tags(basename($this->request->local_file_name)), 0, 200);
+                if (!empty($this->request->local_file_name)) {
+                    $name = mb_substr(strip_tags(basename($this->request->local_file_name)), 0, 200);
+                }
             }
         }
         // ------------------------------------------------
@@ -277,9 +277,10 @@ class Files extends BaseController
         if (isset($this->request->ocs_compatible)) {
             if ($this->request->ocs_compatible == 1) {
                 $ocsCompatible = 1;
-            }
-            else if ($this->request->ocs_compatible == 0) {
-                $ocsCompatible = 0;
+            } else {
+                if ($this->request->ocs_compatible == 0) {
+                    $ocsCompatible = 0;
+                }
             }
         }
         if (isset($this->request->content_id)) {
@@ -324,9 +325,10 @@ class Files extends BaseController
                 'error',
                 array(
                     'message' => 'Validation error',
-                    'errors' => $errors
+                    'errors'  => $errors
                 )
             );
+
             return;
         }
 
@@ -349,10 +351,9 @@ class Files extends BaseController
             $collectionName = $collection->name;
             $collectionData = array(
                 'files' => $collection->files + 1,
-                'size' => $collection->size + $size
+                'size'  => $collection->size + $size
             );
-        }
-        else {
+        } else {
             // Prepare new collection
             $collectionId = $this->models->collections->generateId();
             $collectionActive = 1;
@@ -371,18 +372,18 @@ class Files extends BaseController
                 throw new Flooer_Exception('Failed to create collection', LOG_ALERT);
             }
             $collectionData = array(
-                'active' => $collectionActive,
-                'client_id' => $clientId,
-                'owner_id' => $ownerId,
-                'name' => $collectionName,
-                'files' => 1,
-                'size' => $size,
-                'title' => $collectionTitle,
-                'description' => $collectionDescription,
-                'category' => $collectionCategory,
-                'tags' => $collectionTags,
-                'version' => $collectionVersion,
-                'content_id' => $collectionContentId,
+                'active'       => $collectionActive,
+                'client_id'    => $clientId,
+                'owner_id'     => $ownerId,
+                'name'         => $collectionName,
+                'files'        => 1,
+                'size'         => $size,
+                'title'        => $collectionTitle,
+                'description'  => $collectionDescription,
+                'category'     => $collectionCategory,
+                'tags'         => $collectionTags,
+                'version'      => $collectionVersion,
+                'content_id'   => $collectionContentId,
                 'content_page' => $collectionContentPage
             );
         }
@@ -406,14 +407,14 @@ class Files extends BaseController
                 try {
                     $this->log->log("Set new rights", LOG_NOTICE);
 
-                    $output = shell_exec('/opt/php_root /opt/repair.sh  '.$collectionName);
+                    $output = shell_exec('/opt/php_root /opt/repair.sh  ' . $collectionName);
                     // Log
-                    $this->log->log("Set new rights Done: ".$output, LOG_NOTICE);
-                    
+                    $this->log->log("Set new rights Done: " . $output, LOG_NOTICE);
+
                 } catch (Exception $exc) {
                     echo $exc->getTraceAsString();
                 }
-                
+
                 if (!move_uploaded_file(
                     $_FILES['file']['tmp_name'],
                     $this->appConfig->general['filesDir'] . '/' . $collectionName . '/' . $name
@@ -430,44 +431,45 @@ class Files extends BaseController
                 $this->response->setStatus(500);
                 throw new Flooer_Exception('Failed to save the file', LOG_ALERT);
             }*/
-        }
-        // for hive files importing (Deprecated) ----------
-        else if (isset($this->request->local_file_path)) {
-            try {
-                copy(
-                    $this->request->local_file_path,
-                    $this->appConfig->general['filesDir'] . '/' . $collectionName . '/' . $name
-                );
-                
-            } catch (Exception $exc) {
-                //try to change owner 
+        } // for hive files importing (Deprecated) ----------
+        else {
+            if (isset($this->request->local_file_path)) {
                 try {
-                    $this->log->log("Set new rights", LOG_NOTICE);
+                    copy(
+                        $this->request->local_file_path,
+                        $this->appConfig->general['filesDir'] . '/' . $collectionName . '/' . $name
+                    );
 
-                    $output = shell_exec('/opt/php_root /opt/repair.sh  '.$collectionName);
-                    // Log
-                    $this->log->log("Set new rights Done: ".$output, LOG_NOTICE);
-                    
                 } catch (Exception $exc) {
-                    echo $exc->getTraceAsString();
+                    //try to change owner
+                    try {
+                        $this->log->log("Set new rights", LOG_NOTICE);
+
+                        $output = shell_exec('/opt/php_root /opt/repair.sh  ' . $collectionName);
+                        // Log
+                        $this->log->log("Set new rights Done: " . $output, LOG_NOTICE);
+
+                    } catch (Exception $exc) {
+                        echo $exc->getTraceAsString();
+                    }
+
+                    if (!copy(
+                        $this->request->local_file_path,
+                        $this->appConfig->general['filesDir'] . '/' . $collectionName . '/' . $name
+                    )) {
+                        $this->response->setStatus(500);
+                        throw new Flooer_Exception('Failed to save the file', LOG_ALERT);
+                    }
                 }
-                
+                /*
                 if (!copy(
                     $this->request->local_file_path,
                     $this->appConfig->general['filesDir'] . '/' . $collectionName . '/' . $name
                 )) {
                     $this->response->setStatus(500);
                     throw new Flooer_Exception('Failed to save the file', LOG_ALERT);
-                }
+                }*/
             }
-            /*
-            if (!copy(
-                $this->request->local_file_path,
-                $this->appConfig->general['filesDir'] . '/' . $collectionName . '/' . $name
-            )) {
-                $this->response->setStatus(500);
-                throw new Flooer_Exception('Failed to save the file', LOG_ALERT);
-            }*/
         }
         // ------------------------------------------------
 
@@ -476,23 +478,23 @@ class Files extends BaseController
 
         // Add the file
         $this->models->files->$id = array(
-            'origin_id' => $originId,
-            'active' => $active,
-            'client_id' => $clientId,
-            'owner_id' => $ownerId,
-            'collection_id' => $collectionId,
-            'name' => $name,
-            'type' => $type,
-            'size' => $size,
-            'md5sum' => $md5sum,
-            'title' => $title,
-            'description' => $description,
-            'category' => $category,
-            'tags' => $tags,
-            'version' => $version,
-            'ocs_compatible' => $ocsCompatible,
-            'content_id' => $contentId,
-            'content_page' => $contentPage,
+            'origin_id'        => $originId,
+            'active'           => $active,
+            'client_id'        => $clientId,
+            'owner_id'         => $ownerId,
+            'collection_id'    => $collectionId,
+            'name'             => $name,
+            'type'             => $type,
+            'size'             => $size,
+            'md5sum'           => $md5sum,
+            'title'            => $title,
+            'description'      => $description,
+            'category'         => $category,
+            'tags'             => $tags,
+            'version'          => $version,
+            'ocs_compatible'   => $ocsCompatible,
+            'content_id'       => $contentId,
+            'content_page'     => $contentPage,
             'downloaded_count' => $downloadedCount // for hive files importing (Deprecated)
         );
 
@@ -507,6 +509,124 @@ class Files extends BaseController
             'success',
             array('file' => $file)
         );
+    }
+
+    private function _getId3Tags($filetype, $filepath)
+    {
+        // NOTE: getid3 may not work for a files in a network storage.
+        $id3Tags = null;
+        if (strpos($filetype, 'audio/') !== false
+            || strpos($filetype, 'video/') !== false
+            || strpos($filetype, 'application/ogg') !== false
+        ) {
+            require_once 'getid3/getid3.php';
+            $getID3 = new getID3();
+            $id3Tags = $getID3->analyze($filepath);
+            getid3_lib::CopyTagsToComments($id3Tags);
+        }
+
+        return $id3Tags;
+    }
+
+    private function _fixFilename($name, $collectionName)
+    {
+        if (is_file($this->appConfig->general['filesDir'] . '/' . $collectionName . '/' . $name)) {
+            $fix = date('YmdHis');
+            if (preg_match("/^([^.]+)(\..+)/", $name, $matches)) {
+                $name = $matches[1] . '-' . $fix . $matches[2];
+            } else {
+                $name = $name . '-' . $fix;
+            }
+        }
+
+        return $name;
+    }
+
+    private function _addMedia(array $id3Tags, $clientId, $ownerId, $collectionId, $fileId, $defaultTitle)
+    {
+        // Get artist id or add new one
+        $artistName = 'Unknown';
+        if (isset($id3Tags['comments']['artist'][0])
+            && $id3Tags['comments']['artist'][0] != ''
+        ) {
+            $artistName = mb_substr(strip_tags($id3Tags['comments']['artist'][0]), 0, 255);
+        }
+        $artistId = $this->models->media_artists->getId($clientId, $artistName);
+        if (!$artistId) {
+            $artistId = $this->models->media_artists->generateId();
+            $this->models->media_artists->$artistId = array(
+                'client_id' => $clientId,
+                'name'      => $artistName
+            );
+        }
+
+        // Get album id or add new one
+        $albumName = 'Unknown';
+        if (isset($id3Tags['comments']['album'][0])
+            && $id3Tags['comments']['album'][0] != ''
+        ) {
+            $albumName = mb_substr(strip_tags($id3Tags['comments']['album'][0]), 0, 255);
+        }
+        $albumId = $this->models->media->getAlbumId($clientId, $artistName, $albumName);
+        if (!$albumId) {
+            $albumId = $this->models->media_albums->generateId();
+            $this->models->media_albums->$albumId = array(
+                'client_id' => $clientId,
+                'name'      => $albumName
+            );
+        }
+
+        // Add the media
+        $mediaData = array(
+            'client_id'        => $clientId,
+            'owner_id'         => $ownerId,
+            'collection_id'    => $collectionId,
+            'file_id'          => $fileId,
+            'artist_id'        => $artistId,
+            'album_id'         => $albumId,
+            'title'            => $defaultTitle,
+            'genre'            => null,
+            'track'            => null,
+            'creationdate'     => null,
+            'bitrate'          => 0,
+            'playtime_seconds' => 0,
+            'playtime_string'  => 0
+        );
+        if (isset($id3Tags['comments']['title'][0])
+            && $id3Tags['comments']['title'][0] != ''
+        ) {
+            $mediaData['title'] = mb_substr(strip_tags($id3Tags['comments']['title'][0]), 0, 255);
+        }
+        if (!empty($id3Tags['comments']['genre'][0])) {
+            $mediaData['genre'] = mb_substr(strip_tags($id3Tags['comments']['genre'][0]), 0, 64);
+        }
+        if (!empty($id3Tags['comments']['track_number'][0])) {
+            $mediaData['track'] = mb_substr(strip_tags($id3Tags['comments']['track_number'][0]), 0, 5);
+        }
+        if (!empty($id3Tags['comments']['creationdate'][0])) {
+            $mediaData['creationdate'] = mb_substr(strip_tags($id3Tags['comments']['creationdate'][0]), 0, 4);
+        }
+        if (!empty($id3Tags['bitrate'])) {
+            $mediaData['bitrate'] = mb_substr(strip_tags($id3Tags['bitrate']), 0, 11);
+        }
+        if (!empty($id3Tags['playtime_seconds'])) {
+            $mediaData['playtime_seconds'] = mb_substr(strip_tags($id3Tags['playtime_seconds']), 0, 11);
+        }
+        if (!empty($id3Tags['playtime_string'])) {
+            $mediaData['playtime_string'] = mb_substr(strip_tags($id3Tags['playtime_string']), 0, 8);
+        }
+
+        $mediaId = $this->models->media->generateId();
+        $this->models->media->$mediaId = $mediaData;
+
+        // Save the album cover
+        if (!empty($id3Tags['comments']['picture'][0]['data'])) {
+            $image = imagecreatefromstring($id3Tags['comments']['picture'][0]['data']);
+            if ($image !== false) {
+                imagejpeg($image, $this->appConfig->general['thumbnailsDir'] . '/album_' . $albumId . '.jpg', 75);
+                imagedestroy($image);
+            }
+        }
     }
 
     public function putFile()
@@ -547,9 +667,10 @@ class Files extends BaseController
         if (isset($this->request->ocs_compatible)) {
             if ($this->request->ocs_compatible == 1) {
                 $ocsCompatible = 1;
-            }
-            else if ($this->request->ocs_compatible == 0) {
-                $ocsCompatible = 0;
+            } else {
+                if ($this->request->ocs_compatible == 0) {
+                    $ocsCompatible = 0;
+                }
             }
         }
         if (isset($this->request->content_id)) {
@@ -564,10 +685,11 @@ class Files extends BaseController
         if (!$file) {
             $this->response->setStatus(404);
             throw new Flooer_Exception('Not found', LOG_NOTICE);
-        }
-        else if (!$file->active || $file->client_id != $this->request->client_id) {
-            $this->response->setStatus(403);
-            throw new Flooer_Exception('Forbidden', LOG_NOTICE);
+        } else {
+            if (!$file->active || $file->client_id != $this->request->client_id) {
+                $this->response->setStatus(403);
+                throw new Flooer_Exception('Forbidden', LOG_NOTICE);
+            }
         }
 
         // If new file has uploaded,
@@ -600,7 +722,7 @@ class Files extends BaseController
             if (!empty($_FILES['file']['size'])) {
                 $size = $_FILES['file']['size'];
             }
-            
+
             if ($description === null) {
                 $description = $file->description;
             }
@@ -634,9 +756,10 @@ class Files extends BaseController
                     'error',
                     array(
                         'message' => 'File upload error',
-                        'errors' => $errors
+                        'errors'  => $errors
                     )
                 );
+
                 return;
             }
 
@@ -651,7 +774,7 @@ class Files extends BaseController
             $collectionName = $collection->name;
             $collectionData = array(
                 'files' => $collection->files + 1,
-                'size' => $collection->size + $size
+                'size'  => $collection->size + $size
             );
 
             $id = $this->models->files->generateId();
@@ -671,23 +794,23 @@ class Files extends BaseController
 
             // Add the file
             $this->models->files->$id = array(
-                'origin_id' => $originId,
-                'active' => $active,
-                'client_id' => $clientId,
-                'owner_id' => $ownerId,
-                'collection_id' => $collectionId,
-                'name' => $name,
-                'type' => $type,
-                'size' => $size,
-                'md5sum' => $md5sum,
-                'title' => $title,
-                'description' => $description,
-                'category' => $category,
-                'tags' => $tags,
-                'version' => $version,
-                'ocs_compatible' => $ocsCompatible,
-                'content_id' => $contentId,
-                'content_page' => $contentPage,
+                'origin_id'        => $originId,
+                'active'           => $active,
+                'client_id'        => $clientId,
+                'owner_id'         => $ownerId,
+                'collection_id'    => $collectionId,
+                'name'             => $name,
+                'type'             => $type,
+                'size'             => $size,
+                'md5sum'           => $md5sum,
+                'title'            => $title,
+                'description'      => $description,
+                'category'         => $category,
+                'tags'             => $tags,
+                'version'          => $version,
+                'ocs_compatible'   => $ocsCompatible,
+                'content_id'       => $contentId,
+                'content_page'     => $contentPage,
                 'downloaded_count' => $downloadedCount // for hive files importing (Deprecated)
             );
 
@@ -698,8 +821,7 @@ class Files extends BaseController
             if ($id3Tags) {
                 $this->_addMedia($id3Tags, $clientId, $ownerId, $collectionId, $id, $name);
             }
-        }
-        // Update only file information
+        } // Update only file information
         else {
             $updata = array();
 
@@ -739,307 +861,6 @@ class Files extends BaseController
         );
     }
 
-    public function deleteFile()
-    {
-        if (!$this->_isAllowedAccess()) {
-            $this->response->setStatus(403);
-            throw new Flooer_Exception('Forbidden', LOG_NOTICE);
-        }
-
-        $id = null;
-
-        if (!empty($this->request->id)) {
-            $id = $this->request->id;
-        }
-
-        $file = $this->models->files->$id;
-
-        if (!$file) {
-            $this->response->setStatus(404);
-            throw new Flooer_Exception('Not found', LOG_NOTICE);
-        }
-        else if (!$file->active || $file->client_id != $this->request->client_id) {
-            $this->response->setStatus(403);
-            throw new Flooer_Exception('Forbidden', LOG_NOTICE);
-        }
-
-        $this->_removeFile($file);
-
-        $this->_setResponseContent('success');
-    }
-
-    public function headDownloadfile() // Deprecated
-    {
-        // This is alias for HEAD /files/download
-        $this->headDownload();
-    }
-
-    public function getDownloadfile($headeronly = false) // Deprecated
-    {
-        // This is alias for GET /files/download
-        $this->getDownload($headeronly);
-    }
-
-    public function headDownload()
-    {
-        $this->getDownload(true);
-    }
-
-    public function getDownload($headeronly = false)
-    {
-        $this->log->log(print_r($_SERVER, true));
-        $this->log->log(print_r($_REQUEST, true));
-
-        $id = null;
-        $as = null;
-        $userId = null;
-        $hashGiven = null;
-        $timestamp = null;
-        $isFromOcsApi = false;
-        $isFilepreview = false;
-        
-        $linkType = null;
-
-        $anonymousCookie = null;
-
-        if (!empty($this->request->j)) {
-            require_once '../../library/JWT.php';
-            $payload = JWT::decode($this->request->j, $this->appConfig->general['jwt_secret'], true);
-            $id = isset($payload->id)?$payload->id:null;
-            $hashGiven = isset($payload->s)?$payload->s:null;
-            $timestamp = isset($payload->t)?$payload->t:null;
-            $anonymousCookie = isset($payload->c)?$payload->c:null;
-            $linkType = isset($payload->lt)?$payload->lt:null;
-            $userId = isset($payload->u)?$payload->u:null;
-            if($linkType === 'filepreview') {
-                $isFilepreview = true;
-            }
-            $fp = isset($payload->stfp)?$payload->stfp:null;
-            $ip = isset($payload->stip)?$payload->stip:null;
-        }
-        if (!empty($this->request->id)) {
-            $id = $this->request->id;
-        }
-        if (!empty($this->request->as)) {
-            $as = $this->request->as;
-        }
-        if (!empty($this->request->u)) {
-            $userId = $this->request->u;
-        }
-        if (!empty($this->request->c)) {
-            $anonymousCookie = $this->request->c;
-        }        
-        if (!empty($this->request->s)) {
-            $hashGiven = $this->request->s;
-        }
-        if (!empty($this->request->t)) {
-            $timestamp = $this->request->t;
-        }
-        if (!empty($this->request->o)) {
-            $isFromOcsApi = ($this->request->o == 1);
-        }
-        if (!empty($this->request->lt)) {
-            $linkType = $this->request->lt;
-            if($linkType === 'filepreview') {
-                $isFilepreview = true;
-            }
-        }
-
-        if ($id && $as) {
-            $id = $this->models->files->getFileId($id, $as);
-        }
-
-        $file = $this->models->files->$id;
-
-        if (!$file) {
-            $this->response->setStatus(404);
-            throw new Flooer_Exception('Not found', LOG_NOTICE);
-        }
-
-        $collectionId = $file->collection_id;
-
-        // Check link if it is expired or old style
-        $salt = $this->_getDownloadSecret($file->client_id);
-        //20181009 ronald: change hash from MD5 to SHA512
-        //$hash = md5($salt . $collectionId . $timestamp);
-        $hash = hash('sha512',$salt . $collectionId . $timestamp);
-        
-        
-        $now = time();
-        $div = ($timestamp - $now);
-
-        // Log
-        $this->log->log("Start Download (client: $file->client_id; salt: $salt; hash: $hash; hashGiven: $hashGiven)", LOG_NOTICE);
-        
-        $agent = null;
-        if ( isset( $_SERVER ) ) {
-            $agent = $_SERVER['HTTP_USER_AGENT'];
-        }
-        
-        //Save downloads, but not for perview downloads
-        if(!$isFilepreview) {
-            if($isFromOcsApi) {
-                $data = array(
-                        'client_id' => $file->client_id,
-                        'owner_id' => $file->owner_id,
-                        'collection_id' => $file->collection_id,
-                        'file_id' => $file->id,
-                        'user_id' => $userId,
-                        //'anonymous_cookie' => $anonymousCookie,
-                        'referer' => 'OCS-API',
-                        'source'  => 'OCS-API',
-                        'user_agent' => $agent
-                    );
-            } else {
-                $data = array(
-                        'client_id' => $file->client_id,
-                        'owner_id' => $file->owner_id,
-                        'collection_id' => $file->collection_id,
-                        'file_id' => $file->id,
-                        'user_id' => $userId,
-                        //'anonymous_cookie' => $anonymousCookie,
-                        'source'  => 'OCS-Webserver',
-                        'link_type' => $linkType,
-                        'referer' => null,
-                        'user_agent' => $agent
-                    );
-            }
-            try {
-                //$downloadedId = $this->models->files_downloaded_all->generateId();
-                $downloadedId = $this->models->files_downloaded_all->generateNewId();
-                $ref = 'OCS-API';
-                $this->models->files_downloaded_all->$downloadedId = $data;
-            } catch (Exception $exc) {
-                //echo $exc->getTraceAsString();
-                $this->log->log("ERROR saving Download Data to DB: $exc->getTraceAsString()", LOG_ERR);
-            }
-        }
-        
-
-        if ($as || $isFromOcsApi || $isFilepreview || ($hashGiven == $hash && $div > 0)) {
-            // Link is ok, go on
-            $collection = $this->models->collections->$collectionId;
-
-            $collectionDir = '';
-            if ($collection->active) {
-                $collectionDir = $this->appConfig->general['filesDir'] . '/' . $collection->name;
-            }
-            else {
-                $collectionDir = $this->appConfig->general['filesDir'] . '/.trash/' . $collection->id . '-' . $collection->name;
-            }
-
-            $filePath = '';
-            if ($file->active) {
-                $filePath = $collectionDir . '/' . $file->name;
-            }
-            else {
-                $filePath = $collectionDir . '/.trash/' . $file->id . '-' . $file->name;
-            }
-
-            $fileName = $file->name;
-            $fileType = $file->type;
-            $fileSize = $file->size;
-            
-            // If request URI ended with .zsync, make a response data as zsync data
-            if (strtolower(substr($this->request->getUri(), -6)) == '.zsync') {
-                // But don't make zsync for external URI
-                if (!empty($this->_detectLinkInTags($file->tags))) {
-                    $this->response->setStatus(404);
-                    throw new Flooer_Exception('Not found', LOG_NOTICE);
-                }
-
-                $zsyncPath = $this->appConfig->general['zsyncDir'] . '/' . $file->id . '.zsync';
-                if (!is_file($zsyncPath)) {
-                    $this->_generateZsync($filePath, $zsyncPath, $fileName);
-                }
-
-                $filePath = $zsyncPath;
-                $fileName .= '.zsync';
-                $fileType = 'application/x-zsync';
-                $fileSize = filesize($zsyncPath);
-            }
-            else {
-                if (!$isFilepreview && !$headeronly) {
-                    $this->models->files->updateDownloadedStatus($file->id);
-
-                    try {
-                        //$downloadedId = $this->models->files_downloaded->generateId();
-                        $downloadedId = $this->models->files_downloaded->generateNewId();
-                        $ref = null;
-                        if ($isFromOcsApi) {
-                          $ref = 'OCS-API';
-                        }
-                        $this->models->files_downloaded->$downloadedId = array(
-                            'client_id' => $file->client_id,
-                            'owner_id' => $file->owner_id,
-                            'collection_id' => $file->collection_id,
-                            'file_id' => $file->id,
-                            'user_id' => $userId,
-                            'referer' => $ref
-                        );
-                        
-                        //save unique dataset
-                        $downloadedId = $this->models->files_downloaded_unique->generateNewId();
-                        $ref = null;
-                        if ($isFromOcsApi) {
-                          $ref = 'OCS-API';
-                        }
-                        $this->models->files_downloaded_unique->$downloadedId = array(
-                            'client_id' => $file->client_id,
-                            'owner_id' => $file->owner_id,
-                            'collection_id' => $file->collection_id,
-                            'file_id' => $file->id,
-                            'user_id' => $userId,
-                            'referer' => $ref
-                        );
-
-                        // save download in impression table
-                        $this->modelOcs->impressions->save(array('file_id'=>$file->id, 'ip'=>$ip, 'fp'=>$fp, 'u' => $userId));
-                    } catch (Exception $exc) {
-                        //echo $exc->getTraceAsString();
-                        $this->log->log("ERROR saving Download Data to DB: $exc->getMessage()", LOG_ERR);
-                    }
-                }
-
-                // If external URI has set, redirect to it
-                $externalUri = $this->_detectLinkInTags($file->tags);
-                if (!empty($externalUri)) {
-                    $this->response->redirect($externalUri);
-                }
-            }
-
-            $this->_sendFile(
-                $filePath,
-                $fileName,
-                $fileType,
-                $fileSize,
-                true,
-                $headeronly
-            );
-        }
-        else {
-            // Link is not ok
-            // Log
-            $this->log->log("Start Download failed (file: $file->id; time-div: $div;  client: $file->client_id; salt: $salt; hash: $hash; hashGiven: $hashGiven)", LOG_NOTICE);
-            // Redirect to opendesktop project page
-            $this->response->redirect($this->appConfig->general['redirectTargetServer'] . '/co/' . $collectionId);
-        }
-    }
-
-    private function _fixFilename($name, $collectionName)
-    {
-        if (is_file($this->appConfig->general['filesDir'] . '/' . $collectionName . '/' . $name)) {
-            $fix = date('YmdHis');
-            if (preg_match("/^([^.]+)(\..+)/", $name, $matches)) {
-                $name = $matches[1] . '-' . $fix . $matches[2];
-            }
-            else {
-                $name = $name . '-' . $fix;
-            }
-        }
-        return $name;
-    }
-
     private function _removeFile(Flooer_Db_Table_Row &$file)
     {
         // Please be care the remove process in Collections::deleteCollection()
@@ -1072,111 +893,307 @@ class Files extends BaseController
 
         $this->models->collections->$collectionId = array(
             'files' => $collection->files - 1,
-            'size' => $collection->size - $file->size
+            'size'  => $collection->size - $file->size
         );
     }
 
-    private function _getId3Tags($filetype, $filepath)
+    public function deleteFile()
     {
-        // NOTE: getid3 may not work for a files in a network storage.
-        $id3Tags = null;
-        if (strpos($filetype, 'audio/') !== false
-            || strpos($filetype, 'video/') !== false
-            || strpos($filetype, 'application/ogg') !== false
-        ) {
-            require_once 'getid3/getid3.php';
-            $getID3 = new getID3();
-            $id3Tags = $getID3->analyze($filepath);
-            getid3_lib::CopyTagsToComments($id3Tags);
-        }
-        return $id3Tags;
-    }
-
-    private function _addMedia(array $id3Tags, $clientId, $ownerId, $collectionId, $fileId, $defaultTitle)
-    {
-        // Get artist id or add new one
-        $artistName = 'Unknown';
-        if (isset($id3Tags['comments']['artist'][0])
-            && $id3Tags['comments']['artist'][0] != ''
-        ) {
-            $artistName = mb_substr(strip_tags($id3Tags['comments']['artist'][0]), 0, 255);
-        }
-        $artistId = $this->models->media_artists->getId($clientId, $artistName);
-        if (!$artistId) {
-            $artistId = $this->models->media_artists->generateId();
-            $this->models->media_artists->$artistId = array(
-                'client_id' => $clientId,
-                'name' => $artistName
-            );
+        if (!$this->_isAllowedAccess()) {
+            $this->response->setStatus(403);
+            throw new Flooer_Exception('Forbidden', LOG_NOTICE);
         }
 
-        // Get album id or add new one
-        $albumName = 'Unknown';
-        if (isset($id3Tags['comments']['album'][0])
-            && $id3Tags['comments']['album'][0] != ''
-        ) {
-            $albumName = mb_substr(strip_tags($id3Tags['comments']['album'][0]), 0, 255);
-        }
-        $albumId = $this->models->media->getAlbumId($clientId, $artistName, $albumName);
-        if (!$albumId) {
-            $albumId = $this->models->media_albums->generateId();
-            $this->models->media_albums->$albumId = array(
-                'client_id' => $clientId,
-                'name' => $albumName
-            );
+        $id = null;
+
+        if (!empty($this->request->id)) {
+            $id = $this->request->id;
         }
 
-        // Add the media
-        $mediaData = array(
-            'client_id' => $clientId,
-            'owner_id' => $ownerId,
-            'collection_id' => $collectionId,
-            'file_id' => $fileId,
-            'artist_id' => $artistId,
-            'album_id' => $albumId,
-            'title' => $defaultTitle,
-            'genre' => null,
-            'track' => null,
-            'creationdate' => null,
-            'bitrate' => 0,
-            'playtime_seconds' => 0,
-            'playtime_string' => 0
-        );
-        if (isset($id3Tags['comments']['title'][0])
-            && $id3Tags['comments']['title'][0] != ''
-        ) {
-            $mediaData['title'] = mb_substr(strip_tags($id3Tags['comments']['title'][0]), 0, 255);
-        }
-        if (!empty($id3Tags['comments']['genre'][0])) {
-            $mediaData['genre'] = mb_substr(strip_tags($id3Tags['comments']['genre'][0]), 0, 64);
-        }
-        if (!empty($id3Tags['comments']['track_number'][0])) {
-            $mediaData['track'] = mb_substr(strip_tags($id3Tags['comments']['track_number'][0]), 0, 5);
-        }
-        if (!empty($id3Tags['comments']['creationdate'][0])) {
-            $mediaData['creationdate'] = mb_substr(strip_tags($id3Tags['comments']['creationdate'][0]), 0, 4);
-        }
-        if (!empty($id3Tags['bitrate'])) {
-            $mediaData['bitrate'] = mb_substr(strip_tags($id3Tags['bitrate']), 0, 11);
-        }
-        if (!empty($id3Tags['playtime_seconds'])) {
-            $mediaData['playtime_seconds'] = mb_substr(strip_tags($id3Tags['playtime_seconds']), 0, 11);
-        }
-        if (!empty($id3Tags['playtime_string'])) {
-            $mediaData['playtime_string'] = mb_substr(strip_tags($id3Tags['playtime_string']), 0, 8);
-        }
+        $file = $this->models->files->$id;
 
-        $mediaId = $this->models->media->generateId();
-        $this->models->media->$mediaId = $mediaData;
-
-        // Save the album cover
-        if (!empty($id3Tags['comments']['picture'][0]['data'])) {
-            $image = imagecreatefromstring($id3Tags['comments']['picture'][0]['data']);
-            if ($image !== false) {
-                imagejpeg($image, $this->appConfig->general['thumbnailsDir'] . '/album_' . $albumId . '.jpg', 75);
-                imagedestroy($image);
+        if (!$file) {
+            $this->response->setStatus(404);
+            throw new Flooer_Exception('Not found', LOG_NOTICE);
+        } else {
+            if (!$file->active || $file->client_id != $this->request->client_id) {
+                $this->response->setStatus(403);
+                throw new Flooer_Exception('Forbidden', LOG_NOTICE);
             }
         }
+
+        $this->_removeFile($file);
+
+        $this->_setResponseContent('success');
+    }
+
+    /**
+     * @deprecated
+     */
+    public function headDownloadfile() // Deprecated
+    {
+        // This is alias for HEAD /files/download
+        $this->headDownload();
+    }
+
+    public function headDownload()
+    {
+        $this->getDownload(true);
+    }
+
+    public function getDownload($headeronly = false)
+    {
+        $this->log->log(print_r($_SERVER, true));
+        $this->log->log(print_r($_REQUEST, true));
+
+        $id = null;
+        $as = null;
+        $userId = null;
+        $hashGiven = null;
+        $timestamp = null;
+        $isFromOcsApi = false;
+        $isFilepreview = false;
+
+        $linkType = null;
+
+        $anonymousCookie = null;
+
+        if (!empty($this->request->j)) {
+            require_once '../../library/JWT.php';
+            $payload = JWT::decode($this->request->j, $this->appConfig->general['jwt_secret'], true);
+            $id = isset($payload->id) ? $payload->id : null;
+            $hashGiven = isset($payload->s) ? $payload->s : null;
+            $timestamp = isset($payload->t) ? $payload->t : null;
+            $anonymousCookie = isset($payload->c) ? $payload->c : null;
+            $userId = isset($payload->u) ? $payload->u : null;
+            $linkType = isset($payload->lt) ? $payload->lt : null;
+            $isFilepreview = ($linkType === 'filepreview') ? true : false;
+            $fp = isset($payload->stfp) ? $payload->stfp : null;
+            $ip = isset($payload->stip) ? $payload->stip : null;
+            $as = isset($payload->as) ? $payload->as : null;
+            $isFromOcsApi = (isset($payload->o) AND ($payload->o == 1)) ? true : false;
+        }
+        if (!empty($this->request->id)) {
+            $id = $this->request->id;
+        }
+        if (!empty($this->request->as)) {
+            $as = $this->request->as;
+        }
+        if (!empty($this->request->u)) {
+            $userId = $this->request->u;
+        }
+        if (!empty($this->request->c)) {
+            $anonymousCookie = $this->request->c;
+        }
+        if (!empty($this->request->s)) {
+            $hashGiven = $this->request->s;
+        }
+        if (!empty($this->request->t)) {
+            $timestamp = $this->request->t;
+        }
+        if (!empty($this->request->o)) {
+            $isFromOcsApi = ($this->request->o == 1);
+        }
+        if (!empty($this->request->lt)) {
+            $linkType = $this->request->lt;
+            if ($linkType === 'filepreview') {
+                $isFilepreview = true;
+            }
+        }
+
+        if ($id && $as) {
+            $id = $this->models->files->getFileId($id, $as);
+        }
+
+        $file = $this->models->files->$id;
+
+        if (!$file) {
+            $this->response->setStatus(404);
+            throw new Flooer_Exception('Not found', LOG_NOTICE);
+        }
+
+        $collectionId = $file->collection_id;
+
+        // Check link if it is expired or old style
+        $salt = $this->_getDownloadSecret($file->client_id);
+        //20181009 ronald: change hash from MD5 to SHA512
+        //$hash = md5($salt . $collectionId . $timestamp);
+        $hash = hash('sha512', $salt . $collectionId . $timestamp);
+
+
+        $now = time();
+        $div = ($timestamp - $now);
+
+        // Log
+        $this->log->log("Start Download (client: $file->client_id; salt: $salt; hash: $hash; hashGiven: $hashGiven)",
+            LOG_NOTICE);
+
+        $agent = null;
+        if (isset($_SERVER)) {
+            $agent = $_SERVER['HTTP_USER_AGENT'];
+        }
+
+        //Save downloads, but not for preview downloads
+        if (!$isFilepreview) {
+            if ($isFromOcsApi) {
+                $data = array(
+                    'client_id'     => $file->client_id,
+                    'owner_id'      => $file->owner_id,
+                    'collection_id' => $file->collection_id,
+                    'file_id'       => $file->id,
+                    'user_id'       => $userId,
+                    //'anonymous_cookie' => $anonymousCookie,
+                    'referer'       => 'OCS-API',
+                    'source'        => 'OCS-API',
+                    'user_agent'    => $agent
+                );
+            } else {
+                $data = array(
+                    'client_id'     => $file->client_id,
+                    'owner_id'      => $file->owner_id,
+                    'collection_id' => $file->collection_id,
+                    'file_id'       => $file->id,
+                    'user_id'       => $userId,
+                    //'anonymous_cookie' => $anonymousCookie,
+                    'source'        => 'OCS-Webserver',
+                    'link_type'     => $linkType,
+                    'referer'       => null,
+                    'user_agent'    => $agent
+                );
+            }
+            try {
+                //$downloadedId = $this->models->files_downloaded_all->generateId();
+                $downloadedId = $this->models->files_downloaded_all->generateNewId();
+                $ref = 'OCS-API';
+                $this->models->files_downloaded_all->$downloadedId = $data;
+            } catch (Exception $exc) {
+                //echo $exc->getTraceAsString();
+                $this->log->log("ERROR saving Download Data to DB: {$exc->getMessage()} :: {$exc->getTraceAsString()}", LOG_ERR);
+            }
+        }
+
+
+        if ($as || $isFromOcsApi || $isFilepreview || ($hashGiven == $hash && $div > 0)) {
+            // Link is ok, go on
+            $collection = $this->models->collections->$collectionId;
+
+            $collectionDir = '';
+            if ($collection->active) {
+                $collectionDir = $this->appConfig->general['filesDir'] . '/' . $collection->name;
+            } else {
+                $collectionDir = $this->appConfig->general['filesDir'] . '/.trash/' . $collection->id . '-' . $collection->name;
+            }
+
+            $filePath = '';
+            if ($file->active) {
+                $filePath = $collectionDir . '/' . $file->name;
+            } else {
+                $filePath = $collectionDir . '/.trash/' . $file->id . '-' . $file->name;
+            }
+
+            $fileName = $file->name;
+            $fileType = $file->type;
+            $fileSize = $file->size;
+
+            // If request URI ended with .zsync, make a response data as zsync data
+            if (strtolower(substr($this->request->getUri(), -6)) == '.zsync') {
+                // But don't make zsync for external URI
+                if (!empty($this->_detectLinkInTags($file->tags))) {
+                    $this->response->setStatus(404);
+                    throw new Flooer_Exception('Not found', LOG_NOTICE);
+                }
+
+                $zsyncPath = $this->appConfig->general['zsyncDir'] . '/' . $file->id . '.zsync';
+                if (!is_file($zsyncPath)) {
+                    $this->_generateZsync($filePath, $zsyncPath, $fileName);
+                }
+
+                $filePath = $zsyncPath;
+                $fileName .= '.zsync';
+                $fileType = 'application/x-zsync';
+                $fileSize = filesize($zsyncPath);
+            } else {
+                if (!$isFilepreview && !$headeronly) {
+                    $this->models->files->updateDownloadedStatus($file->id);
+
+                    try {
+                        //$downloadedId = $this->models->files_downloaded->generateId();
+                        $downloadedId = $this->models->files_downloaded->generateNewId();
+                        $ref = null;
+                        if ($isFromOcsApi) {
+                            $ref = 'OCS-API';
+                        }
+                        $this->models->files_downloaded->$downloadedId = array(
+                            'client_id'     => $file->client_id,
+                            'owner_id'      => $file->owner_id,
+                            'collection_id' => $file->collection_id,
+                            'file_id'       => $file->id,
+                            'user_id'       => $userId,
+                            'referer'       => $ref
+                        );
+
+                        //save unique dataset
+                        $downloadedId = $this->models->files_downloaded_unique->generateNewId();
+                        $ref = null;
+                        if ($isFromOcsApi) {
+                            $ref = 'OCS-API';
+                        }
+                        $this->models->files_downloaded_unique->$downloadedId = array(
+                            'client_id'     => $file->client_id,
+                            'owner_id'      => $file->owner_id,
+                            'collection_id' => $file->collection_id,
+                            'file_id'       => $file->id,
+                            'user_id'       => $userId,
+                            'referer'       => $ref
+                        );
+
+                        // save download in impression table
+                        $this->modelOcs->impressions->save(array(
+                            'file_id' => $file->id,
+                            'ip'      => $ip,
+                            'fp'      => $fp,
+                            'u'       => $userId
+                        ));
+                    } catch (Exception $exc) {
+                        //echo $exc->getTraceAsString();
+                        $this->log->log("ERROR saving Download Data to DB: $exc->getMessage()", LOG_ERR);
+                    }
+                }
+
+                // If external URI has set, redirect to it
+                $externalUri = $this->_detectLinkInTags($file->tags);
+                if (!empty($externalUri)) {
+                    $this->response->redirect($externalUri);
+                }
+            }
+
+            $this->_sendFile(
+                $filePath,
+                $fileName,
+                $fileType,
+                $fileSize,
+                true,
+                $headeronly
+            );
+        } else {
+            // Link is not ok
+            // Log
+            $this->log->log("Start Download failed (file: $file->id; time-div: $div;  client: $file->client_id; salt: $salt; hash: $hash; hashGiven: $hashGiven)",
+                LOG_NOTICE);
+            // Redirect to opendesktop project page
+            $this->response->redirect($this->appConfig->general['redirectTargetServer'] . '/co/' . $collectionId);
+        }
+    }
+
+    /**
+     * @param bool $headeronly
+     * @throws Flooer_Exception
+     * @deprecated
+     */
+    public function getDownloadfile($headeronly = false) // Deprecated
+    {
+        // This is alias for GET /files/download
+        $this->getDownload($headeronly);
     }
 
 }

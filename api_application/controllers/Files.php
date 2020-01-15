@@ -1170,10 +1170,11 @@ class Files extends BaseController
         } else {
             // Link is not ok
             // Log
-            $this->log->log("Start Download failed (file: $file->id; time-div: $expires;  client: $file->client_id; salt: $salt; hash: $hash; hashGiven: $hashGiven)",
-                LOG_NOTICE);
+            $this->log->log("Start Download failed (file: $file->id; time-div: $expires;  client: $file->client_id; salt: $salt; hash: $hash; hashGiven: $hashGiven)", LOG_NOTICE);
             // Redirect to opendesktop project page
-            $this->response->redirect($this->appConfig->general['redirectTargetServer'] . '/co/' . $collectionId);
+            //$this->response->redirect($this->appConfig->general['redirectTargetServer'] . '/co/' . $collectionId);
+            $this->response->setStatus(410);
+            throw new Flooer_Exception('Link expired', LOG_NOTICE);
         }
     }
 

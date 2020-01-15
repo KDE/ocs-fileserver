@@ -39,10 +39,13 @@ class table_ocs_downloads extends BaseModel
 
     public function save($value)
     {
-        $ipClientv6 = filter_var($value['ip'], FILTER_VALIDATE_IP, FILTER_FLAG_IPV6) ? $value['ip'] : null;
-        $ipClientv4 = filter_var($value['ip'], FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) ? $value['ip'] : null;
+        $ipRemoteV6 = filter_var($this->_getIp(), FILTER_VALIDATE_IP, FILTER_FLAG_IPV6) ? $this->_getIp() : null;
+        $ipRemoteV4 = filter_var($this->_getIp(), FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) ? $this->_getIp() : null;
 
-        $sql = ("INSERT IGNORE INTO `stat_file_download` (`seen_at`, `ip_inet`, `object_type`, `object_id`, `ipv4`, `ipv6`, `fingerprint`, `user_agent`, `member_id_viewer`) VALUES (:seen, :ip_inet, :object_type, :product_id, :ipv4, :ipv6, :fp, :ua, :member)");
+        $ipClientv6 = filter_var($value['ip'], FILTER_VALIDATE_IP, FILTER_FLAG_IPV6) ? $value['ip'] : $ipRemoteV6;
+        $ipClientv4 = filter_var($value['ip'], FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) ? $value['ip'] : $ipRemoteV4;
+
+        $sql = ("INSERT IGNORE INTO `stat_object_download` (`seen_at`, `ip_inet`, `object_type`, `object_id`, `ipv4`, `ipv6`, `fingerprint`, `user_agent`, `member_id_viewer`) VALUES (:seen, :ip_inet, :object_type, :product_id, :ipv4, :ipv6, :fp, :ua, :member)");
         $ip_inet = isset($value['ip']) ? $value['ip'] : $this->_getIp();
         $time = (round(time() / 300)) * 300;
         $seen_at = date('Y-m-d H:i:s', $time);

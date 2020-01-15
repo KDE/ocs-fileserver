@@ -1174,8 +1174,7 @@ class Files extends BaseController
             // Redirect to opendesktop project page
             //$this->response->redirect($this->appConfig->general['redirectTargetServer'] . '/co/' . $collectionId);
             $this->response->setStatus(410);
-            $this->_setResponseContent('error');
-            //throw new Flooer_Exception('Link expired', LOG_NOTICE);
+            $this->_setResponseContent('error', array('message'=>'link expired'));
         }
     }
 

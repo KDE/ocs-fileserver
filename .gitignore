@@ -1,6 +1,7 @@
 api_application/configs/application.ini
 api_application/configs/clients.ini
 api_application/configs/database.ini
+api_application/configs/database_ocs.ini
 api_application/configs/models.ini
 data/database/*
 data/files/*
@@ -10,3 +11,5 @@ data/zsync/*
 public/.well-known/*
 public/google*.html
 public/robots.txt
+.idea
+

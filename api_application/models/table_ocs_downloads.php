@@ -61,7 +61,7 @@ class table_ocs_downloads extends BaseModel
             'ipv4'        => $ipClientv4,
             'fp'          => $value['fp'] ? $value['fp'] : null,
             'ua'          => $_SERVER['HTTP_USER_AGENT'] ? $_SERVER['HTTP_USER_AGENT'] : null,
-            'member'      => isset($vaue['u']) ? $value['u'] : null
+            'member'      => isset($value['u']) ? $value['u'] : null
         ));
         $stmt->closeCursor();
         $stmt = null;

@@ -21,7 +21,7 @@
  * along with Foobar.  If not, see <http://www.gnu.org/licenses/>.
  **/
 
-require_once 'models/table_ocs_impressions.php';
+require_once 'models/table_ocs_downloads.php';
 
 class OcsModel
 {
@@ -42,7 +42,7 @@ class OcsModel
             $this->_config = $config + $this->_config;
         }
 
-        $this->impressions = new table_ocs_impressions($this->_db);
+        $this->ocs_downloads = new table_ocs_downloads($this->_db);
     }
 
     public function getDb()

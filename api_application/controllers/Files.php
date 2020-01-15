@@ -950,26 +950,23 @@ class Files extends BaseController
         $as = null;
         $userId = null;
         $hashGiven = null;
-        $timestamp = null;
+        $validUntil = null;
         $isFromOcsApi = false;
         $isFilepreview = false;
 
         $linkType = null;
-
-        $anonymousCookie = null;
 
         if (!empty($this->request->j)) {
             require_once '../../library/JWT.php';
             $payload = JWT::decode($this->request->j, $this->appConfig->general['jwt_secret'], true);
             $id = isset($payload->id) ? $payload->id : null;
             $hashGiven = isset($payload->s) ? $payload->s : null;
-            $timestamp = isset($payload->t) ? $payload->t : null;
-            $anonymousCookie = isset($payload->c) ? $payload->c : null;
+            $validUntil = isset($payload->t) ? $payload->t : null;
             $userId = isset($payload->u) ? $payload->u : null;
             $linkType = isset($payload->lt) ? $payload->lt : null;
             $isFilepreview = ($linkType === 'filepreview') ? true : false;
             $fp = isset($payload->stfp) ? $payload->stfp : null;
-            $ip = isset($payload->stip) ? $payload->stip : null;
+            $ip = isset($payload->stip) ? $payload->stip : null; //TODO: set ip from request if null
             $as = isset($payload->as) ? $payload->as : null;
             $isFromOcsApi = (isset($payload->o) AND ($payload->o == 1)) ? true : false;
         }
@@ -982,14 +979,11 @@ class Files extends BaseController
         if (!empty($this->request->u)) {
             $userId = $this->request->u;
         }
-        if (!empty($this->request->c)) {
-            $anonymousCookie = $this->request->c;
-        }
         if (!empty($this->request->s)) {
             $hashGiven = $this->request->s;
         }
         if (!empty($this->request->t)) {
-            $timestamp = $this->request->t;
+            $validUntil = $this->request->t;
         }
         if (!empty($this->request->o)) {
             $isFromOcsApi = ($this->request->o == 1);
@@ -1018,11 +1012,10 @@ class Files extends BaseController
         $salt = $this->_getDownloadSecret($file->client_id);
         //20181009 ronald: change hash from MD5 to SHA512
         //$hash = md5($salt . $collectionId . $timestamp);
-        $hash = hash('sha512', $salt . $collectionId . $timestamp);
+        $hash = hash('sha512', $salt . $collectionId . $validUntil);
 
 
-        $now = time();
-        $div = ($timestamp - $now);
+        $expires = $validUntil - time();
 
         // Log
         $this->log->log("Start Download (client: $file->client_id; salt: $salt; hash: $hash; hashGiven: $hashGiven)",
@@ -1042,7 +1035,6 @@ class Files extends BaseController
                     'collection_id' => $file->collection_id,
                     'file_id'       => $file->id,
                     'user_id'       => $userId,
-                    //'anonymous_cookie' => $anonymousCookie,
                     'referer'       => 'OCS-API',
                     'source'        => 'OCS-API',
                     'user_agent'    => $agent
@@ -1054,7 +1046,6 @@ class Files extends BaseController
                     'collection_id' => $file->collection_id,
                     'file_id'       => $file->id,
                     'user_id'       => $userId,
-                    //'anonymous_cookie' => $anonymousCookie,
                     'source'        => 'OCS-Webserver',
                     'link_type'     => $linkType,
                     'referer'       => null,
@@ -1068,12 +1059,13 @@ class Files extends BaseController
                 $this->models->files_downloaded_all->$downloadedId = $data;
             } catch (Exception $exc) {
                 //echo $exc->getTraceAsString();
-                $this->log->log("ERROR saving Download Data to DB: {$exc->getMessage()} :: {$exc->getTraceAsString()}", LOG_ERR);
+                $this->log->log("ERROR saving Download Data to DB: {$exc->getMessage()} :: {$exc->getTraceAsString()}",
+                    LOG_ERR);
             }
         }
 
 
-        if ($as || $isFromOcsApi || $isFilepreview || ($hashGiven == $hash && $div > 0)) {
+        if ($as || $isFromOcsApi || $isFilepreview || ($hashGiven == $hash && $expires > 0)) {
             // Link is ok, go on
             $collection = $this->models->collections->$collectionId;
 
@@ -1148,7 +1140,7 @@ class Files extends BaseController
                         );
 
                         // save download in impression table
-                        $this->modelOcs->impressions->save(array(
+                        $this->modelOcs->ocs_downloads->save(array(
                             'file_id' => $file->id,
                             'ip'      => $ip,
                             'fp'      => $fp,
@@ -1178,7 +1170,7 @@ class Files extends BaseController
         } else {
             // Link is not ok
             // Log
-            $this->log->log("Start Download failed (file: $file->id; time-div: $div;  client: $file->client_id; salt: $salt; hash: $hash; hashGiven: $hashGiven)",
+            $this->log->log("Start Download failed (file: $file->id; time-div: $expires;  client: $file->client_id; salt: $salt; hash: $hash; hashGiven: $hashGiven)",
                 LOG_NOTICE);
             // Redirect to opendesktop project page
             $this->response->redirect($this->appConfig->general['redirectTargetServer'] . '/co/' . $collectionId);

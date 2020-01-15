@@ -21,13 +21,13 @@
  * along with Foobar.  If not, see <http://www.gnu.org/licenses/>.
  **/
 
-class table_ocs_impressions extends BaseModel
+class table_ocs_downloads extends BaseModel
 {
 
     public function __construct(&$db)
     {
         parent::__construct($db, $db->getTableConfig());
-        $this->setName('stat_page_impression');
+        $this->setName('stat_file_downloads');
         $this->setPrimaryInsert(true);
     }
 
@@ -42,12 +42,16 @@ class table_ocs_impressions extends BaseModel
         $ipClientv6 = filter_var($value['ip'], FILTER_VALIDATE_IP, FILTER_FLAG_IPV6) ? $value['ip'] : null;
         $ipClientv4 = filter_var($value['ip'], FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) ? $value['ip'] : null;
 
-        $sql = ("INSERT IGNORE INTO `stat_page_impression` (`seen_at`, `ip_inet`, `object_type`, `object_id`, `ipv4`, `ipv6`, `fingerprint`, `user_agent`, `member_id_viewer`) VALUES (:seen, :ip_inet, :object_type, :product_id, :ipv4, :ipv6, :fp, :ua, :member)");
+        $sql = ("INSERT IGNORE INTO `stat_file_download` (`seen_at`, `ip_inet`, `object_type`, `object_id`, `ipv4`, `ipv6`, `fingerprint`, `user_agent`, `member_id_viewer`) VALUES (:seen, :ip_inet, :object_type, :product_id, :ipv4, :ipv6, :fp, :ua, :member)");
+        $ip_inet = isset($value['ip']) ? $value['ip'] : $this->_getIp();
+        $time = (round(time() / 300)) * 300;
+        $seen_at = date('Y-m-d H:i:s', $time);
+
         $this->_db->addStatementLog($sql);
         $stmt = $this->getDb()->prepare($sql);
         $stmt->execute(array(
-            'seen'        => round(time() / 300),
-            'ip_inet'     => inet_pton($value['ip']),
+            'seen'        => $seen_at,
+            'ip_inet'     => inet_pton($ip_inet),
             'object_type' => 40,
             'product_id'  => $value['file_id'],
             'ipv6'        => $ipClientv6,

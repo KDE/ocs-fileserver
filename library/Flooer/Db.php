@@ -102,6 +102,9 @@ class Flooer_Db extends PDO
                 parent::FETCH_ASSOC
             );
         }
+        if (!isset($this->_config['driverOptions'][parent::ATTR_PERSISTENT])) {
+            parent::setAttribute(parent::ATTR_PERSISTENT, false);
+        }
     }
 
     /**

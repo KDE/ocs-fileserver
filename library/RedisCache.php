@@ -40,7 +40,7 @@ class RedisCache
         }
 
         $resultPing = $this->redisCache->ping();
-        if ($resultPing) {
+        if (!$resultPing) {
             throw new Exception("Redis connection is inaccessible: {$resultPing}");
         }
         //$this->redisCache->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_JSON);

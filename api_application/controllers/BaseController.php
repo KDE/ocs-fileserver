@@ -21,6 +21,18 @@
  * along with Foobar.  If not, see <http://www.gnu.org/licenses/>.
  **/
 
+/**
+ * Class BaseController
+ *
+ * @property RedisCache redisCache
+ * @property object appConfig
+ * @property Flooer_Log log
+ * @property Flooer_Http_Response response
+ * @property ModelContainer models
+ * @property OcsModel modelOcs
+ * @property Flooer_Http_Request request
+ *
+ */
 class BaseController extends Flooer_Controller
 {
 

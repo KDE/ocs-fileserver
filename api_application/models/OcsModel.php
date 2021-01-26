@@ -29,7 +29,7 @@ class OcsModel
     protected $_db = null;
 
     protected $_config = array(
-        'createTables' => true
+        'createTables' => false
     );
 
     public $profiles = null;
@@ -43,6 +43,7 @@ class OcsModel
         }
 
         $this->ocs_downloads = new table_ocs_downloads($this->_db);
+        $this->ocs_downloads->setOcsDbConfig($this->_config);
     }
 
     public function getDb()

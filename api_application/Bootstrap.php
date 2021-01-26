@@ -106,8 +106,8 @@ class Bootstrap extends Flooer_Application_Bootstrap
         try {
             $db = new Flooer_Db(parse_ini_file('configs/database.ini', true));
             $this->getApplication()->setResource('db', $db);
-            $db_ocs = new Flooer_Db(parse_ini_file('configs/database_ocs.ini', true));
-            $this->getApplication()->setResource('db_ocs', $db_ocs);
+//            $db_ocs = new Flooer_Db(parse_ini_file('configs/database_ocs.ini', true));
+//            $this->getApplication()->setResource('db_ocs', $db_ocs);
         }
         catch (Exception $exception) {
             $response = $this->getApplication()->getResource('response');
@@ -125,17 +125,27 @@ class Bootstrap extends Flooer_Application_Bootstrap
     {
         require_once 'models/BaseModel.php';
         require_once 'models/ModelContainer.php';
+        /** @var Flooer_Db $db */
         $db = $this->getApplication()->getResource('db');
-        $models = new ModelContainer(
-            $db,
-            parse_ini_file('configs/models.ini', true)
-        );
+        $models = new ModelContainer($db, parse_ini_file('configs/models.ini', true));
         $this->getApplication()->setResource('models', $models);
 
         require_once 'models/OcsModel.php';
-        $db2 = $this->getApplication()->getResource('db_ocs');
-        $modelOcs = new OcsModel($db2);
+//        $db2 = $this->getApplication()->getResource('db_ocs');
+        $dbConfig = parse_ini_file('configs/database.ini', true);
+        $modelOcs = new OcsModel($db, $dbConfig);
         $this->getApplication()->setResource('modelOcs', $modelOcs);
+    }
+
+    public function initRedisCache()
+    {
+        $appConfig = $this->getApplication()->getResource('appConfig');
+        $config = $appConfig->redis;
+        $redisCache = null;
+        if (boolval($config['enabled'])) {
+            $redisCache = new RedisCache($config);
+        }
+        $this->getApplication()->setResource('redisCache', $redisCache);
     }
 
 }

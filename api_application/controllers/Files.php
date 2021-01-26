@@ -26,6 +26,7 @@ class Files extends BaseController
 
     const MIN_TIME = 60;
     const MAX_REQUEST_PER_MINUTE = 10;
+    const BLOCKING_PERIOD = 180;
 
     public function getIndex()
     {
@@ -1027,7 +1028,7 @@ class Files extends BaseController
 
             return;
         }
-        if ($this->tooManyRequests($payloadHash, $expires)) {
+        if ($this->tooManyRequests($payloadHash, self::BLOCKING_PERIOD)) {
             $this->log->log("Download too many requests (file: $file->id; time-div: $expires;  client: $file->client_id; salt: $salt; hash: $hash; hashGiven: $hashGiven)", LOG_NOTICE);
             $this->response->setStatus(429);
             $this->_setResponseContent('error', array('message' => 'too many requests'));

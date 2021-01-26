@@ -39,8 +39,9 @@ class RedisCache
             $this->redisCache->auth('password');
         }
 
-        if (true !== $this->redisCache->ping()) {
-            throw new Exception("Redis connection is inaccessible");
+        $resultPing = $this->redisCache->ping();
+        if ($resultPing) {
+            throw new Exception("Redis connection is inaccessible: {$resultPing}");
         }
         //$this->redisCache->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_JSON);
     }

@@ -24,10 +24,13 @@
 class table_ocs_downloads extends BaseModel
 {
 
+    protected $ocsDbConfig;
+    protected $dbName;
+
     public function __construct(&$db)
     {
         parent::__construct($db, $db->getTableConfig());
-        $this->setName('stat_file_downloads');
+        $this->setName('stat_object_download');
         $this->setPrimaryInsert(true);
     }
 
@@ -45,14 +48,14 @@ class table_ocs_downloads extends BaseModel
         $ipClientv6 = filter_var($value['ip'], FILTER_VALIDATE_IP, FILTER_FLAG_IPV6) ? $value['ip'] : $ipRemoteV6;
         $ipClientv4 = filter_var($value['ip'], FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) ? $value['ip'] : $ipRemoteV4;
 
-        $sql = ("INSERT IGNORE INTO `stat_object_download` (`seen_at`, `ip_inet`, `object_type`, `object_id`, `ipv4`, `ipv6`, `fingerprint`, `user_agent`, `member_id_viewer`) VALUES (:seen, :ip_inet, :object_type, :product_id, :ipv4, :ipv6, :fp, :ua, :member)");
+        $sql = ("INSERT IGNORE INTO `{$this->dbName}`.`stat_object_download` (`seen_at`, `ip_inet`, `object_type`, `object_id`, `ipv4`, `ipv6`, `fingerprint`, `user_agent`, `member_id_viewer`) VALUES (:seen, :ip_inet, :object_type, :product_id, :ipv4, :ipv6, :fp, :ua, :member)");
         $ip_inet = isset($value['ip']) ? $value['ip'] : $this->_getIp();
         $time = (round(time() / 300)) * 300;
         $seen_at = date('Y-m-d H:i:s', $time);
 
         $this->_db->addStatementLog($sql);
         $stmt = $this->getDb()->prepare($sql);
-        $stmt->execute(array(
+        $ret = $stmt->execute(array(
             'seen'        => $seen_at,
             'ip_inet'     => inet_pton($ip_inet),
             'object_type' => 40,
@@ -63,8 +66,28 @@ class table_ocs_downloads extends BaseModel
             'ua'          => $_SERVER['HTTP_USER_AGENT'] ? $_SERVER['HTTP_USER_AGENT'] : null,
             'member'      => isset($value['u']) ? $value['u'] : null
         ));
+        if (false == $ret) {
+            error_log(__FUNCTION__ . ' - ' . $stmt->errorInfo());
+        }
         $stmt->closeCursor();
         $stmt = null;
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getOcsDbConfig()
+    {
+        return $this->ocsDbConfig;
+    }
+
+    /**
+     * @param mixed $ocsDbConfig
+     */
+    public function setOcsDbConfig($ocsDbConfig)
+    {
+        $this->ocsDbConfig = $ocsDbConfig;
+        $this->dbName = $this->ocsDbConfig['ocsDbConfig']['database'];
     }
 
 }

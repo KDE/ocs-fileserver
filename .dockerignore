@@ -1,0 +1,7 @@
+.git
+.deployment
+.idea
+data/database/*
+data/logs/*
+data/thumbnails/*
+data/zsync/*

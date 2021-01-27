@@ -995,10 +995,8 @@ class Files extends BaseController
             // if request comes from api then overwrite some details
             if ($isFromOcsApi) {
                 $ref = 'OCS-API';
-                $data = array(
-                    'referer' => $ref,
-                    'source'  => $ref,
-                );
+                $data['referer'] = $ref;
+                $data['source'] = $ref;
             }
 
             try {
@@ -1029,7 +1027,7 @@ class Files extends BaseController
             return;
         }
         if ($this->tooManyRequests($payloadHash, self::BLOCKING_PERIOD)) {
-            $this->log->log("Download too many requests (file: $file->id; time-div: $expires;  client: $file->client_id; salt: $salt; hash: $hash; hashGiven: $hashGiven)", LOG_NOTICE);
+            $this->log->log("Too many requests (file: $file->id; time-div: $expires;  client: $file->client_id; salt: $salt; hash: $hash; hashGiven: $hashGiven)", LOG_NOTICE);
             $this->response->setStatus(429);
             $this->_setResponseContent('error', array('message' => 'too many requests'));
 
@@ -1037,7 +1035,7 @@ class Files extends BaseController
         }
         $uniqueDownload = $this->uniqueDownload($payloadHash, $expires);
         if (!$uniqueDownload) {
-            $this->log->log("Download too many downloads for one token (file: $file->id; time-div: $expires;  client: $file->client_id; salt: $salt; hash: $hash; hashGiven: $hashGiven)", LOG_NOTICE);
+            $this->log->log("Too many downloads for one token (file: $file->id; time-div: $expires;  client: $file->client_id; salt: $salt; hash: $hash; hashGiven: $hashGiven)", LOG_NOTICE);
         }
 
 

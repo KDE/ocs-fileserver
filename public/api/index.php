@@ -1,5 +1,4 @@
 <?php
-
 /**
  * ocs-fileserver
  *
@@ -21,14 +20,21 @@
  * along with Foobar.  If not, see <http://www.gnu.org/licenses/>.
  **/
 
+include '../../vendor/autoload.php';
+
 require_once '../../library/Flooer/Application.php';
 
-$application = new Flooer_Application(array(
-    'baseDir' => '../../api_application',
-    'memoryLimit' => '512M',
-    'maxExecutionTime' => 660,
-    'socketTimeout' => 600
-));
+$application = new Flooer_Application(
+    array(
+        'baseDir'          => '../../api_application',
+        'memoryLimit'      => '512M',
+        'maxExecutionTime' => 660,
+        'socketTimeout'    => 600,
+        'autoloadConfig'   => array(
+            'register' => false,
+        ),
+    )
+);
 
 switch (strtolower($_SERVER['SERVER_NAME'])) {
     case 'localhost':

@@ -1,4 +1,4 @@
-<?php
+<?php /** @noinspection PhpUndefinedFieldInspection */
 
 /**
  * ocs-fileserver
@@ -104,6 +104,10 @@ class BaseController extends Flooer_Controller
                 flush();
             }
             fclose($fp);
+        }
+
+        if (php_sapi_name() == 'fpm-fcgi') {
+            fastcgi_finish_request();
         }
 
         exit;

@@ -589,6 +589,8 @@ class Flooer_Application_Dispatch
      * Render a default error page
      *
      * @return  void
+     * @throws Flooer_Exception
+     * @throws Flooer_Exception
      */
     public function renderErrorPage()
     {

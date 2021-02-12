@@ -8,8 +8,15 @@ data/files/*
 data/logs/*
 data/thumbnails/*
 data/zsync/*
+data/torrents/*
 public/.well-known/*
 public/google*.html
 public/robots.txt
 .idea
-
+vendor
+composer.lock
+docker-compose.yml
+*Dockerfile
+.backup
+.deployment
+.docker

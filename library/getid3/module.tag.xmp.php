@@ -219,14 +219,14 @@ class Image_XMP
 		return false;
 	}
 
-	/**
-	* Parses a string containing XMP data (XML), and returns an array
-	* which contains all the XMP (XML) information.
-	*
-	* @param string $xml_text - a string containing the XMP data (XML) to be parsed
-	* @return array $xmp_array - an array containing all xmp details retrieved.
-	* @return boolean FALSE - couldn't parse the XMP data
-	*/
+    /**
+     * Parses a string containing XMP data (XML), and returns an array
+     * which contains all the XMP (XML) information.
+     *
+     * @param $xmltext
+     *
+     * @return array $xmp_array - an array containing all xmp details retrieved.
+     */
 	public function read_XMP_array_from_text($xmltext)
 	{
 		// Check if there actually is any text to parse

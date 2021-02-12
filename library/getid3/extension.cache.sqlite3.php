@@ -91,11 +91,12 @@
 */
 class getID3_cached_sqlite3 extends getID3 {
 
-	/**
-	* __construct()
-	* @param string $table holds name of sqlite table
-	* @return type
-	*/
+    /**
+     * __construct()
+     *
+     * @param string $table holds name of sqlite table
+     * @param bool   $hide
+     */
 	public function __construct($table='getid3_cache', $hide=false) {
 		$this->table = $table; // Set table
 		$file = dirname(__FILE__).'/'.basename(__FILE__, 'php').'sqlite';
@@ -228,13 +229,15 @@ class getID3_cached_sqlite3 extends getID3 {
 			$rows[] = unserialize(base64_decode($row));
 		}
 		return $rows;
-	}
+    }
 
-	/**
-	* use the magical __get() for sql queries
-	*
-	* access as easy as $this->{case name}, returns NULL if query is not found
-	*/
+    /**
+     * use the magical __get() for sql queries
+     *
+     * access as easy as $this->{case name}, returns NULL if query is not found
+     * @param $name
+     * @return string|null
+     */
 	public function __get($name) {
 		switch($name) {
 			case 'version_check':

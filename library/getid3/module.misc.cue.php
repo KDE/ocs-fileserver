@@ -51,11 +51,14 @@ class getid3_cue extends getid3_handler
 		$filedata = file_get_contents($filename);
 		return $this->readCueSheet($filedata);
 	}
-	/**
-	* Parses a cue sheet file.
-	*
-	* @param string $filename - The filename for the cue sheet to open.
-	*/
+
+    /**
+     * Parses a cue sheet file.
+     *
+     * @param $filedata
+     *
+     * @return array
+     */
 	public function readCueSheet(&$filedata)
 	{
 		$cue_lines = array();

@@ -1,4 +1,5 @@
 <?php
+/** @noinspection PhpUndefinedFieldInspection */
 
 /**
  * ocs-fileserver
@@ -20,7 +21,6 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with Foobar.  If not, see <http://www.gnu.org/licenses/>.
  **/
-
 class Files extends BaseController
 {
 
@@ -1049,19 +1049,25 @@ class Files extends BaseController
 
 
         $collectionDir = '';
+        $sendFileCollection = '';
         if ($collection->active) {
             $collectionDir = $this->appConfig->general['filesDir'] . '/' . $collection->name;
+            $sendFileCollection = $collection->name;
         } else {
             $collectionDir = $this->appConfig->general['filesDir'] . '/.trash/' . $collection->id . '-' . $collection->name;
             $this->log->log("Collection inactive take it from trash(collection: $collection->id file: $file->id; time-div: $expires;  client: $file->client_id; salt: $salt; hash: $hash; hashGiven: $hashGiven)", LOG_NOTICE);
+            $sendFileCollection = '.trash/' . $collection->id . '-' . $collection->name;;
         }
 
         $filePath = '';
+        $sendFilePath = '';
         if ($file->active) {
             $filePath = $collectionDir . '/' . $file->name;
+            $sendFilePath = 'data/files/' . $sendFileCollection . '/' . $file->name;
         } else {
             $filePath = $collectionDir . '/.trash/' . $file->id . '-' . $file->name;
             $this->log->log("File inactive take it from trash(file: $file->id; time-div: $expires;  client: $file->client_id; salt: $salt; hash: $hash; hashGiven: $hashGiven)", LOG_NOTICE);
+            $sendFilePath = 'data/files/' . $sendFileCollection . '/.trash/' . $file->id . '-' . $file->name;
         }
 
         $fileName = $file->name;
@@ -1085,14 +1091,31 @@ class Files extends BaseController
             $fileName .= '.zsync';
             $fileType = 'application/x-zsync';
             $fileSize = filesize($zsyncPath);
-        } else {
-            if (!$isFilepreview && !$headeronly) {
-                $this->models->files->updateDownloadedStatus($file->id);
 
-                try {
-                    //$downloadedId = $this->models->files_downloaded->generateId();
-                    $downloadedId = $this->models->files_downloaded->generateNewId();
-                    $this->models->files_downloaded->$downloadedId = array(
+            $this->_sendFile(
+                $filePath, $fileName, $fileType, $fileSize, true, $headeronly
+            );
+        }
+
+        if (!$isFilepreview && !$headeronly) {
+            $this->models->files->updateDownloadedStatus($file->id);
+
+            try {
+                //$downloadedId = $this->models->files_downloaded->generateId();
+                $downloadedId = $this->models->files_downloaded->generateNewId();
+                $this->models->files_downloaded->$downloadedId = array(
+                    'client_id'     => $file->client_id,
+                    'owner_id'      => $file->owner_id,
+                    'collection_id' => $file->collection_id,
+                    'file_id'       => $file->id,
+                    'user_id'       => $userId,
+                    'referer'       => $ref,
+                );
+
+                //save unique dataset
+                if ($uniqueDownload) {
+                    $downloadedId = $this->models->files_downloaded_unique->generateNewId();
+                    $this->models->files_downloaded_unique->$downloadedId = array(
                         'client_id'     => $file->client_id,
                         'owner_id'      => $file->owner_id,
                         'collection_id' => $file->collection_id,
@@ -1100,45 +1123,34 @@ class Files extends BaseController
                         'user_id'       => $userId,
                         'referer'       => $ref,
                     );
-
-                    //save unique dataset
-                    if ($uniqueDownload) {
-                        $downloadedId = $this->models->files_downloaded_unique->generateNewId();
-                        $this->models->files_downloaded_unique->$downloadedId = array(
-                            'client_id'     => $file->client_id,
-                            'owner_id'      => $file->owner_id,
-                            'collection_id' => $file->collection_id,
-                            'file_id'       => $file->id,
-                            'user_id'       => $userId,
-                            'referer'       => $ref,
-                        );
-                    }
-
-                    // save download in impression table
-                    $this->modelOcs->ocs_downloads->save(
-                        array(
-                            'file_id' => $file->id,
-                            'ip'      => $ip,
-                            'fp'      => $fp,
-                            'u'       => $userId,
-                        )
-                    );
-                } catch (Exception $exc) {
-                    //echo $exc->getTraceAsString();
-                    $this->log->log("ERROR saving Download Data to DB: $exc->getMessage()", LOG_ERR);
                 }
-            }
 
-            // If external URI has set, redirect to it
-            $externalUri = $this->_detectLinkInTags($file->tags);
-            if (!empty($externalUri)) {
-                $this->response->redirect($externalUri);
+                // save download in impression table
+                $this->modelOcs->ocs_downloads->save(
+                    array(
+                        'file_id' => $file->id,
+                        'ip'      => $ip,
+                        'fp'      => $fp,
+                        'u'       => $userId,
+                    )
+                );
+            } catch (Exception $exc) {
+                //echo $exc->getTraceAsString();
+                $this->log->log("ERROR saving Download Data to DB: $exc->getMessage()", LOG_ERR);
             }
         }
 
-        $this->_sendFile(
-            $filePath, $fileName, $fileType, $fileSize, true, $headeronly
-        );
+        // If external URI has set, redirect to it
+        $externalUri = $this->_detectLinkInTags($file->tags);
+        if (!empty($externalUri)) {
+            $this->response->redirect($externalUri);
+        }
+
+        $this->_xSendFile($sendFilePath, $filePath, $fileName, $fileType, $fileSize, true, $headeronly);
+
+//        $this->_sendFile(
+//            $filePath, $fileName, $fileType, $fileSize, true, $headeronly
+//        );
     }
 
     /**
@@ -1202,6 +1214,82 @@ class Files extends BaseController
     }
 
     /**
+     * @param string $sendFilePath
+     * @param string $filePath
+     * @param string $fileName
+     * @param string $fileType
+     * @param string $fileSize
+     * @param bool   $attachment
+     * @param bool   $headeronly
+     */
+    private function _xSendFile($sendFilePath, $filePath, $fileName, $fileType, $fileSize, $attachment = false, $headeronly = false) {
+        if (($headeronly) or (false == $this->appConfig->xsendfile['enabled'])) {
+            $this->_sendFile(
+                $filePath, $fileName, $fileType, $fileSize, true, $headeronly
+            );
+        }
+
+        $disposition = 'inline';
+        if ($attachment) {
+            $disposition = 'attachment';
+        }
+
+        $this->response->setHeader('Content-Type', $fileType);
+        $this->response->setHeader('Content-Length', $fileSize);
+        $this->response->setHeader(
+            'Content-Disposition', $disposition . '; filename="' . $fileName . '"'
+        );
+        $path = $this->appConfig->xsendfile['pathPrefix'] . $sendFilePath;
+        if (boolval($this->appConfig->awss3['enabled'])) {
+            $signedUrl = $this->generateSignedUrl($sendFilePath);
+            $path = $this->appConfig->awss3['pathPrefix'] . $signedUrl;
+        }
+        $this->response->setHeader($this->appConfig->xsendfile['headerName'], $path);
+        $this->response->send();
+
+        if (php_sapi_name() == 'fpm-fcgi') {
+            fastcgi_finish_request();
+        }
+
+        exit();
+    }
+
+    /**
+     * @param string $sendFilePath
+     *
+     * @return string
+     */
+    private function generateSignedUrl($sendFilePath)
+    {
+        if (false == $this->appConfig->awss3['enabled']) {
+            return $sendFilePath;
+        }
+
+        $credentials = new Aws\Credentials\Credentials($this->appConfig->awss3['key'], $this->appConfig->awss3['secret']);
+        // Instantiate an Amazon S3 client.
+        $s3Client = new Aws\S3\S3Client(
+            [
+                'credentials' => $credentials,
+                'version'     => 'latest',
+                'region'      => $this->appConfig->awss3['region'],
+            ]
+        );
+
+        //Creating a presigned URL
+        $cmd = $s3Client->getCommand(
+            'GetObject', [
+            'Bucket' => $this->appConfig->awss3['bucket'],
+            'Key'    => $sendFilePath,
+        ]
+        );
+
+        $request = $s3Client->createPresignedRequest($cmd, $this->appConfig->awss3['signedUrlExpires']);
+
+        // Get the actual presigned-url
+        return preg_replace("(^https?://)", "",(string)$request->getUri());
+    }
+
+    /**
      * @param bool $headeronly
      *
      * @throws Flooer_Exception
@@ -1212,5 +1300,4 @@ class Files extends BaseController
         // This is alias for GET /files/download
         $this->getDownload($headeronly);
     }
-
 }

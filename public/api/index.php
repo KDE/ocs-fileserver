@@ -36,17 +36,14 @@ $application = new Flooer_Application(
     )
 );
 
-switch (strtolower($_SERVER['SERVER_NAME'])) {
-    case 'localhost':
+switch (strtolower(getenv('APPLICATION_ENV'))) {
+    case 'debug':
         $application->setConfig('environment', 'debug');
         break;
-    case 'cc.ppload.com':
+    case 'development':
         $application->setConfig('environment', 'development');
         break;
-    case 'www.ppload.com':
-        // Continue to default
-    case 'dl.opendesktop.org':
-        // Continue to default
+    case 'production':
     default:
         $application->setConfig('environment', 'production');
         break;

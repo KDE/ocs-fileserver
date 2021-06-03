@@ -1146,11 +1146,11 @@ class Files extends BaseController
             $this->response->redirect($externalUri);
         }
 
-        $this->_xSendFile($sendFilePath, $filePath, $fileName, $fileType, $fileSize, true, $headeronly);
+        if (getenv('MOD_X_ACCEL_REDIRECT_ENABLED') === 'on') {
+            $this->_xSendFile($sendFilePath, $filePath, $fileName, $fileType, $fileSize, true, $headeronly);
+        }
 
-//        $this->_sendFile(
-//            $filePath, $fileName, $fileType, $fileSize, true, $headeronly
-//        );
+        $this->_sendFile($filePath, $fileName, $fileType, $fileSize, true, $headeronly);
     }
 
     /**

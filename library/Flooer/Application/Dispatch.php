@@ -102,7 +102,7 @@ class Flooer_Application_Dispatch
      */
     public function __destruct()
     {
-        if (ob_get_length()) {
+        if (ob_get_level()) {
             ob_end_flush();
         }
     }

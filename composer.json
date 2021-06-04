@@ -7,7 +7,7 @@
   "authors": [
     {
       "name": "pling GmbH",
-      "email": "contect@opendesktop.org"
+      "email": "contact@opendesktop.org"
     }
   ],
   "homepage": "https://www.opendesktop.org/",
@@ -31,6 +31,7 @@
     "ext-redis": "*"
   },
   "autoload": {
+    "classmap": ["api_application/", "library/"],
     "psr-0": {
       "Flooer_": "library/",
       "RedisCache": "library/",

@@ -67,7 +67,7 @@ class Flooer_Application
             'baseDir'               => './',
             'environment'           => 'production',
             'safeModeSupport'       => ini_get('safe_mode'),
-            'magicQuotesSupport'    => get_magic_quotes_gpc(),
+            'magicQuotesSupport'    => false,
             'mbstringSupport'       => extension_loaded('mbstring'),
             'memoryLimit'           => '128M',
             'maxExecutionTime'      => 30,

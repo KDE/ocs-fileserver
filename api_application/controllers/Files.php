@@ -1,6 +1,8 @@
 <?php
 /** @noinspection PhpUndefinedFieldInspection */
 
+use Ocs\Storage\FilesystemAdapter;
+
 /**
  * ocs-fileserver
  *
@@ -102,9 +104,7 @@ class Files extends BaseController
             $ids = $this->request->ids;
         }
         if (!empty($this->request->client_id) && !empty($this->request->favoritesby)) {
-            $favoriteIds = $this->_getFavoriteIds(
-                $this->request->client_id, $this->request->favoritesby
-            );
+            $favoriteIds = $this->_getFavoriteIds($this->request->client_id, $this->request->favoritesby);
             if (!$favoriteIds) {
                 $this->response->setStatus(404);
                 throw new Flooer_Exception('Not found', LOG_NOTICE);
@@ -126,9 +126,7 @@ class Files extends BaseController
             $page = $this->request->page;
         }
 
-        $files = $this->models->files->getFiles(
-            $originId, $status, $clientId, $ownerId, $collectionId, $collectionStatus, $collectionCategory, $collectionTags, $collectionContentId, $types, $category, $tags, $ocsCompatibility, $contentId, $search, $ids, $favoriteIds, $downloadedTimeperiodBegin, $downloadedTimeperiodEnd, $sort, $perpage, $page
-        );
+        $files = $this->models->files->getFiles($originId, $status, $clientId, $ownerId, $collectionId, $collectionStatus, $collectionCategory, $collectionTags, $collectionContentId, $types, $category, $tags, $ocsCompatibility, $contentId, $search, $ids, $favoriteIds, $downloadedTimeperiodBegin, $downloadedTimeperiodEnd, $sort, $perpage, $page);
 
         if (!$files) {
             $this->response->setStatus(404);
@@ -153,9 +151,60 @@ class Files extends BaseController
             throw new Flooer_Exception('Not found', LOG_NOTICE);
         }
 
-        $this->_setResponseContent(
-            'success', array('file' => $file)
-        );
+        $this->_setResponseContent('success', array('file' => $file));
+    }
+
+    public function testFileUpload($element_name, &$error_message)
+    {
+        if (!isset($_FILES[$element_name])) {
+            $error_message = "No file upload with name '$element_name' in request.";
+
+            return false;
+        }
+        $error = $_FILES[$element_name]['error'];
+
+        // List at: http://php.net/manual/en/features.file-upload.errors.php
+        if ($error != UPLOAD_ERR_OK) {
+            switch ($error) {
+                case UPLOAD_ERR_INI_SIZE:
+                    $error_message = 'The uploaded file exceeds the upload_max_filesize directive in php.ini.';
+                    break;
+
+                case UPLOAD_ERR_FORM_SIZE:
+                    $error_message = 'The uploaded file exceeds the MAX_FILE_SIZE directive that was specified in the HTML form.';
+                    break;
+
+                case UPLOAD_ERR_PARTIAL:
+                    $error_message = 'The uploaded file was only partially uploaded.';
+                    break;
+
+                case UPLOAD_ERR_NO_FILE:
+                    $error_message = 'No file was uploaded.';
+                    break;
+
+                case UPLOAD_ERR_NO_TMP_DIR:
+                    $error_message = 'Missing a temporary folder.';
+                    break;
+
+                case UPLOAD_ERR_CANT_WRITE:
+                    $error_message = 'Failed to write file to disk.';
+                    break;
+
+                case UPLOAD_ERR_EXTENSION:
+                    $error_message = 'A PHP extension interrupted the upload.';
+                    break;
+
+                default:
+                    $error_message = 'Unknown error';
+                    break;
+            }
+
+            return false;
+        }
+
+        $error_message = null;
+
+        return true;
     }
 
     public function postFile()
@@ -213,30 +262,7 @@ class Files extends BaseController
             if (!empty($_FILES['file']['size'])) {
                 $size = $_FILES['file']['size'];
             }
-        } // for hive files importing (Deprecated) ----------
-        else {
-            if (isset($this->request->local_file_path)) {
-                if (!empty($this->request->local_file_path)) {
-                    $name = mb_substr(strip_tags(basename($this->request->local_file_path)), 0, 200);
-                    $externalUri = $this->_detectLinkInTags($tags);
-                    if ($name == 'empty' && !empty($externalUri)) {
-                        $type = $this->_detectMimeTypeFromUri($externalUri);
-                        $size = $this->_detectFilesizeFromUri($externalUri);
-                    } else {
-                        $finfo = new finfo(FILEINFO_MIME_TYPE);
-                        $type = $finfo->file($this->request->local_file_path);
-                        if (!$type) {
-                            $type = 'application/octet-stream';
-                        }
-                        $size = filesize($this->request->local_file_path);
-                    }
-                }
-                if (!empty($this->request->local_file_name)) {
-                    $name = mb_substr(strip_tags(basename($this->request->local_file_name)), 0, 200);
-                }
-            }
         }
-        // ------------------------------------------------
         if (!empty($this->request->title)) {
             $title = mb_substr(strip_tags($this->request->title), 0, 200);
         }
@@ -296,18 +322,17 @@ class Files extends BaseController
 
         if ($errors) {
             $this->response->setStatus(400);
-            $this->_setResponseContent(
-                'error', array(
-                           'message' => 'Validation error',
-                           'errors'  => $errors,
-                       )
-            );
+            $this->_setResponseContent('error', array('message' => 'Validation error',
+                                                      'errors'  => $errors,));
 
             return;
         }
 
         // Get ID3 tags in the file
         $id3Tags = $this->_getId3Tags($type, $_FILES['file']['tmp_name']);
+
+        $fileSystemAdapter = new FilesystemAdapter($this->appConfig);
+//        $fileSystemAdapter = new \Ocs\Storage\S3Adapter($this->appConfig);
 
         // Prepare to append the file to collection
         $collectionName = null;
@@ -320,10 +345,8 @@ class Files extends BaseController
                 throw new Flooer_Exception('Forbidden', LOG_NOTICE);
             }
             $collectionName = $collection->name;
-            $collectionData = array(
-                'files' => $collection->files + 1,
-                'size'  => $collection->size + $size,
-            );
+            $collectionData = array('files' => $collection->files + 1,
+                                    'size'  => $collection->size + $size,);
         } else {
             // Prepare new collection
             $collectionId = $this->models->collections->generateId();
@@ -336,131 +359,60 @@ class Files extends BaseController
             $collectionVersion = null;
             $collectionContentId = null;
             $collectionContentPage = null;
-            if (!is_dir($this->appConfig->general['filesDir'] . '/' . $collectionName) && !mkdir($this->appConfig->general['filesDir'] . '/' . $collectionName)) {
+            if (true != $fileSystemAdapter->prepareCollectionPath($collectionName)) {
                 $this->response->setStatus(500);
                 throw new Flooer_Exception('Failed to create collection', LOG_ALERT);
             }
-            $collectionData = array(
-                'active'       => $collectionActive,
-                'client_id'    => $clientId,
-                'owner_id'     => $ownerId,
-                'name'         => $collectionName,
-                'files'        => 1,
-                'size'         => $size,
-                'title'        => $collectionTitle,
-                'description'  => $collectionDescription,
-                'category'     => $collectionCategory,
-                'tags'         => $collectionTags,
-                'version'      => $collectionVersion,
-                'content_id'   => $collectionContentId,
-                'content_page' => $collectionContentPage,
-            );
+            $collectionData = array('active'       => $collectionActive,
+                                    'client_id'    => $clientId,
+                                    'owner_id'     => $ownerId,
+                                    'name'         => $collectionName,
+                                    'files'        => 1,
+                                    'size'         => $size,
+                                    'title'        => $collectionTitle,
+                                    'description'  => $collectionDescription,
+                                    'category'     => $collectionCategory,
+                                    'tags'         => $collectionTags,
+                                    'version'      => $collectionVersion,
+                                    'content_id'   => $collectionContentId,
+                                    'content_page' => $collectionContentPage,);
         }
 
         $id = $this->models->files->generateId();
         $originId = $id;
-        $name = $this->_fixFilename($name, $collectionName);
+        $name = $fileSystemAdapter->fixFilename($name, $collectionName);
         if (!$title) {
             $title = $name;
         }
 
         // Save the uploaded file
-        if (isset($_FILES['file'])) {
-            try {
-                move_uploaded_file(
-                    $_FILES['file']['tmp_name'], $this->appConfig->general['filesDir'] . '/' . $collectionName . '/' . $name
-                );
-            } catch (Exception $exc) {
-                //try to change owner 
-                try {
-                    $this->log->log("Set new rights", LOG_NOTICE);
-
-                    $output = shell_exec('/opt/php_root /opt/repair.sh  ' . $collectionName);
-                    // Log
-                    $this->log->log("Set new rights Done: " . $output, LOG_NOTICE);
-
-                } catch (Exception $exc) {
-                    echo $exc->getTraceAsString();
-                }
-
-                if (!move_uploaded_file(
-                    $_FILES['file']['tmp_name'], $this->appConfig->general['filesDir'] . '/' . $collectionName . '/' . $name
-                )) {
-                    $this->response->setStatus(500);
-                    throw new Flooer_Exception('Failed to save the file', LOG_ALERT);
-                }
-            }
-            /*
-            if (!move_uploaded_file(
-                $_FILES['file']['tmp_name'],
-                $this->appConfig->general['filesDir'] . '/' . $collectionName . '/' . $name
-            )) {
-                $this->response->setStatus(500);
-                throw new Flooer_Exception('Failed to save the file', LOG_ALERT);
-            }*/
-        } // for hive files importing (Deprecated) ----------
-        else {
-            if (isset($this->request->local_file_path)) {
-                try {
-                    copy(
-                        $this->request->local_file_path, $this->appConfig->general['filesDir'] . '/' . $collectionName . '/' . $name
-                    );
-
-                } catch (Exception $exc) {
-                    //try to change owner
-                    try {
-                        $this->log->log("Set new rights", LOG_NOTICE);
-
-                        $output = shell_exec('/opt/php_root /opt/repair.sh  ' . $collectionName);
-                        // Log
-                        $this->log->log("Set new rights Done: " . $output, LOG_NOTICE);
-
-                    } catch (Exception $exc) {
-                        echo $exc->getTraceAsString();
-                    }
-
-                    if (!copy(
-                        $this->request->local_file_path, $this->appConfig->general['filesDir'] . '/' . $collectionName . '/' . $name
-                    )) {
-                        $this->response->setStatus(500);
-                        throw new Flooer_Exception('Failed to save the file', LOG_ALERT);
-                    }
-                }
-                /*
-                if (!copy(
-                    $this->request->local_file_path,
-                    $this->appConfig->general['filesDir'] . '/' . $collectionName . '/' . $name
-                )) {
-                    $this->response->setStatus(500);
-                    throw new Flooer_Exception('Failed to save the file', LOG_ALERT);
-                }*/
-            }
+        if (!$fileSystemAdapter->moveUploadedFile($_FILES['file']['tmp_name'], $this->appConfig->general['filesDir'] . '/' . $collectionName . '/' . $name)) {
+            $this->response->setStatus(500);
+            throw new Flooer_Exception('Failed to save the file', LOG_ALERT);
         }
-        // ------------------------------------------------
-
         // Add/Update the collection
         $this->models->collections->$collectionId = $collectionData;
 
         // Add the file
-        $this->models->files->$id = array(
-            'origin_id'        => $originId,
-            'active'           => $active,
-            'client_id'        => $clientId,
-            'owner_id'         => $ownerId,
-            'collection_id'    => $collectionId,
-            'name'             => $name,
-            'type'             => $type,
-            'size'             => $size,
-            'md5sum'           => $md5sum,
-            'title'            => $title,
-            'description'      => $description,
-            'category'         => $category,
-            'tags'             => $tags,
-            'version'          => $version,
-            'ocs_compatible'   => $ocsCompatible,
-            'content_id'       => $contentId,
-            'content_page'     => $contentPage,
-            'downloaded_count' => $downloadedCount // for hive files importing (Deprecated)
+        $this->models->files->$id = array('origin_id'        => $originId,
+                                          'active'           => $active,
+                                          'client_id'        => $clientId,
+                                          'owner_id'         => $ownerId,
+                                          'collection_id'    => $collectionId,
+                                          'name'             => $name,
+                                          'type'             => $type,
+                                          'size'             => $size,
+                                          'md5sum'           => $md5sum,
+                                          'title'            => $title,
+                                          'description'      => $description,
+                                          'category'         => $category,
+                                          'tags'             => $tags,
+                                          'version'          => $version,
+                                          'ocs_compatible'   => $ocsCompatible,
+                                          'content_id'       => $contentId,
+                                          'content_page'     => $contentPage,
+                                          'downloaded_count' => $downloadedCount
+                                          // for hive files importing (Deprecated)
         );
 
         // Add the media
@@ -470,9 +422,7 @@ class Files extends BaseController
 
         $file = $this->models->files->getFile($id);
 
-        $this->_setResponseContent(
-            'success', array('file' => $file)
-        );
+        $this->_setResponseContent('success', array('file' => $file));
     }
 
     private function _getId3Tags($filetype, $filepath)
@@ -489,20 +439,6 @@ class Files extends BaseController
         return $id3Tags;
     }
 
-    private function _fixFilename($name, $collectionName)
-    {
-        if (is_file($this->appConfig->general['filesDir'] . '/' . $collectionName . '/' . $name)) {
-            $fix = date('YmdHis');
-            if (preg_match("/^([^.]+)(\..+)/", $name, $matches)) {
-                $name = $matches[1] . '-' . $fix . $matches[2];
-            } else {
-                $name = $name . '-' . $fix;
-            }
-        }
-
-        return $name;
-    }
-
     private function _addMedia(array $id3Tags, $clientId, $ownerId, $collectionId, $fileId, $defaultTitle)
     {
         // Get artist id or add new one
@@ -513,10 +449,8 @@ class Files extends BaseController
         $artistId = $this->models->media_artists->getId($clientId, $artistName);
         if (!$artistId) {
             $artistId = $this->models->media_artists->generateId();
-            $this->models->media_artists->$artistId = array(
-                'client_id' => $clientId,
-                'name'      => $artistName,
-            );
+            $this->models->media_artists->$artistId = array('client_id' => $clientId,
+                                                            'name'      => $artistName,);
         }
 
         // Get album id or add new one
@@ -527,28 +461,24 @@ class Files extends BaseController
         $albumId = $this->models->media->getAlbumId($clientId, $artistName, $albumName);
         if (!$albumId) {
             $albumId = $this->models->media_albums->generateId();
-            $this->models->media_albums->$albumId = array(
-                'client_id' => $clientId,
-                'name'      => $albumName,
-            );
+            $this->models->media_albums->$albumId = array('client_id' => $clientId,
+                                                          'name'      => $albumName,);
         }
 
         // Add the media
-        $mediaData = array(
-            'client_id'        => $clientId,
-            'owner_id'         => $ownerId,
-            'collection_id'    => $collectionId,
-            'file_id'          => $fileId,
-            'artist_id'        => $artistId,
-            'album_id'         => $albumId,
-            'title'            => $defaultTitle,
-            'genre'            => null,
-            'track'            => null,
-            'creationdate'     => null,
-            'bitrate'          => 0,
-            'playtime_seconds' => 0,
-            'playtime_string'  => 0,
-        );
+        $mediaData = array('client_id'        => $clientId,
+                           'owner_id'         => $ownerId,
+                           'collection_id'    => $collectionId,
+                           'file_id'          => $fileId,
+                           'artist_id'        => $artistId,
+                           'album_id'         => $albumId,
+                           'title'            => $defaultTitle,
+                           'genre'            => null,
+                           'track'            => null,
+                           'creationdate'     => null,
+                           'bitrate'          => 0,
+                           'playtime_seconds' => 0,
+                           'playtime_string'  => 0,);
         if (isset($id3Tags['comments']['title'][0]) && $id3Tags['comments']['title'][0] != '') {
             $mediaData['title'] = mb_substr(strip_tags($id3Tags['comments']['title'][0]), 0, 255);
         }
@@ -707,15 +637,14 @@ class Files extends BaseController
 
             if ($errors) {
                 $this->response->setStatus(400);
-                $this->_setResponseContent(
-                    'error', array(
-                               'message' => 'File upload error',
-                               'errors'  => $errors,
-                           )
-                );
+                $this->_setResponseContent('error', array('message' => 'File upload error',
+                                                          'errors'  => $errors,));
 
                 return;
             }
+
+            $fileSystemAdapter = new FilesystemAdapter($this->appConfig);
+//            $fileSystemAdapter = new S3Adapter($this->appConfig);
 
             // Remove old file
             $this->_removeFile($file);
@@ -726,10 +655,8 @@ class Files extends BaseController
             // Prepare to append the file to collection
             $collection = $this->models->collections->$collectionId;
             $collectionName = $collection->name;
-            $collectionData = array(
-                'files' => $collection->files + 1,
-                'size'  => $collection->size + $size,
-            );
+            $collectionData = array('files' => $collection->files + 1,
+                                    'size'  => $collection->size + $size,);
 
             $id = $this->models->files->generateId();
             $name = $this->_fixFilename($name, $collectionName);
@@ -738,33 +665,31 @@ class Files extends BaseController
             }
 
             // Save the uploaded file
-            if (!move_uploaded_file(
-                $_FILES['file']['tmp_name'], $this->appConfig->general['filesDir'] . '/' . $collectionName . '/' . $name
-            )) {
+            if (!$fileSystemAdapter->moveUploadedFile($_FILES['file']['tmp_name'], $this->appConfig->general['filesDir'] . '/' . $collectionName . '/' . $name)) {
                 $this->response->setStatus(500);
                 throw new Flooer_Exception('Failed to save the file', LOG_ALERT);
             }
 
             // Add the file
-            $this->models->files->$id = array(
-                'origin_id'        => $originId,
-                'active'           => $active,
-                'client_id'        => $clientId,
-                'owner_id'         => $ownerId,
-                'collection_id'    => $collectionId,
-                'name'             => $name,
-                'type'             => $type,
-                'size'             => $size,
-                'md5sum'           => $md5sum,
-                'title'            => $title,
-                'description'      => $description,
-                'category'         => $category,
-                'tags'             => $tags,
-                'version'          => $version,
-                'ocs_compatible'   => $ocsCompatible,
-                'content_id'       => $contentId,
-                'content_page'     => $contentPage,
-                'downloaded_count' => $downloadedCount // for hive files importing (Deprecated)
+            $this->models->files->$id = array('origin_id'        => $originId,
+                                              'active'           => $active,
+                                              'client_id'        => $clientId,
+                                              'owner_id'         => $ownerId,
+                                              'collection_id'    => $collectionId,
+                                              'name'             => $name,
+                                              'type'             => $type,
+                                              'size'             => $size,
+                                              'md5sum'           => $md5sum,
+                                              'title'            => $title,
+                                              'description'      => $description,
+                                              'category'         => $category,
+                                              'tags'             => $tags,
+                                              'version'          => $version,
+                                              'ocs_compatible'   => $ocsCompatible,
+                                              'content_id'       => $contentId,
+                                              'content_page'     => $contentPage,
+                                              'downloaded_count' => $downloadedCount
+                                              // for hive files importing (Deprecated)
             );
 
             // Update the collection
@@ -808,9 +733,7 @@ class Files extends BaseController
 
         $file = $this->models->files->getFile($id);
 
-        $this->_setResponseContent(
-            'success', array('file' => $file)
-        );
+        $this->_setResponseContent('success', array('file' => $file));
     }
 
     private function _removeFile(Flooer_Db_Table_Row &$file)
@@ -821,15 +744,15 @@ class Files extends BaseController
 
         $collectionId = $file->collection_id;
         $collection = $this->models->collections->$collectionId;
+        $fileSystemAdapter = new FilesystemAdapter($this->appConfig);
+//        $fileSystemAdapter = new S3Adapter($this->appConfig);
 
         $trashDir = $this->appConfig->general['filesDir'] . '/' . $collection->name . '/.trash';
-        if (!is_dir($trashDir) && !mkdir($trashDir)) {
+        if (true != $fileSystemAdapter->testAndCreate($trashDir)) {
             $this->response->setStatus(500);
             throw new Flooer_Exception('Failed to remove the file', LOG_ALERT);
         }
-        if (is_file($this->appConfig->general['filesDir'] . '/' . $collection->name . '/' . $file->name) && !rename(
-                $this->appConfig->general['filesDir'] . '/' . $collection->name . '/' . $file->name, $trashDir . '/' . $id . '-' . $file->name
-            )) {
+        if (true != $fileSystemAdapter->moveFile($this->appConfig->general['filesDir'] . '/' . $collection->name . '/' . $file->name, $trashDir . '/' . $id . '-' . $file->name)) {
             $this->response->setStatus(500);
             throw new Flooer_Exception('Failed to remove the file', LOG_ALERT);
         }
@@ -840,10 +763,22 @@ class Files extends BaseController
         $this->models->media->deleteByFileId($id);
         $this->models->media_played->deleteByFileId($id);
 
-        $this->models->collections->$collectionId = array(
-            'files' => $collection->files - 1,
-            'size'  => $collection->size - $file->size,
-        );
+        $this->models->collections->$collectionId = array('files' => $collection->files - 1,
+                                                          'size'  => $collection->size - $file->size,);
+    }
+
+    private function _fixFilename($name, $collectionName)
+    {
+        if (is_file($this->appConfig->general['filesDir'] . '/' . $collectionName . '/' . $name)) {
+            $fix = date('YmdHis');
+            if (preg_match("/^([^.]+)(\..+)/", $name, $matches)) {
+                $name = $matches[1] . '-' . $fix . $matches[2];
+            } else {
+                $name = $name . '-' . $fix;
+            }
+        }
+
+        return $name;
     }
 
     public function deleteFile()
@@ -981,17 +916,15 @@ class Files extends BaseController
         //remark: I really don't understand why we keep all this shit (20210125 alex)
         $ref = null;
         if (false == $isFilepreview) {
-            $data = array(
-                'client_id'     => $file->client_id,
-                'owner_id'      => $file->owner_id,
-                'collection_id' => $file->collection_id,
-                'file_id'       => $file->id,
-                'user_id'       => $userId,
-                'link_type'     => $linkType,
-                'source'        => 'OCS-Webserver',
-                'referer'       => $ref,
-                'user_agent'    => $agent,
-            );
+            $data = array('client_id'     => $file->client_id,
+                          'owner_id'      => $file->owner_id,
+                          'collection_id' => $file->collection_id,
+                          'file_id'       => $file->id,
+                          'user_id'       => $userId,
+                          'link_type'     => $linkType,
+                          'source'        => 'OCS-Webserver',
+                          'referer'       => $ref,
+                          'user_agent'    => $agent,);
             // if request comes from api then overwrite some details
             if ($isFromOcsApi) {
                 $ref = 'OCS-API';
@@ -1056,7 +989,7 @@ class Files extends BaseController
         } else {
             $collectionDir = $this->appConfig->general['filesDir'] . '/.trash/' . $collection->id . '-' . $collection->name;
             $this->log->log("Collection inactive take it from trash(collection: $collection->id file: $file->id; time-div: $expires;  client: $file->client_id; salt: $salt; hash: $hash; hashGiven: $hashGiven)", LOG_NOTICE);
-            $sendFileCollection = '.trash/' . $collection->id . '-' . $collection->name;;
+            $sendFileCollection = '.trash/' . $collection->id . '-' . $collection->name;
         }
 
         $filePath = '';
@@ -1092,9 +1025,7 @@ class Files extends BaseController
             $fileType = 'application/x-zsync';
             $fileSize = filesize($zsyncPath);
 
-            $this->_sendFile(
-                $filePath, $fileName, $fileType, $fileSize, true, $headeronly
-            );
+            $this->_sendFile($filePath, $fileName, $fileType, $fileSize, true, $headeronly);
         }
 
         if (!$isFilepreview && !$headeronly) {
@@ -1103,37 +1034,29 @@ class Files extends BaseController
             try {
                 //$downloadedId = $this->models->files_downloaded->generateId();
                 $downloadedId = $this->models->files_downloaded->generateNewId();
-                $this->models->files_downloaded->$downloadedId = array(
-                    'client_id'     => $file->client_id,
-                    'owner_id'      => $file->owner_id,
-                    'collection_id' => $file->collection_id,
-                    'file_id'       => $file->id,
-                    'user_id'       => $userId,
-                    'referer'       => $ref,
-                );
+                $this->models->files_downloaded->$downloadedId = array('client_id'     => $file->client_id,
+                                                                       'owner_id'      => $file->owner_id,
+                                                                       'collection_id' => $file->collection_id,
+                                                                       'file_id'       => $file->id,
+                                                                       'user_id'       => $userId,
+                                                                       'referer'       => $ref,);
 
                 //save unique dataset
                 if ($uniqueDownload) {
                     $downloadedId = $this->models->files_downloaded_unique->generateNewId();
-                    $this->models->files_downloaded_unique->$downloadedId = array(
-                        'client_id'     => $file->client_id,
-                        'owner_id'      => $file->owner_id,
-                        'collection_id' => $file->collection_id,
-                        'file_id'       => $file->id,
-                        'user_id'       => $userId,
-                        'referer'       => $ref,
-                    );
+                    $this->models->files_downloaded_unique->$downloadedId = array('client_id'     => $file->client_id,
+                                                                                  'owner_id'      => $file->owner_id,
+                                                                                  'collection_id' => $file->collection_id,
+                                                                                  'file_id'       => $file->id,
+                                                                                  'user_id'       => $userId,
+                                                                                  'referer'       => $ref,);
                 }
 
                 // save download in impression table
-                $this->modelOcs->ocs_downloads->save(
-                    array(
-                        'file_id' => $file->id,
-                        'ip'      => $ip,
-                        'fp'      => $fp,
-                        'u'       => $userId,
-                    )
-                );
+                $this->modelOcs->ocs_downloads->save(array('file_id' => $file->id,
+                                                           'ip'      => $ip,
+                                                           'fp'      => $fp,
+                                                           'u'       => $userId,));
             } catch (Exception $exc) {
                 //echo $exc->getTraceAsString();
                 $this->log->log("ERROR saving Download Data to DB: $exc->getMessage()", LOG_ERR);
@@ -1165,10 +1088,8 @@ class Files extends BaseController
         if (0 < $expires) {
             $ttl = $expires;
         }
-        $request = array(
-            'count'     => 1,
-            'last_seen' => time(),
-        );
+        $request = array('count'     => 1,
+                         'last_seen' => time(),);
         if ($this->redisCache) {
             if ($this->redisCache->has($payloadHash)) {
                 $request = $this->redisCache->get($payloadHash);
@@ -1222,11 +1143,16 @@ class Files extends BaseController
      * @param bool   $attachment
      * @param bool   $headeronly
      */
-    private function _xSendFile($sendFilePath, $filePath, $fileName, $fileType, $fileSize, $attachment = false, $headeronly = false) {
+    private function _xSendFile($sendFilePath,
+                                $filePath,
+                                $fileName,
+                                $fileType,
+                                $fileSize,
+                                $attachment = false,
+                                $headeronly = false)
+    {
         if (($headeronly) or (false == $this->appConfig->xsendfile['enabled'])) {
-            $this->_sendFile(
-                $filePath, $fileName, $fileType, $fileSize, true, $headeronly
-            );
+            $this->_sendFile($filePath, $fileName, $fileType, $fileSize, true, $headeronly);
         }
 
         $disposition = 'inline';
@@ -1236,9 +1162,7 @@ class Files extends BaseController
 
         $this->response->setHeader('Content-Type', $fileType);
         $this->response->setHeader('Content-Length', $fileSize);
-        $this->response->setHeader(
-            'Content-Disposition', $disposition . '; filename="' . $fileName . '"'
-        );
+        $this->response->setHeader('Content-Disposition', $disposition . '; filename="' . $fileName . '"');
         $path = $this->appConfig->xsendfile['pathPrefix'] . $sendFilePath;
         if (boolval($this->appConfig->awss3['enabled'])) {
             $signedUrl = $this->generateSignedUrl($sendFilePath);
@@ -1267,26 +1191,18 @@ class Files extends BaseController
 
         $credentials = new Aws\Credentials\Credentials($this->appConfig->awss3['key'], $this->appConfig->awss3['secret']);
         // Instantiate an Amazon S3 client.
-        $s3Client = new Aws\S3\S3Client(
-            [
-                'credentials' => $credentials,
-                'version'     => 'latest',
-                'region'      => $this->appConfig->awss3['region'],
-            ]
-        );
+        $s3Client = new Aws\S3\S3Client(['credentials' => $credentials,
+                                         'version'     => 'latest',
+                                         'region'      => $this->appConfig->awss3['region'],]);
 
         //Creating a presigned URL
-        $cmd = $s3Client->getCommand(
-            'GetObject', [
-            'Bucket' => $this->appConfig->awss3['bucket'],
-            'Key'    => $sendFilePath,
-        ]
-        );
+        $cmd = $s3Client->getCommand('GetObject', ['Bucket' => $this->appConfig->awss3['bucket'],
+                                                   'Key'    => $sendFilePath,]);
 
         $request = $s3Client->createPresignedRequest($cmd, $this->appConfig->awss3['signedUrlExpires']);
 
         // Get the actual presigned-url
-        return preg_replace("(^https?://)", "",(string)$request->getUri());
+        return preg_replace("(^https?://)", "", (string)$request->getUri());
     }
 
     /**
@@ -1299,5 +1215,12 @@ class Files extends BaseController
     {
         // This is alias for GET /files/download
         $this->getDownload($headeronly);
+    }
+
+    public function optionsFile()
+    {
+        $response = $this->response;
+        $response->setStatus(200);
+        $this->response->send();
     }
 }

@@ -1222,5 +1222,9 @@ class Files extends BaseController
         $response = $this->response;
         $response->setStatus(200);
         $this->response->send();
+        if (php_sapi_name() == 'fpm-fcgi') {
+            fastcgi_finish_request();
+        }
+        exit();
     }
 }

@@ -59,7 +59,10 @@ class FilesystemAdapter implements AdapterInterface
 
     public function testAndCreate(string $dir): bool
     {
-        return !is_dir($dir) && mkdir($dir, null, true);
+        if (is_dir($dir)) {
+            return true;
+        }
+        return mkdir($dir, null, true);
     }
 
     public function moveFile($from, $to): bool

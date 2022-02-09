@@ -748,7 +748,8 @@ class Files extends BaseController
 //        $fileSystemAdapter = new S3Adapter($this->appConfig);
 
         $trashDir = $this->appConfig->general['filesDir'] . '/' . $collection->name . '/.trash';
-        if (true != $fileSystemAdapter->testAndCreate($trashDir)) {
+        $this->log->log(__METHOD__ . ' - test trash dir exists: ' . $trashDir . ' :: ' . (is_dir($trashDir)?'true':'false'));
+        if (false == $fileSystemAdapter->testAndCreate($trashDir)) {
             $this->response->setStatus(500);
             throw new Flooer_Exception('Failed to remove the file', LOG_ALERT);
         }

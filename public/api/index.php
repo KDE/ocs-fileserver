@@ -20,6 +20,8 @@
  * along with Foobar.  If not, see <http://www.gnu.org/licenses/>.
  **/
 
+function trigger_deprecation() {}
+
 include '../../vendor/autoload.php';
 
 require_once '../../library/Flooer/Application.php';

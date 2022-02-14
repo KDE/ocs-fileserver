@@ -26,14 +26,9 @@ require_once 'models/table_ocs_downloads.php';
 class OcsModel
 {
 
-    protected $_db = null;
-
-    protected $_config = array(
-        'createTables' => false
-    );
-
     public $profiles = null;
-
+    protected $_db = null;
+    protected $_config = array('createTables' => false);
 
     public function __construct(Flooer_Db &$db, array $config = null)
     {

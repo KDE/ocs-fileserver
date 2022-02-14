@@ -412,7 +412,6 @@ class Files extends BaseController
                                           'content_id'       => $contentId,
                                           'content_page'     => $contentPage,
                                           'downloaded_count' => $downloadedCount
-                                          // for hive files importing (Deprecated)
         );
 
         // Add the media

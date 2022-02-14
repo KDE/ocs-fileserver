@@ -62,6 +62,7 @@ class FilesystemAdapter implements AdapterInterface
         if (is_dir($dir)) {
             return true;
         }
+
         return mkdir($dir, null, true);
     }
 

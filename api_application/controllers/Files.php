@@ -1,6 +1,8 @@
 <?php
 /** @noinspection PhpUndefinedFieldInspection */
 
+use Aws\Credentials\Credentials;
+use Aws\S3\S3Client;
 use Ocs\Storage\FilesystemAdapter;
 
 /**
@@ -154,6 +156,12 @@ class Files extends BaseController
         $this->_setResponseContent('success', array('file' => $file));
     }
 
+    /**
+     * @param $element_name
+     * @param $error_message
+     *
+     * @return bool
+     */
     public function testFileUpload($element_name, &$error_message)
     {
         if (!isset($_FILES[$element_name])) {
@@ -411,8 +419,7 @@ class Files extends BaseController
                                           'ocs_compatible'   => $ocsCompatible,
                                           'content_id'       => $contentId,
                                           'content_page'     => $contentPage,
-                                          'downloaded_count' => $downloadedCount
-        );
+                                          'downloaded_count' => $downloadedCount);
 
         // Add the media
         if ($id3Tags) {
@@ -747,7 +754,7 @@ class Files extends BaseController
 //        $fileSystemAdapter = new S3Adapter($this->appConfig);
 
         $trashDir = $this->appConfig->general['filesDir'] . '/' . $collection->name . '/.trash';
-        $this->log->log(__METHOD__ . ' - test trash dir exists: ' . $trashDir . ' :: ' . (is_dir($trashDir)?'true':'false'));
+        $this->log->log(__METHOD__ . ' - test trash dir exists: ' . $trashDir . ' :: ' . (is_dir($trashDir) ? 'true' : 'false'));
         if (false == $fileSystemAdapter->testAndCreate($trashDir)) {
             $this->response->setStatus(500);
             throw new Flooer_Exception('Failed to remove the file', LOG_ALERT);
@@ -1189,11 +1196,17 @@ class Files extends BaseController
             return $sendFilePath;
         }
 
-        $credentials = new Aws\Credentials\Credentials($this->appConfig->awss3['key'], $this->appConfig->awss3['secret']);
         // Instantiate an Amazon S3 client.
-        $s3Client = new Aws\S3\S3Client(['credentials' => $credentials,
-                                         'version'     => 'latest',
-                                         'region'      => $this->appConfig->awss3['region'],]);
+        if (empty($this->appConfig->awss3['endpoint'])) {
+            $s3Client = new S3Client(['credentials' => new Credentials($this->appConfig->awss3['key'], $this->appConfig->awss3['secret']),
+                                      'version'     => 'latest',
+                                      'region'      => $this->appConfig->awss3['region'],]);
+        } else {
+            $s3Client = new S3Client(['credentials' => new Credentials($this->appConfig->awss3['key'], $this->appConfig->awss3['secret']),
+                                      'version'     => 'latest',
+                                      'region'      => $this->appConfig->awss3['region'],
+                                      'endpoint'    => $this->appConfig->awss3['endpoint'],]);
+        }
 
         //Creating a presigned URL
         $cmd = $s3Client->getCommand('GetObject', ['Bucket' => $this->appConfig->awss3['bucket'],

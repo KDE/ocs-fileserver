@@ -40,7 +40,7 @@
     },
     "psr-4": {
       "Ocs\\Storage\\": "library/Ocs/Storage/",
-      "ocs\\Url\\": "library/Ocs/Url/"
+      "Ocs\\Url\\": "library/Ocs/Url/"
     }
   }
 }

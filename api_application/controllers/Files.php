@@ -4,6 +4,7 @@
 use Aws\Credentials\Credentials;
 use Aws\S3\S3Client;
 use Ocs\Storage\FilesystemAdapter;
+use Ocs\Url\UrlSigner;
 
 /**
  * ocs-fileserver
@@ -222,6 +223,49 @@ class Files extends BaseController
             throw new Flooer_Exception('Forbidden', LOG_NOTICE);
         }
 
+        $errors = array();
+        if (!$this->request->client_id) {
+            $errors['client_id'] = 'Required';
+        }
+        if (!$this->request->owner_id) {
+            $errors['owner_id'] = 'Required';
+        }
+        /*
+        if (!isset($_FILES['file'])) {
+            $errors['file'] = 'Required';
+        }
+        else if (!empty($_FILES['file']['error'])) { // 0 = UPLOAD_ERR_OK
+            $errors['file'] = $_FILES['file']['error'];
+        }
+        */
+        // for hive files importing (Deprecated) ----------
+        if (!isset($_FILES['file']) && !isset($this->request->local_file_path)) {
+            $errors['file'] = 'Required';
+        }
+        if (isset($_FILES['file']) && !empty($_FILES['file']['error'])) { // 0 = UPLOAD_ERR_OK
+            $errors['file'] = $_FILES['file']['error'];
+        }
+        // ------------------------------------------------
+
+        if ($errors) {
+            $this->response->setStatus(400);
+            $this->_setResponseContent('error', array('message' => 'Validation error',
+                                                      'errors'  => $errors,));
+
+            return;
+        }
+
+        $file = $this->processFileUpload();
+
+        $this->_setResponseContent('success', array('file' => $file));
+    }
+
+    /**
+     * @return Flooer_Db_Table_Row|null
+     * @throws Flooer_Exception
+     */
+    private function processFileUpload(): ?Flooer_Db_Table_Row
+    {
         $id = null; // Auto generated
         $originId = null; // Auto generated
         $active = 1;
@@ -304,37 +348,6 @@ class Files extends BaseController
         }
         // ------------------------------------------------
 
-        $errors = array();
-        if (!$clientId) {
-            $errors['client_id'] = 'Required';
-        }
-        if (!$ownerId) {
-            $errors['owner_id'] = 'Required';
-        }
-        /*
-        if (!isset($_FILES['file'])) {
-            $errors['file'] = 'Required';
-        }
-        else if (!empty($_FILES['file']['error'])) { // 0 = UPLOAD_ERR_OK
-            $errors['file'] = $_FILES['file']['error'];
-        }
-        */
-        // for hive files importing (Deprecated) ----------
-        if (!isset($_FILES['file']) && !isset($this->request->local_file_path)) {
-            $errors['file'] = 'Required';
-        }
-        if (isset($_FILES['file']) && !empty($_FILES['file']['error'])) { // 0 = UPLOAD_ERR_OK
-            $errors['file'] = $_FILES['file']['error'];
-        }
-        // ------------------------------------------------
-
-        if ($errors) {
-            $this->response->setStatus(400);
-            $this->_setResponseContent('error', array('message' => 'Validation error',
-                                                      'errors'  => $errors,));
-
-            return;
-        }
 
         // Get ID3 tags in the file
         $id3Tags = $this->_getId3Tags($type, $_FILES['file']['tmp_name']);
@@ -426,9 +439,7 @@ class Files extends BaseController
             $this->_addMedia($id3Tags, $clientId, $ownerId, $collectionId, $id, $name);
         }
 
-        $file = $this->models->files->getFile($id);
-
-        $this->_setResponseContent('success', array('file' => $file));
+        return $this->models->files->getFile($id);
     }
 
     private function _getId3Tags($filetype, $filepath)
@@ -1239,5 +1250,64 @@ class Files extends BaseController
             fastcgi_finish_request();
         }
         exit();
+    }
+
+    public function postUpload()
+    {
+        if (!$this->isValidSignedUrl()) {
+            $this->response->setStatus(403);
+            throw new Flooer_Exception("Forbidden", LOG_NOTICE);
+        }
+
+        $errors = array();
+        if (!$this->request->client_id) {
+            $errors['client_id'] = 'Required';
+        }
+        if (!$this->request->owner_id) {
+            $errors['owner_id'] = 'Required';
+        }
+        /*
+        if (!isset($_FILES['file'])) {
+            $errors['file'] = 'Required';
+        }
+        else if (!empty($_FILES['file']['error'])) { // 0 = UPLOAD_ERR_OK
+            $errors['file'] = $_FILES['file']['error'];
+        }
+        */
+        // for hive files importing (Deprecated) ----------
+        if (!isset($_FILES['file']) && !isset($this->request->local_file_path)) {
+            $errors['file'] = 'Required';
+        }
+        if (isset($_FILES['file']) && !empty($_FILES['file']['error'])) { // 0 = UPLOAD_ERR_OK
+            $errors['file'] = $_FILES['file']['error'];
+        }
+        // ------------------------------------------------
+
+        if ($errors) {
+            $this->response->setStatus(400);
+            $this->_setResponseContent('error', array('message' => 'Validation error',
+                                                      'errors'  => $errors,));
+
+            return;
+        }
+
+        $file = $this->processFileUpload();
+
+        $this->_setResponseContent('success', array('file' => $file));
+    }
+
+    /**
+     * @return bool
+     */
+    private function isValidSignedUrl(): bool
+    {
+        if (!empty($this->request->client_id)) {
+            $clients = parse_ini_file('configs/clients.ini', true);
+            if (isset($clients[$this->request->client_id]) && (UrlSigner::verifySignedUrl($this->request->getUri(), $clients[$this->request->client_id]['secret']))) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

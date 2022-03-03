@@ -39,7 +39,8 @@
       "getid3": "library/getid3/"
     },
     "psr-4": {
-      "Ocs\\Storage\\": "library/Ocs/Storage/"
+      "Ocs\\Storage\\": "library/Ocs/Storage/",
+      "ocs\\Url\\": "library/Ocs/Url/"
     }
   }
 }

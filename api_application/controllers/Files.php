@@ -1316,6 +1316,7 @@ class Files extends BaseController
         if (!empty($this->request->client_id)) {
             $clients = parse_ini_file('configs/clients.ini', true);
             $url = $this->getScheme() . '://' . $this->getHost() . $this->request->getUri();
+            $this->log->log(__METHOD__ . ' - verify signature for $url: ' . $url, LOG_NOTICE);
             if (isset($clients[$this->request->client_id]) && (UrlSigner::verifySignedUrl($url, $clients[$this->request->client_id]['secret']))) {
                 return true;
             }

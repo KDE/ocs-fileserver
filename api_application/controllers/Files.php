@@ -1296,6 +1296,18 @@ class Files extends BaseController
         $this->_setResponseContent('success', array('file' => $file));
     }
 
+    public function optionsUpload()
+    {
+        $response = $this->response;
+        $response->setStatus(200);
+        $this->response->send();
+        if (php_sapi_name() == 'fpm-fcgi') {
+            fastcgi_finish_request();
+        }
+        exit();
+    }
+
+
     /**
      * @return bool
      */

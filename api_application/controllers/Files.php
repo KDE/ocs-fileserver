@@ -163,7 +163,7 @@ class Files extends BaseController
      *
      * @return bool
      */
-    public function testFileUpload($element_name, &$error_message)
+    public function testFileUpload($element_name, &$error_message): bool
     {
         if (!isset($_FILES[$element_name])) {
             $error_message = "No file upload with name '$element_name' in request.";
@@ -538,6 +538,43 @@ class Files extends BaseController
             throw new Flooer_Exception('Forbidden', LOG_NOTICE);
         }
 
+        $errors = array();
+        if (!empty($_FILES['file']['error'])) { // 0 = UPLOAD_ERR_OK
+            $errors['file'] = $_FILES['file']['error'];
+        }
+        if ($errors) {
+            $this->response->setStatus(400);
+            $this->_setResponseContent('error', array('message' => 'File upload error',
+                                                      'errors'  => $errors,));
+
+            return;
+        }
+        $errors = array();
+        if (!$this->request->id) {
+            $errors['id'] = 'Required';
+        }
+        if (!$this->request->client_id) {
+            $errors['client_id'] = 'Required';
+        }
+        if ($errors) {
+            $this->response->setStatus(400);
+            $this->_setResponseContent('error', array('message' => 'Validation error',
+                                                      'errors'  => $errors,));
+
+            return;
+        }
+
+        $file = $this->processFileUpdate();
+
+        $this->_setResponseContent('success', array('file' => $file));
+    }
+
+    /**
+     * @return Flooer_Db_Table_Row|null
+     * @throws Flooer_Exception
+     */
+    protected function processFileUpdate(): ?Flooer_Db_Table_Row
+    {
         $id = null;
         $title = null;
         $description = null;
@@ -647,19 +684,6 @@ class Files extends BaseController
                 $contentPage = $file->content_page;
             }
 
-            $errors = array();
-            if (!empty($_FILES['file']['error'])) { // 0 = UPLOAD_ERR_OK
-                $errors['file'] = $_FILES['file']['error'];
-            }
-
-            if ($errors) {
-                $this->response->setStatus(400);
-                $this->_setResponseContent('error', array('message' => 'File upload error',
-                                                          'errors'  => $errors,));
-
-                return;
-            }
-
             $fileSystemAdapter = new FilesystemAdapter($this->appConfig);
 //            $fileSystemAdapter = new S3Adapter($this->appConfig);
 
@@ -748,9 +772,7 @@ class Files extends BaseController
             $this->models->files->$id = $updata;
         }
 
-        $file = $this->models->files->getFile($id);
-
-        $this->_setResponseContent('success', array('file' => $file));
+        return $this->models->files->getFile($id);
     }
 
     private function _removeFile(Flooer_Db_Table_Row &$file)
@@ -1100,7 +1122,7 @@ class Files extends BaseController
      *
      * @return bool
      */
-    private function tooManyRequests($payloadHash, $expires)
+    private function tooManyRequests(string $payloadHash, int $expires): bool
     {
         $ttl = intval($this->appConfig->redis['ttl']);
         if (0 < $expires) {
@@ -1135,7 +1157,7 @@ class Files extends BaseController
      *
      * @return bool
      */
-    private function uniqueDownload($payloadHash, $expires)
+    private function uniqueDownload(string $payloadHash, int $expires): bool
     {
         $ttl = (0 < $expires) ? intval($expires) : intval($this->appConfig->redis['ttl']);
         $keyName = __FUNCTION__ . ':' . $payloadHash;
@@ -1161,13 +1183,13 @@ class Files extends BaseController
      * @param bool   $attachment
      * @param bool   $headeronly
      */
-    private function _xSendFile($sendFilePath,
-                                $filePath,
-                                $fileName,
-                                $fileType,
-                                $fileSize,
-                                $attachment = false,
-                                $headeronly = false)
+    private function _xSendFile(string $sendFilePath,
+                                string $filePath,
+                                string $fileName,
+                                string $fileType,
+                                string $fileSize,
+                                bool   $attachment = false,
+                                bool   $headeronly = false)
     {
         if (($headeronly) or (false == $this->appConfig->xsendfile['enabled'])) {
             $this->_sendFile($filePath, $fileName, $fileType, $fileSize, true, $headeronly);
@@ -1201,7 +1223,7 @@ class Files extends BaseController
      *
      * @return string
      */
-    private function generateSignedUrl($sendFilePath)
+    private function generateSignedUrl(string $sendFilePath): string
     {
         if (false == $this->appConfig->awss3['enabled']) {
             return $sendFilePath;
@@ -1235,7 +1257,7 @@ class Files extends BaseController
      * @throws Flooer_Exception
      * @deprecated
      */
-    public function getDownloadfile($headeronly = false) // Deprecated
+    public function getDownloadfile(bool $headeronly = false) // Deprecated
     {
         // This is alias for GET /files/download
         $this->getDownload($headeronly);
@@ -1296,18 +1318,6 @@ class Files extends BaseController
         $this->_setResponseContent('success', array('file' => $file));
     }
 
-    public function optionsUpload()
-    {
-        $response = $this->response;
-        $response->setStatus(200);
-        $this->response->send();
-        if (php_sapi_name() == 'fpm-fcgi') {
-            fastcgi_finish_request();
-        }
-        exit();
-    }
-
-
     /**
      * @return bool
      */
@@ -1324,5 +1334,55 @@ class Files extends BaseController
         }
 
         return false;
+    }
+
+    public function optionsUpload()
+    {
+        $response = $this->response;
+        $response->setStatus(200);
+        $this->response->send();
+        if (php_sapi_name() == 'fpm-fcgi') {
+            fastcgi_finish_request();
+        }
+        exit();
+    }
+
+    public function putUpload()
+    {
+        if (!$this->isValidSignedUrl()) {
+            $this->response->setStatus(403);
+            throw new Flooer_Exception("Forbidden", LOG_NOTICE);
+        }
+
+
+        $errors = array();
+        if (!empty($_FILES['file']['error'])) { // 0 = UPLOAD_ERR_OK
+            $errors['file'] = $_FILES['file']['error'];
+        }
+        if ($errors) {
+            $this->response->setStatus(400);
+            $this->_setResponseContent('error', array('message' => 'File upload error',
+                                                      'errors'  => $errors,));
+
+            return;
+        }
+        $errors = array();
+        if (!$this->request->id) {
+            $errors['id'] = 'Required';
+        }
+        if (!$this->request->client_id) {
+            $errors['client_id'] = 'Required';
+        }
+        if ($errors) {
+            $this->response->setStatus(400);
+            $this->_setResponseContent('error', array('message' => 'Validation error',
+                                                      'errors'  => $errors,));
+
+            return;
+        }
+
+        $file = $this->processFileUpdate();
+
+        $this->_setResponseContent('success', array('file' => $file));
     }
 }

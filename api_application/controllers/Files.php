@@ -1113,6 +1113,10 @@ class Files extends BaseController
             $this->_xSendFile($sendFilePath, $filePath, $fileName, $fileType, $fileSize, true, $headeronly);
         }
 
+        if (getenv('X_OCS_S3_DOWNLOAD_ENABLED') === 'on') {
+            $this->_s3SendFile($sendFilePath, $filePath, $fileName, $fileType, $fileSize, true, $headeronly);
+        }
+
         $this->_sendFile($filePath, $fileName, $fileType, $fileSize, true, $headeronly);
     }
 
@@ -1205,7 +1209,7 @@ class Files extends BaseController
         $this->response->setHeader('Content-Disposition', $disposition . '; filename="' . $fileName . '"');
         $path = $this->appConfig->xsendfile['pathPrefix'] . $sendFilePath;
         if (boolval($this->appConfig->awss3['enabled'])) {
-            $signedUrl = $this->generateSignedUrl($sendFilePath);
+            $signedUrl = $this->generateSignedDownloadUrl($sendFilePath, $this->appConfig->awss3);
             $path = $this->appConfig->awss3['pathPrefix'] . $signedUrl;
         }
         $this->response->setHeader($this->appConfig->xsendfile['headerName'], $path);
@@ -1219,36 +1223,66 @@ class Files extends BaseController
     }
 
     /**
-     * @param string $sendFilePath
+     * @param string      $sendFilePath
+     * @param array|null $s3Config
+     * @param bool        $withoutHttpScheme
      *
      * @return string
      */
-    private function generateSignedUrl(string $sendFilePath): string
+    private function generateSignedDownloadUrl(string $sendFilePath,
+                                               array $s3Config = null,
+                                               bool   $withoutHttpScheme = true): string
     {
-        if (false == $this->appConfig->awss3['enabled']) {
+        if (false == $s3Config['enabled']) {
             return $sendFilePath;
         }
 
         // Instantiate an Amazon S3 client.
-        if (empty($this->appConfig->awss3['endpoint'])) {
-            $s3Client = new S3Client(['credentials' => new Credentials($this->appConfig->awss3['key'], $this->appConfig->awss3['secret']),
+        if (empty($s3Config['endpoint'])) {
+            $s3Client = new S3Client(['credentials' => new Credentials($s3Config['key'], $s3Config['secret']),
                                       'version'     => 'latest',
-                                      'region'      => $this->appConfig->awss3['region'],]);
+                                      'region'      => $s3Config['region'],]);
         } else {
-            $s3Client = new S3Client(['credentials' => new Credentials($this->appConfig->awss3['key'], $this->appConfig->awss3['secret']),
+            $s3Client = new S3Client(['credentials' => new Credentials($s3Config['key'], $s3Config['secret']),
                                       'version'     => 'latest',
-                                      'region'      => $this->appConfig->awss3['region'],
-                                      'endpoint'    => $this->appConfig->awss3['endpoint'],]);
+                                      'region'      => $s3Config['region'],
+                                      'endpoint'    => $s3Config['endpoint'],]);
         }
 
-        //Creating a presigned URL
-        $cmd = $s3Client->getCommand('GetObject', ['Bucket' => $this->appConfig->awss3['bucket'],
-                                                   'Key'    => $sendFilePath,]);
+        // Creating a pre-signed URL and request
+        $cmd = $s3Client->getCommand('GetObject', ['Bucket' => $s3Config['bucket'], 'Key' => $sendFilePath,]);
+        $request = $s3Client->createPresignedRequest($cmd, $s3Config['signedUrlExpires']);
 
-        $request = $s3Client->createPresignedRequest($cmd, $this->appConfig->awss3['signedUrlExpires']);
+        if ($withoutHttpScheme) {
+            return preg_replace("(^https?://)", "", (string)$request->getUri());
+        }
 
-        // Get the actual presigned-url
-        return preg_replace("(^https?://)", "", (string)$request->getUri());
+        return (string)$request->getUri();
+    }
+
+    private function _s3SendFile(string $sendFilePath,
+                                 string $filePath,
+                                 string $fileName,
+                                 string $fileType,
+                                 bool   $fileSize,
+                                 bool   $attachment,
+                                        $headeronly)
+    {
+        if (($headeronly) or (false == $this->appConfig->s3download['enabled'])) {
+            $this->_sendFile($filePath, $fileName, $fileType, $fileSize, true, $headeronly);
+        }
+
+        $signedUrl = $this->generateSignedDownloadUrl($sendFilePath, $this->appConfig->s3download, false);
+
+        $this->response->setHeader('Location', $signedUrl);
+        $this->response->setStatus(302);
+        $this->response->send();
+
+        if (php_sapi_name() == 'fpm-fcgi') {
+            fastcgi_finish_request();
+        }
+
+        exit();
     }
 
     /**

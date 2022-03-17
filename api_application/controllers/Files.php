@@ -1212,6 +1212,8 @@ class Files extends BaseController
             $signedUrl = $this->generateSignedDownloadUrl($sendFilePath, $this->appConfig->awss3);
             $path = $this->appConfig->awss3['pathPrefix'] . $signedUrl;
         }
+        $this->log->log("Response (mod_accel_redirect: $path)", LOG_NOTICE);
+
         $this->response->setHeader($this->appConfig->xsendfile['headerName'], $path);
         $this->response->send();
 
@@ -1273,6 +1275,7 @@ class Files extends BaseController
         }
 
         $signedUrl = $this->generateSignedDownloadUrl($sendFilePath, $this->appConfig->s3download, false);
+        $this->log->log("Response (redirect: $signedUrl)", LOG_NOTICE);
 
         $this->response->setHeader('Location', $signedUrl);
         $this->response->setStatus(302);

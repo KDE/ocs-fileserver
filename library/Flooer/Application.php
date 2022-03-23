@@ -1,4 +1,4 @@
-<?php
+<?php /** @noinspection PhpIncludeInspection */
 
 /**
  * Flooer Framework
@@ -56,34 +56,35 @@ class Flooer_Application
     /**
      * Constructor
      *
-     * @param   array $config
+     * @param array $config
+     *
      * @return  void
      */
     public function __construct(array $config = null)
     {
         ob_start();
         $this->_config = array(
-            'baseDir' => './',
-            'environment' => 'production',
-            'safeModeSupport' => ini_get('safe_mode'),
-            'magicQuotesSupport' => get_magic_quotes_gpc(),
-            'mbstringSupport' => extension_loaded('mbstring'),
-            'memoryLimit' => '128M',
-            'maxExecutionTime' => 30,
-            'socketTimeout' => 20,
-            'timezone' => 'UTC',
-            'encoding' => 'UTF-8',
-            'newline' => 'LF',
-            'mbLanguage' => 'uni',
-            'mbDetectOrder' => 'ASCII, JIS, UTF-8, EUC-JP, SJIS',
+            'baseDir'               => './',
+            'environment'           => 'production',
+            'safeModeSupport'       => ini_get('safe_mode'),
+            'magicQuotesSupport'    => false,
+            'mbstringSupport'       => extension_loaded('mbstring'),
+            'memoryLimit'           => '128M',
+            'maxExecutionTime'      => 30,
+            'socketTimeout'         => 20,
+            'timezone'              => 'UTC',
+            'encoding'              => 'UTF-8',
+            'newline'               => 'LF',
+            'mbLanguage'            => 'uni',
+            'mbDetectOrder'         => 'ASCII, JIS, UTF-8, EUC-JP, SJIS',
             'mbSubstituteCharacter' => 'none',
-            'bootstrap' => 'Bootstrap',
-            'bootstrapFileSuffix' => '.php',
-            'autoloadConfig' => array(
-                'register' => true,
-                'extensions' => '.php'
+            'bootstrap'             => 'Bootstrap',
+            'bootstrapFileSuffix'   => '.php',
+            'autoloadConfig'        => array(
+                'register'   => true,
+                'extensions' => '.php',
             ),
-            'bootstrapConfig' => array()
+            'bootstrapConfig'       => array(),
         );
         if ($config) {
             $this->_config = $config + $this->_config;
@@ -97,7 +98,28 @@ class Flooer_Application
      */
     public function __destruct()
     {
-        ob_end_flush();
+        if (ob_get_level()) {
+            ob_end_flush();
+        }
+    }
+
+    /**
+     * Run an application
+     *
+     * @return  void
+     * @throws Flooer_Exception
+     */
+    public function run()
+    {
+        if ($this->_status) {
+            trigger_error(
+                'Application is already running', E_USER_NOTICE
+            );
+        }
+        $this->_status = true;
+        $this->_setup();
+        $this->_bootstrap();
+        $this->_dispatch();
     }
 
     /**
@@ -111,12 +133,11 @@ class Flooer_Application
         $this->_config['environment'] = strtolower($this->_config['environment']);
         set_include_path(
             implode(
-                PATH_SEPARATOR,
-                array(
-                    dirname(dirname(__FILE__)),
-                    $this->_config['baseDir'],
-                    get_include_path()
-                )
+                PATH_SEPARATOR, array(
+                                  dirname(dirname(__FILE__)),
+                                  $this->_config['baseDir'],
+                                  get_include_path(),
+                              )
             )
         );
         switch ($this->_config['environment']) {
@@ -171,29 +192,25 @@ class Flooer_Application
     {
         require_once 'Flooer/Application/Bootstrap.php';
         if (is_file(
-            $this->_config['baseDir'] . '/'
-            . $this->_config['bootstrap'] . $this->_config['bootstrapFileSuffix']
+            $this->_config['baseDir'] . '/' . $this->_config['bootstrap'] . $this->_config['bootstrapFileSuffix']
         )) {
-            include_once $this->_config['baseDir'] . '/'
-                . $this->_config['bootstrap'] . $this->_config['bootstrapFileSuffix'];
+            include_once $this->_config['baseDir'] . '/' . $this->_config['bootstrap'] . $this->_config['bootstrapFileSuffix'];
             if (class_exists($this->_config['bootstrap'], false)) {
                 $bootstrap = new $this->_config['bootstrap'](
-                    $this,
-                    $this->_config['bootstrapConfig']
+                    $this, $this->_config['bootstrapConfig']
                 );
                 if ($bootstrap instanceof Flooer_Application_Bootstrap) {
                     $bootstrap->bootstrap();
+
                     return;
                 }
             }
             trigger_error(
-                'Invalid bootstrapper',
-                E_USER_ERROR
+                'Invalid bootstrapper', E_USER_ERROR
             );
         }
         $bootstrap = new Flooer_Application_Bootstrap(
-            $this,
-            $this->_config['bootstrapConfig']
+            $this, $this->_config['bootstrapConfig']
         );
         $bootstrap->bootstrap();
     }
@@ -201,73 +218,49 @@ class Flooer_Application
     /**
      * Dispatch to a page script or an action controller
      *
-     * @param   string $filename
+     * @param string $filename
+     *
      * @return  void
+     * @throws Flooer_Exception
      */
     protected function _dispatch($filename = null)
     {
-        if (isset($this->_resources['dispatch'])
-            && $this->_resources['dispatch'] instanceof Flooer_Application_Dispatch
-            && isset($this->_resources['request'])
-            && $this->_resources['request'] instanceof Flooer_Http_Request
-            && isset($this->_resources['response'])
-            && $this->_resources['response'] instanceof Flooer_Http_Response
-        ) {
+        if (isset($this->_resources['dispatch']) && $this->_resources['dispatch'] instanceof Flooer_Application_Dispatch && isset($this->_resources['request']) && $this->_resources['request'] instanceof Flooer_Http_Request && isset($this->_resources['response']) && $this->_resources['response'] instanceof Flooer_Http_Response) {
             $this->_resources['dispatch']->dispatch($filename);
+
             return;
         }
         trigger_error(
-            'Resource for dispatcher, HTTP request and response'
-            . ' must be initialized for application',
-            E_USER_ERROR
+            'Resource for dispatcher, HTTP request and response' . ' must be initialized for application', E_USER_ERROR
         );
-    }
-
-    /**
-     * Run an application
-     *
-     * @return  void
-     */
-    public function run()
-    {
-        if ($this->_status) {
-            trigger_error(
-                'Application is already running',
-                E_USER_NOTICE
-            );
-        }
-        $this->_status = true;
-        $this->_setup();
-        $this->_bootstrap();
-        $this->_dispatch();
     }
 
     /**
      * Show an application information page
      *
      * @return  void
+     * @throws Flooer_Exception
      */
     public function info()
     {
         if ($this->_status) {
             trigger_error(
-                'Application is already running',
-                E_USER_NOTICE
+                'Application is already running', E_USER_NOTICE
             );
         }
         $this->_status = true;
         $this->_setup();
         $this->_bootstrap();
         $this->_dispatch(
-            dirname(__FILE__)
-            . '/Application/pages/info.phtml'
+            dirname(__FILE__) . '/Application/pages/info.phtml'
         );
     }
 
     /**
      * Set a configuration options
      *
-     * @param   array $config
+     * @param array $config
+     *
      * @return  void
      */
     public function setConfigs(array $config)
@@ -286,21 +279,10 @@ class Flooer_Application
     }
 
     /**
-     * Set a configuration option
-     *
-     * @param   string $key
-     * @param   mixed $value
-     * @return  void
-     */
-    public function setConfig($key, $value)
-    {
-        $this->_config[$key] = $value;
-    }
-
-    /**
      * Get a configuration option
      *
-     * @param   string $key
+     * @param string $key
+     *
      * @return  mixed
      */
     public function getConfig($key)
@@ -308,18 +290,21 @@ class Flooer_Application
         if (isset($this->_config[$key])) {
             return $this->_config[$key];
         }
+
         return null;
     }
 
     /**
-     * Set a resources
+     * Set a configuration option
      *
-     * @param   array $resources
+     * @param string $key
+     * @param mixed  $value
+     *
      * @return  void
      */
-    public function setResources(array $resources)
+    public function setConfig($key, $value)
     {
-        $this->_resources = $resources;
+        $this->_config[$key] = $value;
     }
 
     /**
@@ -333,10 +318,23 @@ class Flooer_Application
     }
 
     /**
+     * Set a resources
+     *
+     * @param array $resources
+     *
+     * @return  void
+     */
+    public function setResources(array $resources)
+    {
+        $this->_resources = $resources;
+    }
+
+    /**
      * Set a resource
      *
-     * @param   string $key
-     * @param   mixed $value
+     * @param string $key
+     * @param mixed  $value
+     *
      * @return  void
      */
     public function setResource($key, $value)
@@ -347,7 +345,8 @@ class Flooer_Application
     /**
      * Get a resource
      *
-     * @param   string $key
+     * @param string $key
+     *
      * @return  mixed
      */
     public function getResource($key)
@@ -355,6 +354,7 @@ class Flooer_Application
         if (isset($this->_resources[$key])) {
             return $this->_resources[$key];
         }
+
         return null;
     }
 

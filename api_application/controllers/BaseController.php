@@ -1,4 +1,4 @@
-<?php
+<?php /** @noinspection PhpUndefinedFieldInspection */
 
 /**
  * ocs-fileserver
@@ -104,6 +104,10 @@ class BaseController extends Flooer_Controller
                 flush();
             }
             fclose($fp);
+        }
+
+        if (php_sapi_name() == 'fpm-fcgi') {
+            fastcgi_finish_request();
         }
 
         exit;
@@ -398,4 +402,21 @@ class BaseController extends Flooer_Controller
         return strlen(stream_get_contents($fp));
     }
 
+    protected function getHost()
+    {
+        $host = isset($_SERVER['HTTP_X_FORWARDED_HOST']) ? $_SERVER['HTTP_X_FORWARDED_HOST'] : (isset($_SERVER['HTTP_HOST']) ? $_SERVER['HTTP_HOST'] : null);
+        $host = isset($host) ? $host : $_SERVER['SERVER_NAME'];
+
+        return $host;
+    }
+
+    protected function getScheme()
+    {
+        $scheme = isset($_SERVER['HTTP_X_FORWARDED_PROTO']) ? $_SERVER['HTTP_X_FORWARDED_PROTO'] : null;
+        $scheme = isset($scheme) ? $scheme : (isset($_SERVER['REQUEST_SCHEME']) ? $_SERVER['REQUEST_SCHEME'] : null);
+        $scheme = isset($scheme) ? $scheme : (isset($_SERVER['HTTPS']) ? $_SERVER['HTTPS'] : null);
+        $scheme = isset($scheme) ? $scheme : (isset($_SERVER['SERVER_PORT']) AND $_SERVER['SERVER_PORT'] == '443' ? 'https' : 'http');
+
+        return $scheme;
+    }
 }

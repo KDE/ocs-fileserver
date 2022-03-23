@@ -1,0 +1,46 @@
+{
+  "name": "ocs/ocs-fileserver",
+  "description": "Simple file server for hosting small or big files",
+  "type": "project",
+  "minimum-stability": "stable",
+  "license": "AGPL-3.0-or-later",
+  "authors": [
+    {
+      "name": "pling GmbH",
+      "email": "contact@opendesktop.org"
+    }
+  ],
+  "homepage": "https://www.opendesktop.org/",
+  "require": {
+    "aws/aws-sdk-php": "^3.173",
+    "php": "^7.4",
+    "ext-fileinfo": "*",
+    "ext-gd": "*",
+    "ext-json": "*",
+    "ext-dom": "*",
+    "ext-ctype": "*",
+    "ext-curl": "*",
+    "ext-libxml": "*",
+    "ext-simplexml": "*",
+    "ext-mbstring": "*",
+    "ext-pdo": "*",
+    "ext-sqlite3": "*",
+    "ext-iconv": "*",
+    "ext-zlib": "*",
+    "ext-xml": "*",
+    "ext-redis": "*"
+  },
+  "autoload": {
+    "classmap": ["api_application/", "library/"],
+    "psr-0": {
+      "Flooer_": "library/",
+      "RedisCache": "library/",
+      "JWT": "library/",
+      "getid3": "library/getid3/"
+    },
+    "psr-4": {
+      "Ocs\\Storage\\": "library/Ocs/Storage/",
+      "Ocs\\Url\\": "library/Ocs/Url/"
+    }
+  }
+}

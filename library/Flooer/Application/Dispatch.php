@@ -1,4 +1,6 @@
 <?php
+/** @noinspection PhpUnused */
+/** @noinspection PhpIncludeInspection */
 
 /**
  * Flooer Framework
@@ -49,24 +51,24 @@ class Flooer_Application_Dispatch
      * @var     array
      */
     protected $_config = array(
-        'limitMethod' => true,
-        'filterInput' => true,
-        'filterOutput' => true,
-        'sendResponse' => true,
-        'renderView' => true,
-        'renderErrorPage' => true,
-        'writeLog' => true,
-        'allowedMethod' => 'GET, POST, PUT, DELETE',
-        'baseDir' => null,
-        'defaultController' => 'Index',
-        'defaultAction' => 'Index',
-        'errorController' => 'Error',
-        'errorAction' => 'Error',
-        'errorMethod' => 'catch',
-        'layoutView' => 'layout',
+        'limitMethod'          => true,
+        'filterInput'          => true,
+        'filterOutput'         => true,
+        'sendResponse'         => true,
+        'renderView'           => true,
+        'renderErrorPage'      => true,
+        'writeLog'             => true,
+        'allowedMethod'        => 'GET, POST, PUT, DELETE',
+        'baseDir'              => null,
+        'defaultController'    => 'Index',
+        'defaultAction'        => 'Index',
+        'errorController'      => 'Error',
+        'errorAction'          => 'Error',
+        'errorMethod'          => 'catch',
+        'layoutView'           => 'layout',
         'controllerFileSuffix' => '.php',
-        'viewFileSuffix' => '.html',
-        'controllerConfig' => array()
+        'viewFileSuffix'       => '.html',
+        'controllerConfig'     => array(),
     );
 
     /**
@@ -79,8 +81,9 @@ class Flooer_Application_Dispatch
     /**
      * Constructor
      *
-     * @param   Flooer_Application &$application
-     * @param   array $config
+     * @param Flooer_Application &$application
+     * @param array               $config
+     *
      * @return  void
      */
     public function __construct(Flooer_Application &$application, array $config = null)
@@ -99,7 +102,9 @@ class Flooer_Application_Dispatch
      */
     public function __destruct()
     {
-        ob_end_flush();
+        if (ob_get_level()) {
+            ob_end_flush();
+        }
     }
 
     /**
@@ -112,15 +117,16 @@ class Flooer_Application_Dispatch
      * with 'X-HTTP-Method-Override' request header
      * or 'method' request parameter.
      *
-     * @param   string $filename
+     * @param string $filename
+     *
      * @return  void
+     * @throws Flooer_Exception
      */
     public function dispatch($filename = null)
     {
         if ($this->_status) {
             trigger_error(
-                'Dispatch is already running',
-                E_USER_NOTICE
+                'Dispatch is already running', E_USER_NOTICE
             );
         }
         $this->_status = true;
@@ -137,90 +143,64 @@ class Flooer_Application_Dispatch
             // Render the page script
             try {
                 $this->renderPage($filename);
-            }
-            // Error handling
+            } // Error handling
             catch (Flooer_Exception $exception) {
                 $this->_application->setResource('exception', $exception);
-                if ($this->_config['writeLog']
-                    && $this->_application->getResource('log')
-                    && $this->_application->getResource('log') instanceof Flooer_Log
-                ) {
+                if ($this->_config['writeLog'] && $this->_application->getResource('log') && $this->_application->getResource('log') instanceof Flooer_Log) {
                     $this->writeLog();
                 }
                 if ($this->_config['renderErrorPage']) {
                     $this->renderErrorPage();
                 }
             }
-        }
-        // Dispatch to an action controller
+        } // Dispatch to an action controller
         else {
             // Detect a meta-parameters
             if ($this->_application->getResource('request')->controller) {
                 $controller = $this->_application->getResource('request')->controller;
-            }
-            else {
+            } else {
                 $controller = $this->_config['defaultController'];
             }
             if ($this->_application->getResource('request')->action) {
                 $action = $this->_application->getResource('request')->action;
-            }
-            else {
+            } else {
                 $action = $this->_config['defaultAction'];
             }
             if ($this->_application->getResource('request')->getMethod() == 'POST') {
                 if ($this->_application->getResource('request')->method) {
                     $method = $this->_application->getResource('request')->method;
-                }
-                else {
+                } else {
                     $method = $this->_application->getResource('request')->getMethod(true);
                 }
-            }
-            else {
+            } else {
                 $method = $this->_application->getResource('request')->getMethod();
             }
             // Execute the action and render the view
             try {
                 $this->executeAction($controller, $action, $method);
-                if ($this->_config['renderView']
-                    && $this->_application->getResource('view')
-                    && $this->_application->getResource('view') instanceof Flooer_View
-                ) {
+                if ($this->_config['renderView'] && $this->_application->getResource('view') && $this->_application->getResource('view') instanceof Flooer_View) {
                     $this->renderView($controller, $action);
                 }
-            }
-            // Error handling
+            } // Error handling
             catch (Flooer_Exception $exception) {
                 $this->_application->setResource('exception', $exception);
-                if ($this->_config['writeLog']
-                    && $this->_application->getResource('log')
-                    && $this->_application->getResource('log') instanceof Flooer_Log
-                ) {
+                if ($this->_config['writeLog'] && $this->_application->getResource('log') && $this->_application->getResource('log') instanceof Flooer_Log) {
                     $this->writeLog();
                 }
                 // Execute the error action and render the view
                 try {
                     $this->executeAction(
-                        $this->_config['errorController'],
-                        $this->_config['errorAction'],
-                        $this->_config['errorMethod']
+                        $this->_config['errorController'], $this->_config['errorAction'], $this->_config['errorMethod']
                     );
-                    if ($this->_config['renderView']
-                        && $this->_application->getResource('view')
-                        && $this->_application->getResource('view') instanceof Flooer_View
-                    ) {
+                    if ($this->_config['renderView'] && $this->_application->getResource('view') && $this->_application->getResource('view') instanceof Flooer_View) {
                         $this->renderView(
-                            $this->_config['errorController'],
-                            $this->_config['errorAction']
+                            $this->_config['errorController'], $this->_config['errorAction']
                         );
                     }
-                }
-                // If error happened again, render a default error page
+                } // If error happened again, render a default error page
                 catch (Flooer_Exception $exception) {
                     $this->_application->setResource('exception', $exception);
-                    if ($this->_config['writeLog']
-                        && $this->_application->getResource('log')
-                        && $this->_application->getResource('log') instanceof Flooer_Log
-                    ) {
+                    if ($this->_config['writeLog'] && $this->_application->getResource('log') && $this->_application->getResource('log') instanceof Flooer_Log) {
                         $this->writeLog();
                     }
                     if ($this->_config['renderErrorPage']) {
@@ -250,29 +230,29 @@ class Flooer_Application_Dispatch
             $this->_application->getResource('response')->setBody('');
             $this->_application->getResource('response')->send();
             exit;
-        }
-        else if ($this->_application->getResource('request')->getMethod() == 'OPTIONS') {
-            $this->_application->getResource('response')->setHeader(
-                'Allow',
-                $this->_config['allowedMethod']
-            );
-            $this->_application->getResource('response')->setBody(
-                'Allow: '
-                . $this->_config['allowedMethod']
-            );
-            $this->_application->getResource('response')->send();
-            exit;
-        }
-        else if (!in_array(
-            $this->_application->getResource('request')->getMethod(true),
-            explode(',', str_replace(' ', '', $this->_config['allowedMethod']))
-        )) {
-            $this->_application->getResource('response')->setStatus(405);
-            $this->_application->getResource('response')->setBody(
-                'Method Not Allowed'
-            );
-            $this->_application->getResource('response')->send();
-            exit;
+        } else {
+            if ($this->_application->getResource('request')->getMethod() == 'OPTIONS') {
+                $this->_application->getResource('response')->setHeader(
+                    'Allow', $this->_config['allowedMethod']
+                );
+                $this->_application->getResource('response')->setBody(
+                    'Allow: ' . $this->_config['allowedMethod']
+                );
+                $this->_application->getResource('response')->send();
+                exit;
+            } else {
+                if (!in_array(
+                    $this->_application->getResource('request')
+                                       ->getMethod(true), explode(',', str_replace(' ', '', $this->_config['allowedMethod']))
+                )) {
+                    $this->_application->getResource('response')->setStatus(405);
+                    $this->_application->getResource('response')->setBody(
+                        'Method Not Allowed'
+                    );
+                    $this->_application->getResource('response')->send();
+                    exit;
+                }
+            }
         }
     }
 
@@ -283,28 +263,26 @@ class Flooer_Application_Dispatch
      */
     public function filterInput()
     {
-        $filter = new Flooer_Filter(array(
-            'convertEncoding' => $this->_application->getConfig('mbstringSupport'),
-            'convertNewline' => true,
-            'stripNull' => true,
-            'stripSlashes' => $this->_application->getConfig('magicQuotesSupport'),
-            'trimWhitespace' => true,
-            'encoding' => $this->_application->getConfig('encoding'),
-            'newline' => $this->_application->getConfig('newline')
-        ));
+        $filter = new Flooer_Filter(
+            array(
+                'convertEncoding' => $this->_application->getConfig('mbstringSupport'),
+                'convertNewline'  => true,
+                'stripNull'       => true,
+                'stripSlashes'    => $this->_application->getConfig('magicQuotesSupport'),
+                'trimWhitespace'  => true,
+                'encoding'        => $this->_application->getConfig('encoding'),
+                'newline'         => $this->_application->getConfig('newline'),
+            )
+        );
         $request = $this->_application->getResource('request');
         $filter->filter($request);
         $this->_application->setResource('request', $request);
-        if ($this->_application->getResource('cookie')
-            && $this->_application->getResource('cookie') instanceof Flooer_Http_Cookie
-        ) {
+        if ($this->_application->getResource('cookie') && $this->_application->getResource('cookie') instanceof Flooer_Http_Cookie) {
             $cookie = $this->_application->getResource('cookie');
             $filter->filter($cookie);
             $this->_application->setResource('cookie', $cookie);
         }
-        if ($this->_application->getResource('server')
-            && $this->_application->getResource('server') instanceof Flooer_Http_Server
-        ) {
+        if ($this->_application->getResource('server') && $this->_application->getResource('server') instanceof Flooer_Http_Server) {
             $server = $this->_application->getResource('server');
             $filter->filter($server);
             $this->_application->setResource('server', $server);
@@ -312,230 +290,10 @@ class Flooer_Application_Dispatch
     }
 
     /**
-     * Output filtering
-     *
-     * @return  void
-     */
-    public function filterOutput()
-    {
-        $filter = new Flooer_Filter(array(
-            'convertEncoding' => $this->_application->getConfig('mbstringSupport'),
-            'convertNewline' => true,
-            'stripNull' => true,
-            'stripSlashes' => false,
-            'trimWhitespace' => true,
-            'encoding' => $this->_application->getConfig('encoding'),
-            'newline' => $this->_application->getConfig('newline')
-        ));
-        $body = $this->_application->getResource('response')->getBody();
-        $filter->filter($body);
-        $this->_application->getResource('response')->setBody($body);
-    }
-
-    /**
-     * Send a response
-     *
-     * @return  void
-     */
-    public function sendResponse()
-    {
-        $this->_application->getResource('response')->send();
-    }
-
-    /**
-     * Execute an action
-     *
-     * @param   string $controller
-     * @param   string $action
-     * @param   string $method
-     * @return  void
-     * @throws  Flooer_Exception
-     */
-    public function executeAction($controller, $action, $method)
-    {
-        $previousException = null;
-        if ($this->_application->getResource('exception')
-            && $this->_application->getResource('exception') instanceof Flooer_Exception
-        ) {
-            $previousException = $this->_application->getResource('exception');
-        }
-        $controller = ucfirst(strtolower($controller));
-        $action = ucfirst(strtolower($action));
-        $method = strtolower($method);
-        if (is_file(
-            $this->_config['baseDir'] . '/'
-            . $controller . $this->_config['controllerFileSuffix']
-        )) {
-            include_once $this->_config['baseDir'] . '/'
-                . $controller . $this->_config['controllerFileSuffix'];
-            if (class_exists($controller, false)) {
-                $controllerInstance = new $controller($this->_config['controllerConfig']);
-                if ($controllerInstance instanceof Flooer_Controller) {
-                    if (method_exists($controllerInstance, $method . $action)) {
-                        foreach ($this->_application->getResources() as $key => $value) {
-                            // A resources should be an object.
-                            $controllerInstance->$key = $value;
-                        }
-                        try {
-                            $controllerInstance->execute($method . $action);
-                        }
-                        catch (Flooer_Exception $exception) {
-                            ob_clean();
-                            if (!$this->_application->getResource('response')->getStatus()) {
-                                $this->_application->getResource('response')->setStatus(500);
-                            }
-                            throw $exception;
-                        }
-                        catch (Exception $exception) {
-                            ob_clean();
-                            if (!$this->_application->getResource('response')->getStatus()) {
-                                $this->_application->getResource('response')->setStatus(500);
-                            }
-                            throw new Flooer_Exception(
-                                $exception->getMessage(),
-                                $exception->getCode(),
-                                $exception->getFile(),
-                                $exception->getLine()
-                            );
-                        }
-                        return;
-                    }
-                    $this->_application->getResource('response')->setStatus(404);
-                    $message = "Unknown action ($action)";
-                    if (in_array($this->_application->getConfig('environment'), array('production', 'staging'))) {
-                        $message = 'Not Found';
-                    }
-                    throw new Flooer_Exception(
-                        $message,
-                        LOG_NOTICE,
-                        null,
-                        null,
-                        $previousException
-                    );
-                }
-                $this->_application->getResource('response')->setStatus(500);
-                $message = "Invalid controller ($controller)";
-                if (in_array($this->_application->getConfig('environment'), array('production', 'staging'))) {
-                    $message = 'Internal Server Error';
-                }
-                throw new Flooer_Exception(
-                    $message,
-                    LOG_ERR,
-                    null,
-                    null,
-                    $previousException
-                );
-            }
-            $this->_application->getResource('response')->setStatus(500);
-            $message = "Invalid controller ($controller)";
-            if (in_array($this->_application->getConfig('environment'), array('production', 'staging'))) {
-                $message = 'Internal Server Error';
-            }
-            throw new Flooer_Exception(
-                $message,
-                LOG_ERR,
-                null,
-                null,
-                $previousException
-            );
-        }
-        $this->_application->getResource('response')->setStatus(404);
-        $message = "Unknown controller ($controller)";
-        if (in_array($this->_application->getConfig('environment'), array('production', 'staging'))) {
-            $message = 'Not Found';
-        }
-        throw new Flooer_Exception(
-            $message,
-            LOG_NOTICE,
-            null,
-            null,
-            $previousException
-        );
-    }
-
-    /**
-     * Render a view
-     *
-     * @param   string $controller
-     * @param   string $action
-     * @return  void
-     * @throws  Flooer_Exception
-     */
-    public function renderView($controller, $action)
-    {
-        $controller = strtolower($controller);
-        $action = strtolower($action);
-        $file = $this->_application->getResource('view')->getFile();
-        if (!$file) {
-            if (is_file(
-                $this->_application->getResource('view')->getBaseDir() . '/'
-                . $this->_config['layoutView'] . $this->_config['viewFileSuffix']
-            )) {
-                $file = $this->_config['layoutView'] . $this->_config['viewFileSuffix'];
-            }
-            else if (is_file(
-                $this->_application->getResource('view')->getBaseDir() . '/'
-                . $controller . $this->_config['viewFileSuffix']
-            )) {
-                $file = $controller . $this->_config['viewFileSuffix'];
-            }
-            else {
-                $file = $controller . '/' . $action . $this->_config['viewFileSuffix'];
-            }
-        }
-        if (is_file(
-            $this->_application->getResource('view')->getBaseDir() . '/'
-            . $file
-        )) {
-            try {
-                $this->_application->getResource('response')->setBody(
-                    $this->_application->getResource('view')->render($file)
-                );
-                if (!$this->_application->getResource('response')->getHeader('Content-Type')) {
-                    $type = $this->_application->getResource('response')->detectContentType($file);
-                    if ($type) {
-                        $this->_application->getResource('response')->setHeader(
-                            'Content-Type',
-                            $type
-                        );
-                    }
-                }
-            }
-            catch (Flooer_Exception $exception) {
-                ob_clean();
-                $this->_application->getResource('response')->setStatus(500);
-                throw $exception;
-            }
-            catch (Exception $exception) {
-                ob_clean();
-                $this->_application->getResource('response')->setStatus(500);
-                throw new Flooer_Exception(
-                    $exception->getMessage(),
-                    $exception->getCode(),
-                    $exception->getFile(),
-                    $exception->getLine()
-                );
-            }
-            return;
-        }
-        $this->_application->getResource('response')->setStatus(404);
-        $message = 'View script file ('
-            . $this->_application->getResource('view')->getBaseDir() . '/'
-            . $file
-            . ') not found';
-        if (in_array($this->_application->getConfig('environment'), array('production', 'staging'))) {
-            $message = 'Not Found';
-        }
-        throw new Flooer_Exception(
-            $message,
-            LOG_NOTICE
-        );
-    }
-
-    /**
      * Render a page
      *
-     * @param   string $filename
+     * @param string $filename
+     *
      * @return  void
      * @throws  Flooer_Exception
      */
@@ -551,27 +309,22 @@ class Flooer_Application_Dispatch
                     $type = $this->_application->getResource('response')->detectContentType($filename);
                     if ($type) {
                         $this->_application->getResource('response')->setHeader(
-                            'Content-Type',
-                            $type
+                            'Content-Type', $type
                         );
                     }
                 }
-            }
-            catch (Flooer_Exception $exception) {
+            } catch (Flooer_Exception $exception) {
                 ob_clean();
                 $this->_application->getResource('response')->setStatus(500);
                 throw $exception;
-            }
-            catch (Exception $exception) {
+            } catch (Exception $exception) {
                 ob_clean();
                 $this->_application->getResource('response')->setStatus(500);
                 throw new Flooer_Exception(
-                    $exception->getMessage(),
-                    $exception->getCode(),
-                    $exception->getFile(),
-                    $exception->getLine()
+                    $exception->getMessage(), $exception->getCode(), $exception->getFile(), $exception->getLine()
                 );
             }
+
             return;
         }
         $this->_application->getResource('response')->setStatus(404);
@@ -580,21 +333,7 @@ class Flooer_Application_Dispatch
             $message = 'Not Found';
         }
         throw new Flooer_Exception(
-            $message,
-            LOG_NOTICE
-        );
-    }
-
-    /**
-     * Render a default error page
-     *
-     * @return  void
-     */
-    public function renderErrorPage()
-    {
-        $this->renderPage(
-            dirname(__FILE__)
-            . '/pages/error.phtml'
+            $message, LOG_NOTICE
         );
     }
 
@@ -611,9 +350,215 @@ class Flooer_Application_Dispatch
         $line = $this->_application->getResource('exception')->getLine();
         $uri = $this->_application->getResource('request')->getUri();
         $this->_application->getResource('log')->log(
-            "$message; $file($line); $uri",
-            $code
+            "$message; $file($line); $uri", $code
         );
+    }
+
+    /**
+     * Render a default error page
+     *
+     * @return  void
+     * @throws Flooer_Exception
+     * @throws Flooer_Exception
+     */
+    public function renderErrorPage()
+    {
+        $this->renderPage(
+            dirname(__FILE__) . '/pages/error.phtml'
+        );
+    }
+
+    /**
+     * Execute an action
+     *
+     * @param string $controller
+     * @param string $action
+     * @param string $method
+     *
+     * @return  void
+     * @throws  Flooer_Exception
+     */
+    public function executeAction($controller, $action, $method)
+    {
+        $previousException = null;
+        if ($this->_application->getResource('exception') && $this->_application->getResource('exception') instanceof Flooer_Exception) {
+            $previousException = $this->_application->getResource('exception');
+        }
+        $controller = ucfirst(strtolower($controller));
+        $controller = str_replace('controller', 'Controller', $controller);
+        $action = ucfirst(strtolower($action));
+        $method = strtolower($method);
+        if (is_file(
+            $this->_config['baseDir'] . '/' . $controller . $this->_config['controllerFileSuffix']
+        )) {
+            include_once $this->_config['baseDir'] . '/' . $controller . $this->_config['controllerFileSuffix'];
+            if (class_exists($controller, false)) {
+                $controllerInstance = new $controller($this->_config['controllerConfig']);
+                if ($controllerInstance instanceof Flooer_Controller) {
+                    if (method_exists($controllerInstance, $method . $action)) {
+                        foreach ($this->_application->getResources() as $key => $value) {
+                            // A resources should be an object.
+                            $controllerInstance->$key = $value;
+                        }
+                        try {
+                            $controllerInstance->execute($method . $action);
+                        } catch (Flooer_Exception $exception) {
+                            ob_clean();
+                            if (!$this->_application->getResource('response')->getStatus()) {
+                                $this->_application->getResource('response')->setStatus(500);
+                            }
+                            throw $exception;
+                        } catch (Exception $exception) {
+                            ob_clean();
+                            if (!$this->_application->getResource('response')->getStatus()) {
+                                $this->_application->getResource('response')->setStatus(500);
+                            }
+                            throw new Flooer_Exception(
+                                $exception->getMessage(), $exception->getCode(), $exception->getFile(), $exception->getLine()
+                            );
+                        }
+
+                        return;
+                    }
+                    $this->_application->getResource('response')->setStatus(404);
+                    $message = "Unknown action ($action)";
+                    if (in_array($this->_application->getConfig('environment'), array('production', 'staging'))) {
+                        $message = 'Not Found';
+                    }
+                    throw new Flooer_Exception(
+                        $message, LOG_NOTICE, null, null, $previousException
+                    );
+                }
+                $this->_application->getResource('response')->setStatus(500);
+                $message = "Invalid controller ($controller)";
+                if (in_array($this->_application->getConfig('environment'), array('production', 'staging'))) {
+                    $message = 'Internal Server Error';
+                }
+                throw new Flooer_Exception(
+                    $message, LOG_ERR, null, null, $previousException
+                );
+            }
+            $this->_application->getResource('response')->setStatus(500);
+            $message = "Invalid controller ($controller)";
+            if (in_array($this->_application->getConfig('environment'), array('production', 'staging'))) {
+                $message = 'Internal Server Error';
+            }
+            throw new Flooer_Exception(
+                $message, LOG_ERR, null, null, $previousException
+            );
+        }
+        $this->_application->getResource('response')->setStatus(404);
+        $message = "Unknown controller ($controller)";
+        if (in_array($this->_application->getConfig('environment'), array('production', 'staging'))) {
+            $message = 'Not Found';
+        }
+        throw new Flooer_Exception(
+            $message, LOG_NOTICE, null, null, $previousException
+        );
+    }
+
+    /**
+     * Render a view
+     *
+     * @param string $controller
+     * @param string $action
+     *
+     * @return  void
+     * @throws  Flooer_Exception
+     */
+    public function renderView($controller, $action)
+    {
+        $controller = strtolower($controller);
+        $action = strtolower($action);
+        $file = $this->_application->getResource('view')->getFile();
+        if (!$file) {
+            if (is_file(
+                $this->_application->getResource('view')
+                                   ->getBaseDir() . '/' . $this->_config['layoutView'] . $this->_config['viewFileSuffix']
+            )) {
+                $file = $this->_config['layoutView'] . $this->_config['viewFileSuffix'];
+            } else {
+                if (is_file(
+                    $this->_application->getResource('view')
+                                       ->getBaseDir() . '/' . $controller . $this->_config['viewFileSuffix']
+                )) {
+                    $file = $controller . $this->_config['viewFileSuffix'];
+                } else {
+                    $file = $controller . '/' . $action . $this->_config['viewFileSuffix'];
+                }
+            }
+        }
+        if (is_file(
+            $this->_application->getResource('view')->getBaseDir() . '/' . $file
+        )) {
+            try {
+                $this->_application->getResource('response')->setBody(
+                    $this->_application->getResource('view')->render($file)
+                );
+                if (!$this->_application->getResource('response')->getHeader('Content-Type')) {
+                    $type = $this->_application->getResource('response')->detectContentType($file);
+                    if ($type) {
+                        $this->_application->getResource('response')->setHeader(
+                            'Content-Type', $type
+                        );
+                    }
+                }
+            } catch (Flooer_Exception $exception) {
+                ob_clean();
+                $this->_application->getResource('response')->setStatus(500);
+                throw $exception;
+            } catch (Exception $exception) {
+                ob_clean();
+                $this->_application->getResource('response')->setStatus(500);
+                throw new Flooer_Exception(
+                    $exception->getMessage(), $exception->getCode(), $exception->getFile(), $exception->getLine()
+                );
+            }
+
+            return;
+        }
+        $this->_application->getResource('response')->setStatus(404);
+        $message = 'View script file (' . $this->_application->getResource('view')
+                                                             ->getBaseDir() . '/' . $file . ') not found';
+        if (in_array($this->_application->getConfig('environment'), array('production', 'staging'))) {
+            $message = 'Not Found';
+        }
+        throw new Flooer_Exception(
+            $message, LOG_NOTICE
+        );
+    }
+
+    /**
+     * Output filtering
+     *
+     * @return  void
+     */
+    public function filterOutput()
+    {
+        $filter = new Flooer_Filter(
+            array(
+                'convertEncoding' => $this->_application->getConfig('mbstringSupport'),
+                'convertNewline'  => true,
+                'stripNull'       => true,
+                'stripSlashes'    => false,
+                'trimWhitespace'  => true,
+                'encoding'        => $this->_application->getConfig('encoding'),
+                'newline'         => $this->_application->getConfig('newline'),
+            )
+        );
+        $body = $this->_application->getResource('response')->getBody();
+        $filter->filter($body);
+        $this->_application->getResource('response')->setBody($body);
+    }
+
+    /**
+     * Send a response
+     *
+     * @return  void
+     */
+    public function sendResponse()
+    {
+        $this->_application->getResource('response')->send();
     }
 
     /**
@@ -629,7 +574,8 @@ class Flooer_Application_Dispatch
     /**
      * Set an executable flag for limitMethod()
      *
-     * @param   bool $bool
+     * @param bool $bool
+     *
      * @return  void
      */
     public function setLimitMethod($bool)
@@ -650,7 +596,8 @@ class Flooer_Application_Dispatch
     /**
      * Set an executable flag for filterInput()
      *
-     * @param   bool $bool
+     * @param bool $bool
+     *
      * @return  void
      */
     public function setFilterInput($bool)
@@ -671,7 +618,8 @@ class Flooer_Application_Dispatch
     /**
      * Set an executable flag for filterOutput()
      *
-     * @param   bool $bool
+     * @param bool $bool
+     *
      * @return  void
      */
     public function setFilterOutput($bool)
@@ -692,7 +640,8 @@ class Flooer_Application_Dispatch
     /**
      * Set an executable flag for sendResponse()
      *
-     * @param   bool $bool
+     * @param bool $bool
+     *
      * @return  void
      */
     public function setSendResponse($bool)
@@ -713,7 +662,8 @@ class Flooer_Application_Dispatch
     /**
      * Set an executable flag for renderView()
      *
-     * @param   bool $bool
+     * @param bool $bool
+     *
      * @return  void
      */
     public function setRenderView($bool)
@@ -734,7 +684,8 @@ class Flooer_Application_Dispatch
     /**
      * Set an executable flag for renderErrorPage()
      *
-     * @param   bool $bool
+     * @param bool $bool
+     *
      * @return  void
      */
     public function setRenderErrorPage($bool)
@@ -755,7 +706,8 @@ class Flooer_Application_Dispatch
     /**
      * Set an executable flag for writeLog()
      *
-     * @param   bool $bool
+     * @param bool $bool
+     *
      * @return  void
      */
     public function setWriteLog($bool)
@@ -776,7 +728,8 @@ class Flooer_Application_Dispatch
     /**
      * Set an allowed method
      *
-     * @param   string $allowedMethod Comma-separated list
+     * @param string $allowedMethod Comma-separated list
+     *
      * @return  void
      */
     public function setAllowedMethod($allowedMethod)
@@ -797,7 +750,8 @@ class Flooer_Application_Dispatch
     /**
      * Set the path of a base directory
      *
-     * @param   string $path
+     * @param string $path
+     *
      * @return  void
      */
     public function setBaseDir($path)
@@ -818,7 +772,8 @@ class Flooer_Application_Dispatch
     /**
      * Set a default controller name
      *
-     * @param   string $controller
+     * @param string $controller
+     *
      * @return  void
      */
     public function setDefaultController($controller)
@@ -839,7 +794,8 @@ class Flooer_Application_Dispatch
     /**
      * Set a default action name
      *
-     * @param   string $action
+     * @param string $action
+     *
      * @return  void
      */
     public function setDefaultAction($action)
@@ -860,7 +816,8 @@ class Flooer_Application_Dispatch
     /**
      * Set an error controller name
      *
-     * @param   string $controller
+     * @param string $controller
+     *
      * @return  void
      */
     public function setErrorController($controller)
@@ -881,7 +838,8 @@ class Flooer_Application_Dispatch
     /**
      * Set an error action name
      *
-     * @param   string $action
+     * @param string $action
+     *
      * @return  void
      */
     public function setErrorAction($action)
@@ -902,7 +860,8 @@ class Flooer_Application_Dispatch
     /**
      * Set an error method name
      *
-     * @param   string $method
+     * @param string $method
+     *
      * @return  void
      */
     public function setErrorMethod($method)
@@ -923,7 +882,8 @@ class Flooer_Application_Dispatch
     /**
      * Set a view name for layout
      *
-     * @param   string $layout
+     * @param string $layout
+     *
      * @return  void
      */
     public function setLayoutView($layout)
@@ -944,7 +904,8 @@ class Flooer_Application_Dispatch
     /**
      * Set a controller file suffix
      *
-     * @param   string $suffix
+     * @param string $suffix
+     *
      * @return  void
      */
     public function setControllerFileSuffix($suffix)
@@ -965,7 +926,8 @@ class Flooer_Application_Dispatch
     /**
      * Set a view file suffix
      *
-     * @param   string $suffix
+     * @param string $suffix
+     *
      * @return  void
      */
     public function setViewFileSuffix($suffix)
@@ -986,7 +948,8 @@ class Flooer_Application_Dispatch
     /**
      * Set a configuration options for a controller class
      *
-     * @param   array $config
+     * @param array $config
+     *
      * @return  void
      */
     public function setControllerConfig(array $config)

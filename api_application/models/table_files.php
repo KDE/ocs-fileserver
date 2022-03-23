@@ -36,56 +36,15 @@ class table_files extends BaseModel
 
         $prefix = $this->getPrefix();
 
-        $this->_columns = "{$prefix}files.id AS id,"
-            . "{$prefix}files.origin_id AS origin_id,"
-            . "{$prefix}files.active AS active,"
-            . "{$prefix}files.client_id AS client_id,"
-            . "{$prefix}files.owner_id AS owner_id,"
-            . "{$prefix}profiles.id AS profile_id,"
-            . "{$prefix}profiles.name AS profile_name,"
-            . "{$prefix}files.collection_id AS collection_id,"
-            . "{$prefix}collections.active AS collection_active,"
-            . "{$prefix}collections.title AS collection_title,"
-            . "{$prefix}collections.category AS collection_category,"
-            . "{$prefix}collections.tags AS collection_tags,"
-            . "{$prefix}collections.version AS collection_version,"
-            . "{$prefix}collections.content_id AS collection_content_id,"
-            . "{$prefix}collections.content_page AS collection_content_page,"
-            . "{$prefix}files.name AS name,"
-            . "{$prefix}files.type AS type,"
-            . "{$prefix}files.size AS size,"
-            . "{$prefix}files.md5sum AS md5sum,"
-            . "{$prefix}files.title AS title,"
-            . "{$prefix}files.description AS description,"
-            . "{$prefix}files.category AS category,"
-            . "{$prefix}files.tags AS tags,"
-            . "{$prefix}files.version AS version,"
-            . "{$prefix}files.ocs_compatible AS ocs_compatible,"
-            . "{$prefix}files.content_id AS content_id,"
-            . "{$prefix}files.content_page AS content_page,"
-            . "{$prefix}files.downloaded_timestamp AS downloaded_timestamp,"
-            . "{$prefix}files.downloaded_count AS downloaded_count,"
-            . "{$prefix}files.downloaded_count AS downloaded_timeperiod_count,"
-            . "{$prefix}files.created_timestamp AS created_timestamp,"
-            . "{$prefix}files.updated_timestamp AS updated_timestamp";
+        $this->_columns = "{$prefix}files.id AS id," . "{$prefix}files.origin_id AS origin_id," . "{$prefix}files.active AS active," . "{$prefix}files.client_id AS client_id," . "{$prefix}files.owner_id AS owner_id," . "{$prefix}profiles.id AS profile_id," . "{$prefix}profiles.name AS profile_name," . "{$prefix}files.collection_id AS collection_id," . "{$prefix}collections.active AS collection_active," . "{$prefix}collections.title AS collection_title," . "{$prefix}collections.category AS collection_category," . "{$prefix}collections.tags AS collection_tags," . "{$prefix}collections.version AS collection_version," . "{$prefix}collections.content_id AS collection_content_id," . "{$prefix}collections.content_page AS collection_content_page," . "{$prefix}files.name AS name," . "{$prefix}files.type AS type," . "{$prefix}files.size AS size," . "{$prefix}files.md5sum AS md5sum," . "{$prefix}files.title AS title," . "{$prefix}files.description AS description," . "{$prefix}files.category AS category," . "{$prefix}files.tags AS tags," . "{$prefix}files.version AS version," . "{$prefix}files.ocs_compatible AS ocs_compatible," . "{$prefix}files.content_id AS content_id," . "{$prefix}files.content_page AS content_page," . "{$prefix}files.downloaded_timestamp AS downloaded_timestamp," . "{$prefix}files.downloaded_count AS downloaded_count," . "{$prefix}files.downloaded_count AS downloaded_timeperiod_count," . "{$prefix}files.created_timestamp AS created_timestamp," . "{$prefix}files.updated_timestamp AS updated_timestamp";
 
-        $this->_join = "LEFT OUTER JOIN {$prefix}profiles"
-            . " ON {$prefix}profiles.client_id = {$prefix}files.client_id"
-            . " AND {$prefix}profiles.owner_id = {$prefix}files.owner_id"
-            . " LEFT OUTER JOIN {$prefix}collections"
-            . " ON {$prefix}collections.id = {$prefix}files.collection_id";
+        $this->_join = "LEFT OUTER JOIN {$prefix}profiles" . " ON {$prefix}profiles.client_id = {$prefix}files.client_id" . " AND {$prefix}profiles.owner_id = {$prefix}files.owner_id" . " LEFT OUTER JOIN {$prefix}collections" . " ON {$prefix}collections.id = {$prefix}files.collection_id";
     }
 
     public function __set($key, $value)
     {
         $value = $this->_convertArrayToObject($value);
-        unset(
-            $value->id,
-            $value->created_timestamp,
-            $value->created_ip,
-            $value->updated_timestamp,
-            $value->updated_ip
-        );
+        unset($value->id, $value->created_timestamp, $value->created_ip, $value->updated_timestamp, $value->updated_ip);
         $value->updated_timestamp = $this->_getTimestamp();
         $value->updated_ip = $this->_getIp();
         if (!isset($this->$key)) {
@@ -99,7 +58,28 @@ class table_files extends BaseModel
         parent::__set($key, $value);
     }
 
-    public function getFiles($originId = null, $status = 'active', $clientId = null, $ownerId = null, $collectionId = null, $collectionStatus = 'active', $collectionCategory = null, $collectionTags = null, $collectionContentId = null, $types = null, $category = null, $tags = null, $ocsCompatibility = 'all', $contentId = null, $search = null, $ids = null, array $favoriteIds = null, $downloadedTimeperiodBegin = null, $downloadedTimeperiodEnd = null, $sort = 'name', $perpage = 20, $page = 1)
+    public function getFiles($originId = null,
+        $status = 'active',
+        $clientId = null,
+        $ownerId = null,
+        $collectionId = null,
+        $collectionStatus = 'active',
+        $collectionCategory = null,
+        $collectionTags = null,
+        $collectionContentId = null,
+        $types = null,
+        $category = null,
+        $tags = null,
+        $ocsCompatibility = 'all',
+        $contentId = null,
+        $search = null,
+        $ids = null,
+                             array $favoriteIds = null,
+        $downloadedTimeperiodBegin = null,
+        $downloadedTimeperiodEnd = null,
+        $sort = 'name',
+        $perpage = 20,
+        $page = 1)
     {
         $prefix = $this->getPrefix();
         $name = $this->getName();
@@ -193,9 +173,10 @@ class table_files extends BaseModel
             $ocsCompatible = null;
             if ($ocsCompatibility == 'compatible') {
                 $ocsCompatible = 1;
-            }
-            else if ($ocsCompatibility == 'incompatible') {
-                $ocsCompatible = 0;
+            } else {
+                if ($ocsCompatibility == 'incompatible') {
+                    $ocsCompatible = 0;
+                }
             }
             if ($ocsCompatible !== null) {
                 $where[] = "{$prefix}files.ocs_compatible = :ocs_compatible";
@@ -211,9 +192,7 @@ class table_files extends BaseModel
             foreach (explode(' ', $search) as $keyword) {
                 if ($keyword && strlen($keyword) > 2) {
                     $keyword = $this->getDb()->quote("%$keyword%");
-                    $where[] = "({$prefix}files.name LIKE $keyword"
-                        . " OR {$prefix}files.title LIKE $keyword"
-                        . " OR {$prefix}files.description LIKE $keyword)";
+                    $where[] = "({$prefix}files.name LIKE $keyword" . " OR {$prefix}files.title LIKE $keyword" . " OR {$prefix}files.description LIKE $keyword)";
                     $isSearchable = true;
                 }
             }
@@ -233,18 +212,10 @@ class table_files extends BaseModel
                 $where[] = "{$prefix}files.id IN (" . implode(',', $_ids) . ')';
             }
         }
-        if (!empty($favoriteIds['ownerIds'])
-            || !empty($favoriteIds['collectionIds'])
-            || !empty($favoriteIds['fileIds'])
-        ) {
-            $where[] = $this->_convertFavoriteIdsToStatement(
-                $favoriteIds,
-                array(
-                    'ownerId' => "{$prefix}files.owner_id",
-                    'collectionId' => "{$prefix}files.collection_id",
-                    'fileId' => "{$prefix}files.id"
-                )
-            );
+        if (!empty($favoriteIds['ownerIds']) || !empty($favoriteIds['collectionIds']) || !empty($favoriteIds['fileIds'])) {
+            $where[] = $this->_convertFavoriteIdsToStatement($favoriteIds, array('ownerId'      => "{$prefix}files.owner_id",
+                                                                                 'collectionId' => "{$prefix}files.collection_id",
+                                                                                 'fileId'       => "{$prefix}files.id"));
         }
 
         if ($where) {
@@ -253,12 +224,14 @@ class table_files extends BaseModel
 
         if ($sort == 'newest') {
             $order = "{$prefix}files.id DESC";
-        }
-        else if ($sort == 'recent') {
-            $order = "{$prefix}files.downloaded_timestamp DESC";
-        }
-        else if ($sort == 'frequent') {
-            $order = "{$prefix}files.downloaded_count DESC";
+        } else {
+            if ($sort == 'recent') {
+                $order = "{$prefix}files.downloaded_timestamp DESC";
+            } else {
+                if ($sort == 'frequent') {
+                    $order = "{$prefix}files.downloaded_count DESC";
+                }
+            }
         }
 
         if ($page > 1) {
@@ -281,24 +254,11 @@ class table_files extends BaseModel
             }
             $_downloadedTimeperiodEnd = $this->getDb()->quote($_downloadedTimeperiodEnd);
 
-            $_from = '('
-                . " SELECT {$prefix}files_downloaded.file_id AS file_id,"
-                . " COUNT({$prefix}files_downloaded.file_id) AS count"
-                . " FROM {$prefix}files_downloaded"
-                . " WHERE {$prefix}files_downloaded.downloaded_timestamp"
-                . " BETWEEN {$_downloadedTimeperiodBegin} AND {$_downloadedTimeperiodEnd}"
-                . " GROUP BY {$prefix}files_downloaded.file_id"
-                . ') AS downloaded_timeperiod';
+            $_from = '(' . " SELECT {$prefix}files_downloaded.file_id AS file_id," . " COUNT({$prefix}files_downloaded.file_id) AS count" . " FROM {$prefix}files_downloaded" . " WHERE {$prefix}files_downloaded.downloaded_timestamp" . " BETWEEN {$_downloadedTimeperiodBegin} AND {$_downloadedTimeperiodEnd}" . " GROUP BY {$prefix}files_downloaded.file_id" . ') AS downloaded_timeperiod';
 
-            $_join = "LEFT OUTER JOIN {$prefix}files"
-                . " ON {$prefix}files.id = downloaded_timeperiod.file_id"
-                . ' ' . $this->_join;
+            $_join = "LEFT OUTER JOIN {$prefix}files" . " ON {$prefix}files.id = downloaded_timeperiod.file_id" . ' ' . $this->_join;
 
-            $_columns = str_replace(
-                "{$prefix}files.downloaded_count AS downloaded_timeperiod_count",
-                'downloaded_timeperiod.count AS downloaded_timeperiod_count',
-                $this->_columns
-            );
+            $_columns = str_replace("{$prefix}files.downloaded_count AS downloaded_timeperiod_count", 'downloaded_timeperiod.count AS downloaded_timeperiod_count', $this->_columns);
 
             if ($sort == 'frequent') {
                 $order = 'downloaded_timeperiod.count DESC';
@@ -308,11 +268,7 @@ class table_files extends BaseModel
             $this->setName($_from);
             $this->setColumns($_columns);
 
-            $files = $this->fetchRowset(
-                $_join . ' ' . $statementOption
-                . " ORDER BY $order LIMIT $perpage OFFSET $offset",
-                $values
-            );
+            $files = $this->fetchRowset($_join . ' ' . $statementOption . " ORDER BY $order LIMIT $perpage OFFSET $offset", $values);
 
             $this->setPrefix($prefix);
             $this->setName($name);
@@ -326,23 +282,14 @@ class table_files extends BaseModel
             $this->setName($_from);
             $this->setColumns($_columns);
 
-            $pagination = Flooer_Utility_Pagination::paginate(
-                $this->count($_join . ' ' . $statementOption, $values),
-                $perpage,
-                $page
-            );
+            $pagination = Flooer_Utility_Pagination::paginate($this->count($_join . ' ' . $statementOption, $values), $perpage, $page);
 
             $this->setPrefix($prefix);
             $this->setName($name);
             $this->setColumns($columns);
-        }
-        else {
+        } else {
             $this->setColumns($this->_columns);
-            $files = $this->fetchRowset(
-                $this->_join . ' ' . $statementOption
-                . " ORDER BY $order LIMIT $perpage OFFSET $offset",
-                $values
-            );
+            $files = $this->fetchRowset($this->_join . ' ' . $statementOption . " ORDER BY $order LIMIT $perpage OFFSET $offset", $values);
             $this->setColumns($columns);
 
             if (!$files) {
@@ -350,18 +297,12 @@ class table_files extends BaseModel
             }
 
             $this->setColumns($this->_columns);
-            $pagination = Flooer_Utility_Pagination::paginate(
-                $this->count($this->_join . ' ' . $statementOption, $values),
-                $perpage,
-                $page
-            );
+            $pagination = Flooer_Utility_Pagination::paginate($this->count($this->_join . ' ' . $statementOption, $values), $perpage, $page);
             $this->setColumns($columns);
         }
 
-        return array(
-            'files' => $files,
-            'pagination' => $pagination
-        );
+        return array('files'      => $files,
+                     'pagination' => $pagination);
     }
 
     public function getFile($id)
@@ -370,17 +311,13 @@ class table_files extends BaseModel
         $columns = $this->getColumns();
 
         $this->setColumns($this->_columns);
-        $file = $this->fetchRow(
-            $this->_join
-            . " WHERE {$prefix}files.id = :id"
-            . ' LIMIT 1',
-            array(':id' => $id)
-        );
+        $file = $this->fetchRow($this->_join . " WHERE {$prefix}files.id = :id" . ' LIMIT 1', array(':id' => $id));
         $this->setColumns($columns);
 
         if ($file) {
             return $file;
         }
+
         return null;
     }
 
@@ -390,30 +327,28 @@ class table_files extends BaseModel
         if ($file) {
             if ($of == 'self') {
                 return $file->id;
-            }
-            else if ($of == 'origin') {
-                return $file->origin_id;
-            }
-            else if ($of == 'latest') {
-                $latestFile = $this->fetchRow(
-                    'WHERE origin_id = :origin_id'
-                    . ' ORDER BY id DESC LIMIT 1',
-                    array(':origin_id' => $file->origin_id)
-                );
-                return $latestFile->id;
+            } else {
+                if ($of == 'origin') {
+                    return $file->origin_id;
+                } else {
+                    if ($of == 'latest') {
+                        $latestFile = $this->fetchRow('WHERE origin_id = :origin_id' . ' ORDER BY id DESC LIMIT 1', array(':origin_id' => $file->origin_id));
+
+                        return $latestFile->id;
+                    }
+                }
             }
         }
+
         return null;
     }
 
     public function updateDownloadedStatus($id)
     {
         if (isset($this->$id)) {
-            parent::__set($id, array(
-                'downloaded_timestamp' => $this->_getTimestamp(),
-                'downloaded_ip' => $this->_getIp(),
-                'downloaded_count' => $this->$id->downloaded_count + 1
-            ));
+            parent::__set($id, array('downloaded_timestamp' => $this->_getTimestamp(),
+                                     'downloaded_ip'        => $this->_getIp(),
+                                     'downloaded_count'     => $this->$id->downloaded_count + 1));
         }
     }
 

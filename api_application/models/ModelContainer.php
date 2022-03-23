@@ -37,35 +37,20 @@ require_once 'models/table_media_played.php';
 class ModelContainer
 {
 
-    protected $_db = null;
-
-    protected $_config = array(
-        'createTables' => true
-    );
-
     public $profiles = null;
-
     public $collections = null;
-
     public $collections_downloaded = null;
-
     public $files = null;
-
     public $files_downloaded = null;
-
     public $files_downloaded_all = null;
-    
     public $files_downloaded_unique = null;
-
     public $favorites = null;
-
     public $media = null;
-
     public $media_artists = null;
-
     public $media_albums = null;
-
     public $media_played = null;
+    protected $_db = null;
+    protected $_config = array('createTables' => true);
 
     public function __construct(Flooer_Db &$db, array $config = null)
     {
@@ -112,197 +97,174 @@ class ModelContainer
         }
 
         if (!isset($this->_db->profiles)) {
-            $this->_db->profiles = array(
-                'id' => $idDifinition,
-                'active' => 'INTEGER(1) NOT NULL DEFAULT 1',
-                'client_id' => 'INTEGER NOT NULL',
-                'owner_id' => 'VARCHAR(255) NOT NULL',
-                'name' => 'VARCHAR(255) NOT NULL',
-                'email' => 'VARCHAR(255)',
-                'homepage' => 'VARCHAR(255)',
-                'image' => 'VARCHAR(255)',
-                'description' => 'TEXT'
-            );
+            $this->_db->profiles = array('id'          => $idDifinition,
+                                         'active'      => 'INTEGER(1) NOT NULL DEFAULT 1',
+                                         'client_id'   => 'INTEGER NOT NULL',
+                                         'owner_id'    => 'VARCHAR(255) NOT NULL',
+                                         'name'        => 'VARCHAR(255) NOT NULL',
+                                         'email'       => 'VARCHAR(255)',
+                                         'homepage'    => 'VARCHAR(255)',
+                                         'image'       => 'VARCHAR(255)',
+                                         'description' => 'TEXT');
         }
 
         if (!isset($this->_db->collections)) {
-            $this->_db->collections = array(
-                'id' => $idDifinition,
-                'active' => 'INTEGER(1) NOT NULL DEFAULT 1',
-                'client_id' => 'INTEGER NOT NULL',
-                'owner_id' => 'VARCHAR(255) NOT NULL',
-                'name' => 'VARCHAR(255) NOT NULL',
-                'files' => 'INTEGER NOT NULL',
-                'size' => 'BIGINT UNSIGNED NOT NULL',
-                'title' => 'VARCHAR(200)',
-                'description' => 'TEXT',
-                'category' => 'VARCHAR(64)',
-                'tags' => 'TEXT',
-                'version' => 'VARCHAR(64)',
-                'content_id' => 'VARCHAR(255)',
-                'content_page' => 'VARCHAR(255)',
-                'downloaded_timestamp' => $timestampDifinition,
-                'downloaded_ip' => 'VARCHAR(39)',
-                'downloaded_count' => 'INTEGER',
-                'created_timestamp' => $timestampDifinition,
-                'created_ip' => 'VARCHAR(39)',
-                'updated_timestamp' => $timestampDifinition,
-                'updated_ip' => 'VARCHAR(39)'
-            );
+            $this->_db->collections = array('id'                   => $idDifinition,
+                                            'active'               => 'INTEGER(1) NOT NULL DEFAULT 1',
+                                            'client_id'            => 'INTEGER NOT NULL',
+                                            'owner_id'             => 'VARCHAR(255) NOT NULL',
+                                            'name'                 => 'VARCHAR(255) NOT NULL',
+                                            'files'                => 'INTEGER NOT NULL',
+                                            'size'                 => 'BIGINT UNSIGNED NOT NULL',
+                                            'title'                => 'VARCHAR(200)',
+                                            'description'          => 'TEXT',
+                                            'category'             => 'VARCHAR(64)',
+                                            'tags'                 => 'TEXT',
+                                            'version'              => 'VARCHAR(64)',
+                                            'content_id'           => 'VARCHAR(255)',
+                                            'content_page'         => 'VARCHAR(255)',
+                                            'downloaded_timestamp' => $timestampDifinition,
+                                            'downloaded_ip'        => 'VARCHAR(39)',
+                                            'downloaded_count'     => 'INTEGER',
+                                            'created_timestamp'    => $timestampDifinition,
+                                            'created_ip'           => 'VARCHAR(39)',
+                                            'updated_timestamp'    => $timestampDifinition,
+                                            'updated_ip'           => 'VARCHAR(39)');
         }
 
         if (!isset($this->_db->collections_downloaded)) {
-            $this->_db->collections_downloaded = array(
-                'id' => $idDifinition,
-                'client_id' => 'INTEGER NOT NULL',
-                'owner_id' => 'VARCHAR(255) NOT NULL',
-                'collection_id' => 'INTEGER NOT NULL',
-                'user_id' => 'VARCHAR(255)',
-                'referer' => 'VARCHAR(255)',
-                'downloaded_timestamp' => $timestampDifinition,
-                'downloaded_ip' => 'VARCHAR(39)'
-            );
+            $this->_db->collections_downloaded = array('id'                   => $idDifinition,
+                                                       'client_id'            => 'INTEGER NOT NULL',
+                                                       'owner_id'             => 'VARCHAR(255) NOT NULL',
+                                                       'collection_id'        => 'INTEGER NOT NULL',
+                                                       'user_id'              => 'VARCHAR(255)',
+                                                       'referer'              => 'VARCHAR(255)',
+                                                       'downloaded_timestamp' => $timestampDifinition,
+                                                       'downloaded_ip'        => 'VARCHAR(39)');
         }
 
         if (!isset($this->_db->files)) {
-            $this->_db->files = array(
-                'id' => $idDifinition,
-                'origin_id' => 'INTEGER NOT NULL',
-                'active' => 'INTEGER(1) NOT NULL DEFAULT 1',
-                'client_id' => 'INTEGER NOT NULL',
-                'owner_id' => 'VARCHAR(255) NOT NULL',
-                'collection_id' => 'INTEGER NOT NULL',
-                'name' => 'VARCHAR(255) NOT NULL',
-                'type' => 'VARCHAR(255) NOT NULL',
-                'size' => 'BIGINT UNSIGNED NOT NULL',
-                'md5sum' => 'VARCHAR(200)',
-                'title' => 'VARCHAR(200)',
-                'description' => 'TEXT',
-                'category' => 'VARCHAR(64)',
-                'tags' => 'TEXT',
-                'version' => 'VARCHAR(64)',
-                'ocs_compatible' => 'INTEGER(1) NOT NULL DEFAULT 1',
-                'content_id' => 'VARCHAR(255)',
-                'content_page' => 'VARCHAR(255)',
-                'downloaded_timestamp' => $timestampDifinition,
-                'downloaded_ip' => 'VARCHAR(39)',
-                'downloaded_count' => 'INTEGER',
-                'created_timestamp' => $timestampDifinition,
-                'created_ip' => 'VARCHAR(39)',
-                'updated_timestamp' => $timestampDifinition,
-                'updated_ip' => 'VARCHAR(39)'
-            );
+            $this->_db->files = array('id'                   => $idDifinition,
+                                      'origin_id'            => 'INTEGER NOT NULL',
+                                      'active'               => 'INTEGER(1) NOT NULL DEFAULT 1',
+                                      'client_id'            => 'INTEGER NOT NULL',
+                                      'owner_id'             => 'VARCHAR(255) NOT NULL',
+                                      'collection_id'        => 'INTEGER NOT NULL',
+                                      'name'                 => 'VARCHAR(255) NOT NULL',
+                                      'type'                 => 'VARCHAR(255) NOT NULL',
+                                      'size'                 => 'BIGINT UNSIGNED NOT NULL',
+                                      'md5sum'               => 'VARCHAR(200)',
+                                      'title'                => 'VARCHAR(200)',
+                                      'description'          => 'TEXT',
+                                      'category'             => 'VARCHAR(64)',
+                                      'tags'                 => 'TEXT',
+                                      'version'              => 'VARCHAR(64)',
+                                      'ocs_compatible'       => 'INTEGER(1) NOT NULL DEFAULT 1',
+                                      'content_id'           => 'VARCHAR(255)',
+                                      'content_page'         => 'VARCHAR(255)',
+                                      'downloaded_timestamp' => $timestampDifinition,
+                                      'downloaded_ip'        => 'VARCHAR(39)',
+                                      'downloaded_count'     => 'INTEGER',
+                                      'created_timestamp'    => $timestampDifinition,
+                                      'created_ip'           => 'VARCHAR(39)',
+                                      'updated_timestamp'    => $timestampDifinition,
+                                      'updated_ip'           => 'VARCHAR(39)');
         }
 
         if (!isset($this->_db->files_downloaded)) {
-            $this->_db->files_downloaded = array(
-                'id' => $idDifinition,
-                'client_id' => 'INTEGER NOT NULL',
-                'owner_id' => 'VARCHAR(255) NOT NULL',
-                'collection_id' => 'INTEGER NOT NULL',
-                'file_id' => 'INTEGER NOT NULL',
-                'user_id' => 'VARCHAR(255)',
-                'referer' => 'VARCHAR(255)',
-                'downloaded_timestamp' => $timestampDifinition,
-                'downloaded_ip' => 'VARCHAR(39)'
-            );
+            $this->_db->files_downloaded = array('id'                   => $idDifinition,
+                                                 'client_id'            => 'INTEGER NOT NULL',
+                                                 'owner_id'             => 'VARCHAR(255) NOT NULL',
+                                                 'collection_id'        => 'INTEGER NOT NULL',
+                                                 'file_id'              => 'INTEGER NOT NULL',
+                                                 'user_id'              => 'VARCHAR(255)',
+                                                 'referer'              => 'VARCHAR(255)',
+                                                 'downloaded_timestamp' => $timestampDifinition,
+                                                 'downloaded_ip'        => 'VARCHAR(39)');
         }
 
         if (!isset($this->_db->files_downloaded_all)) {
-            $this->_db->files_downloaded_all = array(
-                'id' => $idDifinition,
-                'client_id' => 'INTEGER NOT NULL',
-                'owner_id' => 'VARCHAR(255) NOT NULL',
-                'collection_id' => 'INTEGER NOT NULL',
-                'file_id' => 'INTEGER NOT NULL',
-                'user_id' => 'VARCHAR(255)',
-                'referer' => 'VARCHAR(255)',
-                'downloaded_timestamp' => $timestampDifinition,
-                'downloaded_ip' => 'VARCHAR(39)',
-                'source' => 'VARCHAR(39)',
-                'link_type' => 'VARCHAR(39)',
-                'user_agent' => 'VARCHAR(255)',
-                'app_id' => 'INT',
-                'fingerprint' => 'VARCHAR(255)',
-                
+            $this->_db->files_downloaded_all = array('id'                   => $idDifinition,
+                                                     'client_id'            => 'INTEGER NOT NULL',
+                                                     'owner_id'             => 'VARCHAR(255) NOT NULL',
+                                                     'collection_id'        => 'INTEGER NOT NULL',
+                                                     'file_id'              => 'INTEGER NOT NULL',
+                                                     'user_id'              => 'VARCHAR(255)',
+                                                     'referer'              => 'VARCHAR(255)',
+                                                     'downloaded_timestamp' => $timestampDifinition,
+                                                     'downloaded_ip'        => 'VARCHAR(39)',
+                                                     'source'               => 'VARCHAR(39)',
+                                                     'link_type'            => 'VARCHAR(39)',
+                                                     'user_agent'           => 'VARCHAR(255)',
+                                                     'app_id'               => 'INT',
+                                                     'fingerprint'          => 'VARCHAR(255)',
+
             );
         }
-        
+
         if (!isset($this->_db->files_downloaded_unique)) {
-            $this->_db->files_downloaded_unique = array(
-                'id' => $idDifinition,
-                'client_id' => 'INTEGER NOT NULL',
-                'owner_id' => 'VARCHAR(255) NOT NULL',
-                'collection_id' => 'INTEGER NOT NULL',
-                'file_id' => 'INTEGER NOT NULL',
-                'user_id' => 'VARCHAR(255)',
-                'referer' => 'VARCHAR(255)',
-                'downloaded_timestamp' => $timestampDifinition,
-                'downloaded_ip' => 'VARCHAR(39)'
-            );
+            $this->_db->files_downloaded_unique = array('id'                   => $idDifinition,
+                                                        'client_id'            => 'INTEGER NOT NULL',
+                                                        'owner_id'             => 'VARCHAR(255) NOT NULL',
+                                                        'collection_id'        => 'INTEGER NOT NULL',
+                                                        'file_id'              => 'INTEGER NOT NULL',
+                                                        'user_id'              => 'VARCHAR(255)',
+                                                        'referer'              => 'VARCHAR(255)',
+                                                        'downloaded_timestamp' => $timestampDifinition,
+                                                        'downloaded_ip'        => 'VARCHAR(39)');
         }
 
         if (!isset($this->_db->favorites)) {
-            $this->_db->favorites = array(
-                'id' => $idDifinition,
-                'client_id' => 'INTEGER NOT NULL',
-                'user_id' => 'VARCHAR(255) NOT NULL',
-                'owner_id' => 'VARCHAR(255) NOT NULL',
-                'collection_id' => 'INTEGER',
-                'file_id' => 'INTEGER'
-            );
+            $this->_db->favorites = array('id'            => $idDifinition,
+                                          'client_id'     => 'INTEGER NOT NULL',
+                                          'user_id'       => 'VARCHAR(255) NOT NULL',
+                                          'owner_id'      => 'VARCHAR(255) NOT NULL',
+                                          'collection_id' => 'INTEGER',
+                                          'file_id'       => 'INTEGER');
         }
 
         if (!isset($this->_db->media)) {
-            $this->_db->media = array(
-                'id' => $idDifinition,
-                'client_id' => 'INTEGER NOT NULL',
-                'owner_id' => 'VARCHAR(255) NOT NULL',
-                'collection_id' => 'INTEGER NOT NULL',
-                'file_id' => 'INTEGER NOT NULL',
-                'artist_id' => 'INTEGER NOT NULL',
-                'album_id' => 'INTEGER NOT NULL',
-                'title' => 'VARCHAR(255)',
-                'genre' => 'VARCHAR(64)',
-                'track' => 'VARCHAR(5)',
-                'creationdate' => 'INTEGER(4)',
-                'bitrate' => 'INTEGER',
-                'playtime_seconds' => 'INTEGER',
-                'playtime_string' => 'VARCHAR(8)',
-                'played_timestamp' => $timestampDifinition,
-                'played_ip' => 'VARCHAR(39)',
-                'played_count' => 'INTEGER'
-            );
+            $this->_db->media = array('id'               => $idDifinition,
+                                      'client_id'        => 'INTEGER NOT NULL',
+                                      'owner_id'         => 'VARCHAR(255) NOT NULL',
+                                      'collection_id'    => 'INTEGER NOT NULL',
+                                      'file_id'          => 'INTEGER NOT NULL',
+                                      'artist_id'        => 'INTEGER NOT NULL',
+                                      'album_id'         => 'INTEGER NOT NULL',
+                                      'title'            => 'VARCHAR(255)',
+                                      'genre'            => 'VARCHAR(64)',
+                                      'track'            => 'VARCHAR(5)',
+                                      'creationdate'     => 'INTEGER(4)',
+                                      'bitrate'          => 'INTEGER',
+                                      'playtime_seconds' => 'INTEGER',
+                                      'playtime_string'  => 'VARCHAR(8)',
+                                      'played_timestamp' => $timestampDifinition,
+                                      'played_ip'        => 'VARCHAR(39)',
+                                      'played_count'     => 'INTEGER');
         }
 
         if (!isset($this->_db->media_artists)) {
-            $this->_db->media_artists = array(
-                'id' => $idDifinition,
-                'client_id' => 'INTEGER NOT NULL',
-                'name' => 'VARCHAR(255) NOT NULL'
-            );
+            $this->_db->media_artists = array('id'        => $idDifinition,
+                                              'client_id' => 'INTEGER NOT NULL',
+                                              'name'      => 'VARCHAR(255) NOT NULL');
         }
 
         if (!isset($this->_db->media_albums)) {
-            $this->_db->media_albums = array(
-                'id' => $idDifinition,
-                'client_id' => 'INTEGER NOT NULL',
-                'name' => 'VARCHAR(255) NOT NULL'
-            );
+            $this->_db->media_albums = array('id'        => $idDifinition,
+                                             'client_id' => 'INTEGER NOT NULL',
+                                             'name'      => 'VARCHAR(255) NOT NULL');
         }
 
         if (!isset($this->_db->media_played)) {
-            $this->_db->media_played = array(
-                'id' => $idDifinition,
-                'client_id' => 'INTEGER NOT NULL',
-                'owner_id' => 'VARCHAR(255) NOT NULL',
-                'collection_id' => 'INTEGER NOT NULL',
-                'file_id' => 'INTEGER NOT NULL',
-                'media_id' => 'INTEGER NOT NULL',
-                'user_id' => 'VARCHAR(255)',
-                'played_timestamp' => $timestampDifinition,
-                'played_ip' => 'VARCHAR(39)'
-            );
+            $this->_db->media_played = array('id'               => $idDifinition,
+                                             'client_id'        => 'INTEGER NOT NULL',
+                                             'owner_id'         => 'VARCHAR(255) NOT NULL',
+                                             'collection_id'    => 'INTEGER NOT NULL',
+                                             'file_id'          => 'INTEGER NOT NULL',
+                                             'media_id'         => 'INTEGER NOT NULL',
+                                             'user_id'          => 'VARCHAR(255)',
+                                             'played_timestamp' => $timestampDifinition,
+                                             'played_ip'        => 'VARCHAR(39)');
         }
     }
 

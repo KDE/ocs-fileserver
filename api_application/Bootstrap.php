@@ -106,8 +106,6 @@ class Bootstrap extends Flooer_Application_Bootstrap
         try {
             $db = new Flooer_Db(parse_ini_file('configs/database.ini', true));
             $this->getApplication()->setResource('db', $db);
-//            $db_ocs = new Flooer_Db(parse_ini_file('configs/database_ocs.ini', true));
-//            $this->getApplication()->setResource('db_ocs', $db_ocs);
         }
         catch (Exception $exception) {
             $response = $this->getApplication()->getResource('response');

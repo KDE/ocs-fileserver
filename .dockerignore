@@ -1,7 +1,7 @@
+.backup
 .git
 .deployment
 .idea
-.backup
 data/database/*
 data/logs/*
 data/thumbnails/*

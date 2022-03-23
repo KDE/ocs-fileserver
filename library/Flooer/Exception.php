@@ -77,7 +77,7 @@ class Flooer_Exception extends Exception
      */
     public function __toString()
     {
-        return __CLASS__ . ": [{$this->code}]: {$this->message}; {$this->file}({$this->line})\n";
+        return __CLASS__ . " [{$this->code}]: {$this->message}; {$this->file}({$this->line})\n";
     }
 
     /**
@@ -88,6 +88,20 @@ class Flooer_Exception extends Exception
      */
     public static function exceptionHandler($exception)
     {
+        $displayErrors = ini_get("display_errors");
+        $displayErrors = strtolower($displayErrors);
+
+        $logErrors = boolval(ini_get("log_errors"));
+
+        if ($logErrors) {
+            $errorMsg = __CLASS__ . " [{$exception->getCode()}]: {$exception->getMessage()} in {$exception->getFile()}({$exception->getLine()})\n{$exception->getTraceAsString()}\n";
+            error_log($errorMsg);
+        }
+
+        if (error_reporting() === 0 || empty($displayErrors) || $displayErrors === "off") {
+            return;
+        }
+
         echo $exception;
     }
 

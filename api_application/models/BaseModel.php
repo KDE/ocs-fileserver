@@ -25,7 +25,7 @@ class BaseModel extends Flooer_Db_Table
 {
 
     /**
-     * Generates a ID number for primary key
+     * Generates an ID number for primary key
      *
      * This method generating a unique ID number based on unix time.
      * And the maximum value of the ID has affected by database
@@ -44,13 +44,15 @@ class BaseModel extends Flooer_Db_Table
         while (isset($this->$id)) {
             $id = time() + mt_rand(1, 1000);
         }
+
         return $id;
     }
-    
+
     public function generateNewId()
     {
         $result = $this->_db->query("SELECT UUID_SHORT();");
         $res = $result->fetchAll();
+
         return $res[0]['UUID_SHORT()'];
     }
 
@@ -59,12 +61,13 @@ class BaseModel extends Flooer_Db_Table
         if ($time === null) {
             $time = time();
         }
+
         return date('Y-m-d H:i:s', $time);
     }
 
     protected function _getIp()
     {
-        $ip = isset($_SERVER['HTTP_X_FORWARDED_FOR']) ? explode(',',$_SERVER['HTTP_X_FORWARDED_FOR']) : $_SERVER['REMOTE_ADDR'];
+        $ip = isset($_SERVER['HTTP_X_FORWARDED_FOR']) ? explode(',', $_SERVER['HTTP_X_FORWARDED_FOR']) : $_SERVER['REMOTE_ADDR'];
 
         if (is_array($ip)) {
             return $ip[0];
@@ -81,32 +84,35 @@ class BaseModel extends Flooer_Db_Table
         if (!empty($_SERVER['HTTP_REFERER'])) {
             return $_SERVER['HTTP_REFERER'];
         }
+
         return null;
     }
 
     protected function _convertArrayToObject($values)
     {
         if (is_array($values)) {
-            $values = (object) $values;
+            $values = (object)$values;
         }
         if (is_object($values)) {
             foreach ($values as &$value) {
                 $value = $this->_convertArrayToObject($value);
             }
         }
+
         return $values;
     }
 
     protected function _convertObjectToArray($values)
     {
         if (is_object($values)) {
-            $values = (array) $values;
+            $values = (array)$values;
         }
         if (is_array($values)) {
             foreach ($values as &$value) {
                 $value = $this->_convertObjectToArray($value);
             }
         }
+
         return $values;
     }
 
@@ -114,45 +120,34 @@ class BaseModel extends Flooer_Db_Table
     {
         $whereOr = array();
 
-        if (!empty($favoriteIds['ownerIds'])
-            && !empty($columns['ownerId'])
-        ) {
+        if (!empty($favoriteIds['ownerIds']) && !empty($columns['ownerId'])) {
             $ownerIds = array();
             foreach ($favoriteIds['ownerIds'] as $id) {
                 $ownerIds[] = $this->getDb()->quote($id);
             }
-            $whereOr[] = "{$columns['ownerId']} IN ("
-                . implode(',', $ownerIds)
-                . ")";
+            $whereOr[] = "{$columns['ownerId']} IN (" . implode(',', $ownerIds) . ")";
         }
 
-        if (!empty($favoriteIds['collectionIds'])
-            && !empty($columns['collectionId'])
-        ) {
+        if (!empty($favoriteIds['collectionIds']) && !empty($columns['collectionId'])) {
             $collectionIds = array();
             foreach ($favoriteIds['collectionIds'] as $id) {
                 $collectionIds[] = $this->getDb()->quote($id);
             }
-            $whereOr[] = "{$columns['collectionId']} IN ("
-                . implode(',', $collectionIds)
-                . ")";
+            $whereOr[] = "{$columns['collectionId']} IN (" . implode(',', $collectionIds) . ")";
         }
 
-        if (!empty($favoriteIds['fileIds'])
-            && !empty($columns['fileId'])
-        ) {
+        if (!empty($favoriteIds['fileIds']) && !empty($columns['fileId'])) {
             $fileIds = array();
             foreach ($favoriteIds['fileIds'] as $id) {
                 $fileIds[] = $this->getDb()->quote($id);
             }
-            $whereOr[] = "{$columns['fileId']} IN ("
-                . implode(',', $fileIds)
-                . ")";
+            $whereOr[] = "{$columns['fileId']} IN (" . implode(',', $fileIds) . ")";
         }
 
         if ($whereOr) {
             return '(' . implode(' OR ', $whereOr) . ')';
         }
+
         return '';
     }
 

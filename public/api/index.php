@@ -1,5 +1,4 @@
 <?php
-
 /**
  * ocs-fileserver
  *
@@ -21,26 +20,32 @@
  * along with Foobar.  If not, see <http://www.gnu.org/licenses/>.
  **/
 
+function trigger_deprecation() {}
+
+include '../../vendor/autoload.php';
+
 require_once '../../library/Flooer/Application.php';
 
-$application = new Flooer_Application(array(
-    'baseDir' => '../../api_application',
-    'memoryLimit' => '512M',
-    'maxExecutionTime' => 660,
-    'socketTimeout' => 600
-));
+$application = new Flooer_Application(
+    array(
+        'baseDir'          => '../../api_application',
+        'memoryLimit'      => '512M',
+        'maxExecutionTime' => 660,
+        'socketTimeout'    => 600,
+        'autoloadConfig'   => array(
+            'register' => false,
+        ),
+    )
+);
 
-switch (strtolower($_SERVER['SERVER_NAME'])) {
-    case 'localhost':
+switch (strtolower(getenv('APPLICATION_ENV'))) {
+    case 'debug':
         $application->setConfig('environment', 'debug');
         break;
-    case 'cc.ppload.com':
+    case 'development':
         $application->setConfig('environment', 'development');
         break;
-    case 'www.ppload.com':
-        // Continue to default
-    case 'dl.opendesktop.org':
-        // Continue to default
+    case 'production':
     default:
         $application->setConfig('environment', 'production');
         break;

@@ -284,6 +284,8 @@ class Flooer_Db extends PDO
     /**
      * Add a SQL statement log
      *
+     * @param $sql
+     *
      * @return  void
      */
     public function addStatementLog($sql)

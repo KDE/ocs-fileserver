@@ -1252,7 +1252,7 @@ class Files extends BaseController
         }
 
         // Creating a pre-signed URL and request
-        $cmd = $s3Client->getCommand('GetObject', ['Bucket' => $s3Config['bucket'], 'Key' => $sendFilePath,]);
+        $cmd = $s3Client->getCommand('GetObject', ['Bucket' => $s3Config['bucket'], 'Key' => $sendFilePath,'ResponseContentDisposition' => 'attachment;%20'.basename($sendFilePath),]);
         $request = $s3Client->createPresignedRequest($cmd, $s3Config['signedUrlExpires']);
 
         if ($withoutHttpScheme) {

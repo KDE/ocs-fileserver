@@ -406,7 +406,7 @@ class Files extends BaseController
         $originId = $id;
         $name = $fileSystemAdapter->fixFilename($name, $collectionName);
         if (!$title) {
-            $title = $name;
+            $title = mb_substr(strip_tags($name), 0, 200);
         }
 
         // Save the uploaded file
@@ -652,7 +652,7 @@ class Files extends BaseController
 
             if (!empty($_FILES['file']['name'])) {
                 //$name = mb_substr(strip_tags(basename($_FILES['file']['name'])), 0, 200);
-                $filter = new Filename(['beutify' => true]);
+                $filter = new Filename(['beautify' => true]);
                 $name = $filter->filter(basename($_FILES['file']['name']));
             }
             if (!empty($_FILES['file']['tmp_name'])) {

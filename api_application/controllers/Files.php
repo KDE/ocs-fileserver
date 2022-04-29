@@ -407,6 +407,7 @@ class Files extends BaseController
         $name = $fileSystemAdapter->fixFilename($name, $collectionName);
         if (!$title) {
             $title = mb_substr(strip_tags($name), 0, 200);
+            $title = $name;
         }
 
         // Save the uploaded file

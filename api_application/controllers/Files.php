@@ -301,7 +301,9 @@ class Files extends BaseController
         }
         if (isset($_FILES['file'])) {
             if (!empty($_FILES['file']['name'])) {
-                $name = mb_substr(strip_tags(basename($_FILES['file']['name'])), 0, 200);
+                //$name = mb_substr(strip_tags(basename($_FILES['file']['name'])), 0, 200);
+                $filter = new \Ocs\Filter\File\Filename(['beautify' => true]);
+                $name = $filter->filter(basename($_FILES['file']['name']));
             }
             if (!empty($_FILES['file']['tmp_name'])) {
                 $finfo = new finfo(FILEINFO_MIME_TYPE);
@@ -648,7 +650,9 @@ class Files extends BaseController
             $downloadedCount = 0; // for hive files importing (Deprecated)
 
             if (!empty($_FILES['file']['name'])) {
-                $name = mb_substr(strip_tags(basename($_FILES['file']['name'])), 0, 200);
+                //$name = mb_substr(strip_tags(basename($_FILES['file']['name'])), 0, 200);
+                $filter = new \Ocs\Filter\File\Filename(['beutify' => true]);
+                $name = $filter->filter(basename($_FILES['file']['name']));
             }
             if (!empty($_FILES['file']['tmp_name'])) {
                 $finfo = new finfo(FILEINFO_MIME_TYPE);
@@ -1110,6 +1114,10 @@ class Files extends BaseController
         }
 
         if (getenv('MOD_X_ACCEL_REDIRECT_ENABLED') === 'on') {
+            $this->_xSendFile($sendFilePath, $filePath, $fileName, $fileType, $fileSize, true, $headeronly);
+        }
+
+        if (getenv('X_OCS_ACCEL_REDIRECT_ENABLED') === 'on') {
             $this->_xSendFile($sendFilePath, $filePath, $fileName, $fileType, $fileSize, true, $headeronly);
         }
 

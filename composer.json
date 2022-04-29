@@ -28,7 +28,8 @@
     "ext-iconv": "*",
     "ext-zlib": "*",
     "ext-xml": "*",
-    "ext-redis": "*"
+    "ext-redis": "*",
+    "laminas/laminas-inputfilter": "^2"
   },
   "autoload": {
     "classmap": ["api_application/", "library/"],
@@ -40,7 +41,8 @@
     },
     "psr-4": {
       "Ocs\\Storage\\": "library/Ocs/Storage/",
-      "Ocs\\Url\\": "library/Ocs/Url/"
+      "Ocs\\Url\\": "library/Ocs/Url/",
+      "Ocs\\Filter\\File\\": "library/Ocs/Filter/File"
     }
   }
 }

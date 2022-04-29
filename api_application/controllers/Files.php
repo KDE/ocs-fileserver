@@ -3,6 +3,7 @@
 
 use Aws\Credentials\Credentials;
 use Aws\S3\S3Client;
+use Ocs\Filter\File\Filename;
 use Ocs\Storage\FilesystemAdapter;
 use Ocs\Url\UrlSigner;
 
@@ -302,7 +303,7 @@ class Files extends BaseController
         if (isset($_FILES['file'])) {
             if (!empty($_FILES['file']['name'])) {
                 //$name = mb_substr(strip_tags(basename($_FILES['file']['name'])), 0, 200);
-                $filter = new \Ocs\Filter\File\Filename(['beautify' => true]);
+                $filter = new Filename(['beautify' => true]);
                 $name = $filter->filter(basename($_FILES['file']['name']));
             }
             if (!empty($_FILES['file']['tmp_name'])) {
@@ -651,7 +652,7 @@ class Files extends BaseController
 
             if (!empty($_FILES['file']['name'])) {
                 //$name = mb_substr(strip_tags(basename($_FILES['file']['name'])), 0, 200);
-                $filter = new \Ocs\Filter\File\Filename(['beutify' => true]);
+                $filter = new Filename(['beutify' => true]);
                 $name = $filter->filter(basename($_FILES['file']['name']));
             }
             if (!empty($_FILES['file']['tmp_name'])) {

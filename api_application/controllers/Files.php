@@ -3,6 +3,7 @@
 
 use Aws\Credentials\Credentials;
 use Aws\S3\S3Client;
+use Ocs\Filter\File\Filename;
 use Ocs\Storage\FilesystemAdapter;
 use Ocs\Url\UrlSigner;
 
@@ -301,7 +302,9 @@ class Files extends BaseController
         }
         if (isset($_FILES['file'])) {
             if (!empty($_FILES['file']['name'])) {
-                $name = mb_substr(strip_tags(basename($_FILES['file']['name'])), 0, 200);
+                //$name = mb_substr(strip_tags(basename($_FILES['file']['name'])), 0, 200);
+                $filter = new Filename(['beautify' => true]);
+                $name = $filter->filter(basename($_FILES['file']['name']));
             }
             if (!empty($_FILES['file']['tmp_name'])) {
                 $finfo = new finfo(FILEINFO_MIME_TYPE);
@@ -403,7 +406,7 @@ class Files extends BaseController
         $originId = $id;
         $name = $fileSystemAdapter->fixFilename($name, $collectionName);
         if (!$title) {
-            $title = $name;
+            $title = mb_substr(strip_tags($name), 0, 200);
         }
 
         // Save the uploaded file
@@ -648,7 +651,9 @@ class Files extends BaseController
             $downloadedCount = 0; // for hive files importing (Deprecated)
 
             if (!empty($_FILES['file']['name'])) {
-                $name = mb_substr(strip_tags(basename($_FILES['file']['name'])), 0, 200);
+                //$name = mb_substr(strip_tags(basename($_FILES['file']['name'])), 0, 200);
+                $filter = new Filename(['beautify' => true]);
+                $name = $filter->filter(basename($_FILES['file']['name']));
             }
             if (!empty($_FILES['file']['tmp_name'])) {
                 $finfo = new finfo(FILEINFO_MIME_TYPE);
@@ -702,7 +707,7 @@ class Files extends BaseController
             $id = $this->models->files->generateId();
             $name = $this->_fixFilename($name, $collectionName);
             if (!$title) {
-                $title = $name;
+                $title = mb_substr(strip_tags($name), 0, 200);
             }
 
             // Save the uploaded file
@@ -1110,6 +1115,10 @@ class Files extends BaseController
         }
 
         if (getenv('MOD_X_ACCEL_REDIRECT_ENABLED') === 'on') {
+            $this->_xSendFile($sendFilePath, $filePath, $fileName, $fileType, $fileSize, true, $headeronly);
+        }
+
+        if (getenv('X_OCS_ACCEL_REDIRECT_ENABLED') === 'on') {
             $this->_xSendFile($sendFilePath, $filePath, $fileName, $fileType, $fileSize, true, $headeronly);
         }
 

@@ -149,6 +149,12 @@ class Flooer_Db_Table
                 $this->_db->addStatementLog($sql);
                 $statement = $this->_db->prepare($sql);
                 $statement->execute($statementValues);
+                if ((int)$statement->errorCode()) {
+                    trigger_error(
+                        "" . json_encode($statement->errorInfo()),
+                        E_USER_ERROR
+                    );
+                }
                 $statement->closeCursor();
             }
             return;

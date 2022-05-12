@@ -60,8 +60,12 @@ class FilesystemAdapter implements AdapterInterface
     public function testAndCreate(string $dir): bool
     {
         if (is_dir($dir)) {
+            if (!is_writable($dir)) {
+                return chmod($dir, 0755);
+            }
             return true;
         }
+
 
         return mkdir($dir, 0755, true);
     }

@@ -68,6 +68,6 @@ class FilesystemAdapter implements AdapterInterface
 
     public function moveFile($from, $to): bool
     {
-        return is_file($from) && rename($from, $to);
+        return is_file($from) && copy($from, $to) && unlink($from);
     }
 }

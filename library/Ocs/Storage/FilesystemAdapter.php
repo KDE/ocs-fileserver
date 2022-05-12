@@ -63,7 +63,7 @@ class FilesystemAdapter implements AdapterInterface
             return true;
         }
 
-        return mkdir($dir, null, true);
+        return mkdir($dir, 0755, true);
     }
 
     public function moveFile($from, $to): bool

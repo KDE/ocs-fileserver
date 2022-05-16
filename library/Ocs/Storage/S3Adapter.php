@@ -47,14 +47,12 @@ class S3Adapter implements AdapterInterface
         $bucketKey = $this->getBucketKey($to);
 
         $awsClient = $this->getAwsClient();
-        $awsResult = $awsClient->putObject([
-            'Bucket' => $this->appConfig->awss3['bucket'],
-            'Key' => $bucketKey,
-            'SourceFile' => $from,
-            'ACL' => 'private',
-            'ContentType' => $type,
-//            'ContentMD5' => base64_encode($md5sum),
-        ]);
+        $awsResult = $awsClient->putObject(['Bucket'      => $this->appConfig->awss3['bucket'],
+                                            'Key'         => $bucketKey,
+                                            'SourceFile'  => $from,
+                                            'ACL'         => 'private',
+                                            'ContentType' => $type,//            'ContentMD5' => base64_encode($md5sum),
+                                           ]);
 
         if (is_object($awsResult)) {
             if ($awsResult->get('@metadata')['statusCode'] != 200) {
@@ -74,6 +72,19 @@ class S3Adapter implements AdapterInterface
         return true;
     }
 
+    /**
+     * @param string $to
+     *
+     * @return string
+     */
+    public function getBucketKey(string $to): string
+    {
+        $bucketPathPrefix = $this->appConfig->awss3['bucketPathPrefix'];
+        $pos = strpos($to, $bucketPathPrefix);
+
+        return ltrim(substr($to, $pos), " /");
+    }
+
     private function getAwsClient(): S3Client
     {
         if (!empty($this->s3Client)) {
@@ -81,23 +92,16 @@ class S3Adapter implements AdapterInterface
         }
         // Instantiate an Amazon S3 client.
         if (empty($this->appConfig->awss3['endpoint'])) {
-            $this->s3Client = new S3Client(
-                [
-                    'credentials' => new Credentials($this->appConfig->awss3['key'], $this->appConfig->awss3['secret']),
-                    'version' => 'latest',
-                    'region' => $this->appConfig->awss3['region'],
-                ]
-            );
+            $this->s3Client = new S3Client(['credentials' => new Credentials($this->appConfig->awss3['key'], $this->appConfig->awss3['secret']),
+                                            'version'     => 'latest',
+                                            'region'      => $this->appConfig->awss3['region'],]);
         } else {
-            $this->s3Client = new S3Client(
-                [
-                    'credentials' => new Credentials($this->appConfig->awss3['key'], $this->appConfig->awss3['secret']),
-                    'version' => 'latest',
-                    'region' => $this->appConfig->awss3['region'],
-                    'endpoint' => $this->appConfig->awss3['endpoint'],
-                ]
-            );
+            $this->s3Client = new S3Client(['credentials' => new Credentials($this->appConfig->awss3['key'], $this->appConfig->awss3['secret']),
+                                            'version'     => 'latest',
+                                            'region'      => $this->appConfig->awss3['region'],
+                                            'endpoint'    => $this->appConfig->awss3['endpoint'],]);
         }
+
         return $this->s3Client;
     }
 
@@ -123,17 +127,6 @@ class S3Adapter implements AdapterInterface
         return $name;
     }
 
-    /**
-     * @param string $to
-     * @return string
-     */
-    public function getBucketKey(string $to): string
-    {
-        $bucketPathPrefix = $this->appConfig->awss3['bucketPathPrefix'];
-        $pos = strpos($to, $bucketPathPrefix);
-        return ltrim(substr($to, $pos), " /");
-    }
-
     public function prepareCollectionPath(string $collectionName): bool
     {
         return true;
@@ -153,27 +146,46 @@ class S3Adapter implements AdapterInterface
 //            'Bucket'     => $this->appConfig->awss3['bucket'],
 //            'Key'        => $srcKey,
 //        ]);
-        $awsResult = $awsClient->copyObject([
-            'Bucket'     => $this->appConfig->awss3['bucket'],
-            'Key'        => $destKey,
-            'CopySource' => $this->appConfig->awss3['bucket'] . '/' . $srcKey,
-        ]);
-        error_log(__METHOD__ . ' - ' . 'copyObject: ' .print_r($awsResult, true));
+        $awsResult = $awsClient->copyObject(['Bucket'     => $this->appConfig->awss3['bucket'],
+                                             'Key'        => $destKey,
+                                             'CopySource' => $this->appConfig->awss3['bucket'] . '/' . $srcKey,]);
+        error_log(__METHOD__ . ' - ' . 'copyObject: ' . print_r($awsResult, true));
         if (is_object($awsResult)) {
             $responseCode = $awsResult->get('@metadata')['statusCode'];
-            if (false == in_array($responseCode,[200,201,202,204])) {
+            if (false == in_array($responseCode, [200, 201, 202, 204])) {
                 error_log(print_r($awsResult, true));
 
                 return false;
             }
         }
 
-        $awsResult = $awsClient->deleteObject([
-            'Bucket'     => $this->appConfig->awss3['bucket'],
-            'Key'        => $srcKey,
-        ]);
-        error_log(__METHOD__ . ' - ' . 'copyObject: ' .print_r($awsResult, true));
+        $awsResult = $awsClient->deleteObject(['Bucket' => $this->appConfig->awss3['bucket'],
+                                               'Key'    => $srcKey,]);
+        error_log(__METHOD__ . ' - ' . 'copyObject: ' . print_r($awsResult, true));
 
         return true;
     }
+
+    public function copyFile($from, $to): bool
+    {
+        $awsClient = $this->getAwsClient();
+        $destKey = $this->getBucketKey($to);
+        $srcKey = $this->getBucketKey($from);
+        $awsResult = $awsClient->copyObject(['Bucket'     => $this->appConfig->awss3['bucket'],
+                                             'Key'        => $destKey,
+                                             'CopySource' => $this->appConfig->awss3['bucket'] . '/' . $srcKey,]);
+        error_log(__METHOD__ . ' - ' . 'copyObject: ' . print_r($awsResult, true));
+        if (is_object($awsResult)) {
+            $responseCode = $awsResult->get('@metadata')['statusCode'];
+            if (false == in_array($responseCode, [200, 201, 202, 204])) {
+                error_log(print_r($awsResult, true));
+
+                return false;
+            }
+        }
+        error_log(__METHOD__ . ' - ' . 'copyObject: ' . print_r($awsResult, true));
+
+        return true;
+    }
+
 }

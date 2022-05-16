@@ -63,9 +63,9 @@ class FilesystemAdapter implements AdapterInterface
             if (!is_writable($dir)) {
                 return chmod($dir, 0755);
             }
+
             return true;
         }
-
 
         return mkdir($dir, 0755, true);
     }
@@ -73,5 +73,10 @@ class FilesystemAdapter implements AdapterInterface
     public function moveFile($from, $to): bool
     {
         return is_file($from) && copy($from, $to) && unlink($from);
+    }
+
+    public function copyFile($from, $to): bool
+    {
+        return is_file($from) && copy($from, $to);
     }
 }

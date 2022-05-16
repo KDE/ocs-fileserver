@@ -25,6 +25,7 @@ interface AdapterInterface
     /**
      * @param string $from
      * @param string $to
+     *
      * @return bool
      */
     public function moveUploadedFile(string $from, string $to): bool;
@@ -36,4 +37,7 @@ interface AdapterInterface
     public function testAndCreate(string $dir): bool;
 
     public function moveFile($from, $to): bool;
+
+    public function copyFile($from, $to): bool;
+
 }

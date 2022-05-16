@@ -318,6 +318,32 @@ class Files extends BaseController
                 $size = $_FILES['file']['size'];
             }
         }
+        else { // alternative application path when user uploads an url
+            if (isset($this->request->local_file_path)) {
+                if (!empty($this->request->local_file_path)) {
+                    // $name = mb_substr(strip_tags(basename($this->request->local_file_path)), 0, 200);
+                    $filter = new Filename(['beautify' => true]);
+                    $name = $filter->filter(basename($this->request->local_file_path));
+                    $externalUri = $this->_detectLinkInTags($tags);
+                    if ($name == 'empty' && !empty($externalUri)) {
+                        $type = $this->_detectMimeTypeFromUri($externalUri);
+                        $size = $this->_detectFilesizeFromUri($externalUri);
+                    } else {
+                        $finfo = new finfo(FILEINFO_MIME_TYPE);
+                        $type = $finfo->file($this->request->local_file_path);
+                        if (!$type) {
+                            $type = 'application/octet-stream';
+                        }
+                        $size = filesize($this->request->local_file_path);
+                    }
+                }
+                if (!empty($this->request->local_file_name)) {
+                    //$name = mb_substr(strip_tags(basename($this->request->local_file_name)), 0, 200);
+                    $filter = new Filename(['beautify' => true]);
+                    $name = $filter->filter(basename($this->request->local_file_name));
+                }
+            }
+        }
         if (!empty($this->request->title)) {
             $title = mb_substr(strip_tags($this->request->title), 0, 200);
         }
@@ -410,7 +436,11 @@ class Files extends BaseController
         }
 
         // Save the uploaded file
-        if (!$fileSystemAdapter->moveUploadedFile($_FILES['file']['tmp_name'], $this->appConfig->general['filesDir'] . '/' . $collectionName . '/' . $name)) {
+        if (empty($this->request->local_file_path) && !$fileSystemAdapter->moveUploadedFile($_FILES['file']['tmp_name'], $this->appConfig->general['filesDir'] . '/' . $collectionName . '/' . $name)) {
+            $this->response->setStatus(500);
+            throw new Flooer_Exception('Failed to save the file', LOG_ALERT);
+        }
+        if (!empty($this->request->local_file_path) && !$fileSystemAdapter->copyFile($this->appConfig->general['filesDir'] . '/empty', $this->appConfig->general['filesDir'] . '/' . $collectionName . '/' . $name)) {
             $this->response->setStatus(500);
             throw new Flooer_Exception('Failed to save the file', LOG_ALERT);
         }

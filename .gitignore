@@ -6,6 +6,7 @@ api_application/configs/models.ini
 data/cache/*
 data/database/*
 data/files/*
+!data/files/empty
 data/logs/*
 data/thumbnails/*
 data/zsync/*

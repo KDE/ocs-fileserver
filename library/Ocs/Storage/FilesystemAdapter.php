@@ -38,9 +38,9 @@ class FilesystemAdapter implements AdapterInterface
         return move_uploaded_file($from, $to);
     }
 
-    public function fixFilename(string $name, string $collectionName): string
+    public function fixFilename(string $name, string $pathFile): string
     {
-        if (is_file($this->appConfig->general['filesDir'] . '/' . $collectionName . '/' . $name)) {
+        if (is_file($pathFile)) {
             $fix = date('YmdHis');
             if (preg_match("/^([^.]+)(\..+)/", $name, $matches)) {
                 $name = $matches[1] . '-' . $fix . $matches[2];
@@ -72,11 +72,17 @@ class FilesystemAdapter implements AdapterInterface
 
     public function moveFile($from, $to): bool
     {
-        return is_file($from) && copy($from, $to) && unlink($from);
+        return is_file($from) && $this->testAndCreate(dirname($to)) && copy($from, $to) && unlink($from);
     }
 
     public function copyFile($from, $to): bool
     {
-        return is_file($from) && copy($from, $to);
+        return is_file($from) && $this->testAndCreate(dirname($to)) && copy($from, $to);
     }
+
+    public function isFile($from): bool
+    {
+        return is_file($from);
+    }
+
 }

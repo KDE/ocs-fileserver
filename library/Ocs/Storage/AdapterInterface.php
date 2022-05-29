@@ -30,7 +30,7 @@ interface AdapterInterface
      */
     public function moveUploadedFile(string $from, string $to): bool;
 
-    public function fixFilename(string $name, string $collectionName): string;
+    public function fixFilename(string $name, string $pathFile): string;
 
     public function prepareCollectionPath(string $collectionName): bool;
 
@@ -39,5 +39,7 @@ interface AdapterInterface
     public function moveFile($from, $to): bool;
 
     public function copyFile($from, $to): bool;
+
+    public function isFile($from): bool;
 
 }

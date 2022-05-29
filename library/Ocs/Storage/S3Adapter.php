@@ -188,4 +188,9 @@ class S3Adapter implements AdapterInterface
         return true;
     }
 
+    public function isFile($from): bool
+    {
+        return true;
+    }
+
 }

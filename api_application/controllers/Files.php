@@ -1,4 +1,5 @@
 <?php
+/** @noinspection PhpUnused */
 /** @noinspection PhpUndefinedFieldInspection */
 
 use Aws\Credentials\Credentials;
@@ -34,6 +35,9 @@ class Files extends BaseController
     const MAX_REQUEST_PER_MINUTE = 10;
     const BLOCKING_PERIOD = 180;
 
+    /**
+     * @throws Flooer_Exception
+     */
     public function getIndex()
     {
         $originId = null;
@@ -140,6 +144,9 @@ class Files extends BaseController
         $this->_setResponseContent('success', $files);
     }
 
+    /**
+     * @throws Flooer_Exception
+     */
     public function getFile()
     {
         $id = null;
@@ -217,6 +224,9 @@ class Files extends BaseController
         return true;
     }
 
+    /**
+     * @throws Flooer_Exception
+     */
     public function postFile()
     {
         if (!$this->_isAllowedAccess()) {
@@ -307,8 +317,8 @@ class Files extends BaseController
                 $name = $filter->filter(basename($_FILES['file']['name']));
             }
             if (!empty($_FILES['file']['tmp_name'])) {
-                $finfo = new finfo(FILEINFO_MIME_TYPE);
-                $type = $finfo->file($_FILES['file']['tmp_name']);
+                $info = new finfo(FILEINFO_MIME_TYPE);
+                $type = $info->file($_FILES['file']['tmp_name']);
                 if (!$type) {
                     $type = 'application/octet-stream';
                 }
@@ -329,8 +339,8 @@ class Files extends BaseController
                         $type = $this->_detectMimeTypeFromUri($externalUri);
                         $size = $this->_detectFilesizeFromUri($externalUri);
                     } else {
-                        $finfo = new finfo(FILEINFO_MIME_TYPE);
-                        $type = $finfo->file($this->request->local_file_path);
+                        $info = new finfo(FILEINFO_MIME_TYPE);
+                        $type = $info->file($this->request->local_file_path);
                         if (!$type) {
                             $type = 'application/octet-stream';
                         }
@@ -430,17 +440,33 @@ class Files extends BaseController
 
         $id = $this->models->files->generateId();
         $originId = $id;
-        $name = $fileSystemAdapter->fixFilename($name, $collectionName);
+        $pathCollection = $this->appConfig->general['filesDir'] . DIRECTORY_SEPARATOR . $collectionName;
+        $pathFile = $pathCollection . '/' . $name;
+        $name = $fileSystemAdapter->fixFilename($name, $pathFile);
         if (!$title) {
             $title = mb_substr(strip_tags($name), 0, 200);
         }
 
+        // copy the file to the alternative storage ... if defined
+        if ($this->appConfig->s3alternative) {
+            $alternativeCollectionDir = $this->appConfig->s3alternative['filesDir'] . DIRECTORY_SEPARATOR . $collection->name;
+            $alternativeFilePath = $alternativeCollectionDir . DIRECTORY_SEPARATOR . $name;
+            if (empty($this->request->local_file_path) && !$fileSystemAdapter->copyFile($_FILES['file']['tmp_name'], $alternativeFilePath)) {
+                $this->response->setStatus(500);
+                throw new Flooer_Exception('Failed to save the file', LOG_ALERT);
+            }
+            if (!empty($this->request->local_file_path) && !$fileSystemAdapter->copyFile($this->appConfig->general['filesDir'] . '/empty', $alternativeCollectionDir . '/' . $name)) {
+                $this->response->setStatus(500);
+                throw new Flooer_Exception('Failed to save the file', LOG_ALERT);
+            }
+        }
         // Save the uploaded file
-        if (empty($this->request->local_file_path) && !$fileSystemAdapter->moveUploadedFile($_FILES['file']['tmp_name'], $this->appConfig->general['filesDir'] . '/' . $collectionName . '/' . $name)) {
+        $pathFile = $pathCollection . DIRECTORY_SEPARATOR . $name;
+        if (empty($this->request->local_file_path) && !$fileSystemAdapter->moveUploadedFile($_FILES['file']['tmp_name'], $pathFile)) {
             $this->response->setStatus(500);
             throw new Flooer_Exception('Failed to save the file', LOG_ALERT);
         }
-        if (!empty($this->request->local_file_path) && !$fileSystemAdapter->copyFile($this->appConfig->general['filesDir'] . '/empty', $this->appConfig->general['filesDir'] . '/' . $collectionName . '/' . $name)) {
+        if (!empty($this->request->local_file_path) && !$fileSystemAdapter->copyFile($this->appConfig->general['filesDir'] . '/empty', $pathCollection . '/' . $name)) {
             $this->response->setStatus(500);
             throw new Flooer_Exception('Failed to save the file', LOG_ALERT);
         }
@@ -564,6 +590,9 @@ class Files extends BaseController
         }
     }
 
+    /**
+     * @throws Flooer_Exception
+     */
     public function putFile()
     {
         if (!$this->_isAllowedAccess()) {
@@ -686,8 +715,8 @@ class Files extends BaseController
                 $name = $filter->filter(basename($_FILES['file']['name']));
             }
             if (!empty($_FILES['file']['tmp_name'])) {
-                $finfo = new finfo(FILEINFO_MIME_TYPE);
-                $type = $finfo->file($_FILES['file']['tmp_name']);
+                $info = new finfo(FILEINFO_MIME_TYPE);
+                $type = $info->file($_FILES['file']['tmp_name']);
                 $md5sum = md5_file($_FILES['file']['tmp_name']);
                 if (!$type) {
                     $type = 'application/octet-stream';
@@ -810,6 +839,9 @@ class Files extends BaseController
         return $this->models->files->getFile($id);
     }
 
+    /**
+     * @throws Flooer_Exception
+     */
     private function _removeFile(Flooer_Db_Table_Row &$file)
     {
         // Please be care the remove process in Collections::deleteCollection()
@@ -856,6 +888,9 @@ class Files extends BaseController
         return $name;
     }
 
+    /**
+     * @throws Flooer_Exception
+     */
     public function deleteFile()
     {
         if (!$this->_isAllowedAccess()) {
@@ -887,6 +922,7 @@ class Files extends BaseController
     }
 
     /**
+     * @throws Flooer_Exception
      * @deprecated
      */
     public function headDownloadfile() // Deprecated
@@ -895,11 +931,17 @@ class Files extends BaseController
         $this->headDownload();
     }
 
+    /**
+     * @throws Flooer_Exception
+     */
     public function headDownload()
     {
         $this->getDownload(true);
     }
 
+    /**
+     * @throws Flooer_Exception
+     */
     public function getDownload($headeronly = false)
     {
 //        $this->log->log(print_r($_SERVER, true));
@@ -979,13 +1021,13 @@ class Files extends BaseController
         $hash = hash('sha512', $salt . $collectionId . $validUntil);
         $expires = $validUntil - time();
 
-        // Log
-        $this->log->log("Start Download (client: $file->client_id; salt: $salt; hash: $hash; hashGiven: $hashGiven)", LOG_NOTICE);
-
         $agent = null;
         if (isset($_SERVER)) {
             $agent = $_SERVER['HTTP_USER_AGENT'];
         }
+
+        // Log
+        $this->log->log("Prepare Download (client: $file->client_id; salt: $salt; hash: $hash; hashGiven: $hashGiven; agent: $agent)", LOG_NOTICE);
 
         //Save all(!) download requests, but not for preview downloads
         //remark: I really don't understand why we keep all this shit (20210125 alex)
@@ -1047,7 +1089,7 @@ class Files extends BaseController
         }
 
 
-        // Link is ok, go on
+        // incoming Link is ok, go on and check collection and file
         $collection = $this->models->collections->$collectionId;
         if (!$collection) {
             $this->log->log("Collection not found (file: $file->id; time-div: $expires;  client: $file->client_id; salt: $salt; hash: $hash; hashGiven: $hashGiven)", LOG_NOTICE);
@@ -1055,28 +1097,33 @@ class Files extends BaseController
             throw new Flooer_Exception('Not found', LOG_NOTICE);
         }
 
-
-        $collectionDir = '';
-        $sendFileCollection = '';
-        if ($collection->active) {
-            $collectionDir = $this->appConfig->general['filesDir'] . '/' . $collection->name;
-            $sendFileCollection = $collection->name;
-        } else {
-            $collectionDir = $this->appConfig->general['filesDir'] . '/.trash/' . $collection->id . '-' . $collection->name;
-            $this->log->log("Collection inactive take it from trash(collection: $collection->id file: $file->id; time-div: $expires;  client: $file->client_id; salt: $salt; hash: $hash; hashGiven: $hashGiven)", LOG_NOTICE);
-            $sendFileCollection = '.trash/' . $collection->id . '-' . $collection->name;
+        // if the collection is inactive, we prohibit the download
+        if (!$collection->active) {
+            $this->log->log("Collection is inactive (file: $file->id; time-div: $expires;  client: $file->client_id; salt: $salt; hash: $hash; hashGiven: $hashGiven)", LOG_NOTICE);
+            $this->response->setStatus(404);
+            throw new Flooer_Exception('Not found', LOG_NOTICE);
         }
+//        else {
+//            $collectionDir = $this->appConfig->general['filesDir'] . '/.trash/' . $collection->id . '-' . $collection->name;
+//            $this->log->log("Collection inactive take it from trash(collection: $collection->id file: $file->id; time-div: $expires;  client: $file->client_id; salt: $salt; hash: $hash; hashGiven: $hashGiven)", LOG_NOTICE);
+//            $sendFileCollection = '.trash/' . $collection->id . '-' . $collection->name;
+//        }
+        $collectionDir = $this->appConfig->general['filesDir'] . '/' . $collection->name;
+        $sendFileCollection = $collection->name;
 
-        $filePath = '';
-        $sendFilePath = '';
-        if ($file->active) {
-            $filePath = $collectionDir . '/' . $file->name;
-            $sendFilePath = 'data/files/' . $sendFileCollection . '/' . $file->name;
-        } else {
-            $filePath = $collectionDir . '/.trash/' . $file->id . '-' . $file->name;
-            $this->log->log("File inactive take it from trash(file: $file->id; time-div: $expires;  client: $file->client_id; salt: $salt; hash: $hash; hashGiven: $hashGiven)", LOG_NOTICE);
-            $sendFilePath = 'data/files/' . $sendFileCollection . '/.trash/' . $file->id . '-' . $file->name;
+        // if the file is inactive, we prohibit the download
+        if (!$file->active) {
+            $this->log->log("File is inactive (file: $file->id; time-div: $expires;  client: $file->client_id; salt: $salt; hash: $hash; hashGiven: $hashGiven)", LOG_NOTICE);
+            $this->response->setStatus(404);
+            throw new Flooer_Exception('Not found', LOG_NOTICE);
         }
+//        else {
+//            $filePath = $collectionDir . '/.trash/' . $file->id . '-' . $file->name;
+//            $this->log->log("File inactive take it from trash(file: $file->id; time-div: $expires;  client: $file->client_id; salt: $salt; hash: $hash; hashGiven: $hashGiven)", LOG_NOTICE);
+//            $sendFilePath = 'data/files/' . $sendFileCollection . '/.trash/' . $file->id . '-' . $file->name;
+//        }
+        $filePath = $collectionDir . '/' . $file->name;
+        $sendFilePath = 'data/files/' . $sendFileCollection . '/' . $file->name;
 
         $fileName = $file->name;
         $fileType = $file->type;
@@ -1153,7 +1200,17 @@ class Files extends BaseController
         }
 
         if (getenv('X_OCS_S3_DOWNLOAD_ENABLED') === 'on') {
-            $this->_s3SendFile($sendFilePath, $filePath, $fileName, $fileType, $fileSize, true, $headeronly);
+            // checks if the alternate storage contains the file. If it does, we continue with that file path.
+            if ($this->appConfig->s3alternative) {
+                $alternativeCollectionDir = $this->appConfig->s3alternative['filesDir'] . '/' . $collection->name;
+                $alternativeFilePath = $alternativeCollectionDir . DIRECTORY_SEPARATOR . $file->name;
+                if (is_file($alternativeFilePath)) {
+                    $filePath = $alternativeFilePath;
+                    $this->_s3SendFile($sendFilePath, $filePath, $fileName, $fileType, $fileSize, true, $headeronly, $this->appConfig->s3alternative);
+                }
+            }
+
+            $this->_s3SendFile($sendFilePath, $filePath, $fileName, $fileType, $fileSize, true, $headeronly, $this->appConfig->s3download);
         }
 
         $this->_sendFile($filePath, $fileName, $fileType, $fileSize, true, $headeronly);
@@ -1294,11 +1351,18 @@ class Files extends BaseController
         $cmd = $s3Client->getCommand('GetObject', ['Bucket' => $s3Config['bucket'], 'Key' => $sendFilePath,'ResponseContentDisposition' => 'attachment;%20'.basename($sendFilePath),]);
         $request = $s3Client->createPresignedRequest($cmd, $s3Config['signedUrlExpires']);
 
-        if ($withoutHttpScheme) {
-            return preg_replace("(^https?://)", "", (string)$request->getUri());
+        $uri = (string)$request->getUri();
+
+        if (!empty($s3Config['cdn']) && !empty($s3Config['endpoint'])) {
+            $uri = preg_replace("(^".$s3Config['endpoint'].")", $s3Config['cdn'], $uri);
         }
 
-        return (string)$request->getUri();
+        if ($withoutHttpScheme) {
+            return preg_replace("(^https?://)", "", $uri);
+        }
+
+        return $uri;
+
     }
 
     private function _s3SendFile(string $sendFilePath,
@@ -1307,13 +1371,14 @@ class Files extends BaseController
                                  string $fileType,
                                  bool   $fileSize,
                                  bool   $attachment,
-                                        $headeronly)
+                                        $headeronly,
+                                 array $appconfig)
     {
-        if (($headeronly) or (false == $this->appConfig->s3download['enabled'])) {
+        if (($headeronly) or (false == $appconfig['enabled'])) {
             $this->_sendFile($filePath, $fileName, $fileType, $fileSize, true, $headeronly);
         }
 
-        $signedUrl = $this->generateSignedDownloadUrl($sendFilePath, $this->appConfig->s3download, false);
+        $signedUrl = $this->generateSignedDownloadUrl($sendFilePath, $appconfig, false);
         $this->log->log("Response (redirect: $signedUrl)", LOG_NOTICE);
 
         $this->response->setHeader('Location', $signedUrl);
@@ -1350,6 +1415,9 @@ class Files extends BaseController
         exit();
     }
 
+    /**
+     * @throws Flooer_Exception
+     */
     public function postUpload()
     {
         if (!$this->isValidSignedUrl()) {
@@ -1423,6 +1491,9 @@ class Files extends BaseController
         exit();
     }
 
+    /**
+     * @throws Flooer_Exception
+     */
     public function putUpload()
     {
         if (!$this->isValidSignedUrl()) {

@@ -419,9 +419,15 @@ class Files extends BaseController
             $collectionVersion = null;
             $collectionContentId = null;
             $collectionContentPage = null;
-            if (true != $fileSystemAdapter->prepareCollectionPath($collectionName)) {
+            if (!$fileSystemAdapter->testAndCreate($this->appConfig->general['filesDir'] . DIRECTORY_SEPARATOR . $collectionName)) {
                 $this->response->setStatus(500);
                 throw new Flooer_Exception('Failed to create collection', LOG_ALERT);
+            }
+            if ($this->appConfig->s3alternative) {
+                if (!$fileSystemAdapter->testAndCreate($this->appConfig->s3alternative['filesDir'] . DIRECTORY_SEPARATOR . $collectionName)) {
+                    $this->response->setStatus(500);
+                    throw new Flooer_Exception('Failed to create alternative collection path', LOG_ALERT);
+                }
             }
             $collectionData = array('active'       => $collectionActive,
                                     'client_id'    => $clientId,
@@ -449,8 +455,9 @@ class Files extends BaseController
 
         // copy the file to the alternative storage ... if defined
         if ($this->appConfig->s3alternative) {
-            $alternativeCollectionDir = $this->appConfig->s3alternative['filesDir'] . DIRECTORY_SEPARATOR . $collection->name;
+            $alternativeCollectionDir = $this->appConfig->s3alternative['filesDir'] . DIRECTORY_SEPARATOR . $collectionName;
             $alternativeFilePath = $alternativeCollectionDir . DIRECTORY_SEPARATOR . $name;
+            $this->log->log(__METHOD__ . ' - copy uploaded file to alternative storage: ' . $alternativeCollectionDir . ' :: ' . (is_dir($alternativeCollectionDir) ? 'true' : 'false'));
             if (empty($this->request->local_file_path) && !$fileSystemAdapter->copyFile($_FILES['file']['tmp_name'], $alternativeFilePath)) {
                 $this->response->setStatus(500);
                 throw new Flooer_Exception('Failed to save the file', LOG_ALERT);

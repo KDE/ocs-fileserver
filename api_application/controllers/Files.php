@@ -860,6 +860,22 @@ class Files extends BaseController
         $fileSystemAdapter = new FilesystemAdapter($this->appConfig);
 //        $fileSystemAdapter = new S3Adapter($this->appConfig);
 
+        if ($this->appConfig->s3alternative) {
+            $alternativeTrashDir = $this->appConfig->s3alternative['filesDir'] . '/' . $collection->name . '/.trash';
+            $this->log->log(__METHOD__ . ' - test alternative trash dir exists: ' . $alternativeTrashDir . ' :: ' . (is_dir($alternativeTrashDir) ? 'true' : 'false'));
+            if (!$fileSystemAdapter->testAndCreate($alternativeTrashDir)) {
+                $this->response->setStatus(500);
+                throw new Flooer_Exception('Failed to remove the file from alternative storage', LOG_ALERT);
+            }
+            $alternativeFilePath = $this->appConfig->s3alternative['filesDir'] . '/' . $collection->name . '/' . $file->name;
+            $this->log->log(__METHOD__ . ' - move file to alternative trash dir: ' . $alternativeFilePath . ' :: ' . (is_file($alternativeFilePath) ? 'true' : 'false'));
+            if (is_file($alternativeFilePath)) {
+                if (!$fileSystemAdapter->moveFile($alternativeFilePath, $alternativeTrashDir . '/' . $id . '-' . $file->name)) {
+                    $this->response->setStatus(500);
+                    throw new Flooer_Exception('Failed to remove the file from alternative storage', LOG_ALERT);
+                }
+            }
+        }
         $trashDir = $this->appConfig->general['filesDir'] . '/' . $collection->name . '/.trash';
         $this->log->log(__METHOD__ . ' - test trash dir exists: ' . $trashDir . ' :: ' . (is_dir($trashDir) ? 'true' : 'false'));
         if (false == $fileSystemAdapter->testAndCreate($trashDir)) {

@@ -1211,9 +1211,9 @@ class Files extends BaseController
             if ($this->appConfig->s3alternative) {
                 $alternativeCollectionDir = $this->appConfig->s3alternative['filesDir'] . '/' . $collection->name;
                 $alternativeFilePath = $alternativeCollectionDir . DIRECTORY_SEPARATOR . $file->name;
+                $this->log->log(__METHOD__ . ' - check alternative storage for file: ' . $alternativeFilePath . ' :: ' . (is_file($alternativeFilePath) ? 'true' : 'false'));
                 if (is_file($alternativeFilePath)) {
-                    $filePath = $alternativeFilePath;
-                    $this->_s3SendFile($sendFilePath, $filePath, $fileName, $fileType, $fileSize, true, $headeronly, $this->appConfig->s3alternative);
+                    $this->_s3SendFile($sendFilePath, $alternativeFilePath, $fileName, $fileType, $fileSize, true, $headeronly, $this->appConfig->s3alternative);
                 }
             }
 

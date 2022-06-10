@@ -105,12 +105,12 @@ class S3Adapter implements AdapterInterface
         return $this->s3Client;
     }
 
-    public function fixFilename(string $name, string $collectionName): string
+    public function fixFilename(string $name, string $pathFile): string
     {
         $awsClient = $this->getAwsClient();
         $counter = 0;
         while ($counter < 5) {
-            $bucketName = $this->appConfig->awss3['bucketPathPrefix'] . '/' . $collectionName . '/' . $name;
+            $bucketName = $this->appConfig->awss3['bucketPathPrefix'] . '/' . $pathFile . '/' . $name;
             $awsObjectExists = $awsClient->doesObjectExist($this->appConfig->awss3['bucket'], $bucketName);
             if (!$awsObjectExists) {
                 break;
@@ -190,7 +190,10 @@ class S3Adapter implements AdapterInterface
 
     public function isFile($from): bool
     {
-        return true;
+        $bucketName = $this->appConfig->awss3['bucketPathPrefix'] . '/' . $from;
+        $awsClient = $this->getAwsClient();
+
+        return $awsClient->doesObjectExist($this->appConfig->awss3['bucket'], $bucketName);
     }
 
 }

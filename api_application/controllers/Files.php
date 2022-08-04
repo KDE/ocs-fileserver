@@ -1377,7 +1377,8 @@ class Files extends BaseController
         $uri = (string)$request->getUri();
 
         if (!empty($s3Config['cdn']) && !empty($s3Config['endpoint'])) {
-            $uri = preg_replace("(^".$s3Config['endpoint'].")", $s3Config['cdn'], $uri);
+            $host = preg_replace("(^https?://)", "", $s3Config['cdn'] );
+            $uri = (string)$request->getUri()->withHost($host);
         }
 
         if ($withoutHttpScheme) {

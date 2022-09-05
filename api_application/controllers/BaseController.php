@@ -425,9 +425,9 @@ class BaseController extends Flooer_Controller
         $output = array();
         $code = 0;
         $this->log->log(__METHOD__ . ' :: ' . '/usr/local/bin/audiowaveform -i "' . $src . '" -o "' . $target . '" --pixels-per-second 20 --bits 8');
-        $result = exec('audiowaveform -i "' . $src . '" -o "' . $target . '" --pixels-per-second 20 --bits 8', $output, $code);
-        $this->log->log(__METHOD__ . ' :: ' . implode("\n",$output) . '(' . $code . ')');
+        $output = system('audiowaveform -i "' . $src . '" -o "' . $target . '" --pixels-per-second 20 --bits 8', $code);
+        $this->log->log(__METHOD__ . ' :: ' . $output . '(' . $code . ')');
 
-        return $result;
+        return $code;
     }
 }

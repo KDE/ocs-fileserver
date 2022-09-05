@@ -67,17 +67,36 @@ class Waveform extends BaseController
 
         $collectionDir = $this->appConfig->general['filesDir'] . '/' . $collection->name;
         $filePath = $collectionDir . '/' . $file->name;
-        $filePathTarget = $filePath . '.json';
-
-        if (!file_exists($filePathTarget)) {
-            $this->_generateWaveForm($filePath, $filePathTarget);
-        }
-
         $fileName = $file->name . '.json';
         $fileType = 'application/json';
-        $fileSize = filesize($filePathTarget);
+        $fileJsonWaveform = $filePath . '.json';
 
-        $this->_sendFile($filePathTarget, $fileName, $fileType, $fileSize, true, false);
+        if (file_exists($fileJsonWaveform)) {
+            $this->_sendFile($fileJsonWaveform, $fileName, $fileType, filesize($fileJsonWaveform), true, false);
+        }
+
+        $this->_generateWaveForm($filePath, $fileJsonWaveform);
+        if (file_exists($fileJsonWaveform)) {
+            $this->_sendFile($fileJsonWaveform, $fileName, $fileType, filesize($fileJsonWaveform), true, false);
+        }
+
+        if ($this->appConfig->s3alternative) {
+            $alternativeCollectionDir = $this->appConfig->s3alternative['filesDir'] . '/' . $collection->name;
+            $alternativeFilePath = $alternativeCollectionDir . DIRECTORY_SEPARATOR . $file->name;
+            $alternativeJsonWaveForm = $alternativeFilePath . '.json';
+            $this->log->log(__METHOD__ . ' - check alternative storage for file: ' . $alternativeFilePath . ' :: ' . (is_file($alternativeFilePath) ? 'true' : 'false'));
+            if (is_file($alternativeJsonWaveForm)) {
+                $this->_sendFile($alternativeJsonWaveForm, $fileName, $fileType, filesize($alternativeJsonWaveForm), true, false);
+            }
+            $this->_generateWaveForm($alternativeFilePath, $alternativeJsonWaveForm);
+            if (file_exists($alternativeJsonWaveForm)) {
+                $this->_sendFile($alternativeJsonWaveForm, $fileName, $fileType, filesize($alternativeJsonWaveForm), true, false);
+            }
+        }
+
+        $this->log->log("Waveform file not generated (file: $file->id)", LOG_NOTICE);
+        $this->response->setStatus(404);
+        throw new Flooer_Exception('File Not found', LOG_NOTICE);
     }
 
 

@@ -12,7 +12,6 @@
   ],
   "homepage": "https://www.opendesktop.org/",
   "require": {
-    "aws/aws-sdk-php": "^3.173",
     "php": "^7.4",
     "ext-fileinfo": "*",
     "ext-gd": "*",
@@ -29,6 +28,8 @@
     "ext-zlib": "*",
     "ext-xml": "*",
     "ext-redis": "*",
+    "ext-zip": "*",
+    "aws/aws-sdk-php": "^3.173",
     "laminas/laminas-inputfilter": "^2"
   },
   "autoload": {
@@ -37,7 +38,8 @@
       "Flooer_": "library/",
       "RedisCache": "library/",
       "JWT": "library/",
-      "getid3": "library/getid3/"
+      "getid3": "library/getid3/",
+      "EPubReader": "library/"
     },
     "psr-4": {
       "Ocs\\Storage\\": "library/Ocs/Storage/",

@@ -16,7 +16,6 @@ public/google*.html
 public/robots.txt
 .idea
 vendor
-composer.lock
 docker-compose.yml
 *Dockerfile
 .backup

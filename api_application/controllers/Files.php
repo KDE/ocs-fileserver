@@ -419,14 +419,17 @@ class Files extends BaseController
             $collectionVersion = null;
             $collectionContentId = null;
             $collectionContentPage = null;
-            if (!$fileSystemAdapter->testAndCreate($this->appConfig->general['filesDir'] . DIRECTORY_SEPARATOR . $collectionName)) {
+
+            $collectionPath = $this->appConfig->general['filesDir'] . DIRECTORY_SEPARATOR . $collectionName;
+            if (!$fileSystemAdapter->testAndCreate($collectionPath)) {
                 $this->response->setStatus(500);
-                throw new Flooer_Exception('Failed to create collection', LOG_ALERT);
+                throw new Flooer_Exception('Failed to create new collection: ' . $collectionPath, LOG_ALERT);
             }
             if ($this->appConfig->s3alternative) {
-                if (!$fileSystemAdapter->testAndCreate($this->appConfig->s3alternative['filesDir'] . DIRECTORY_SEPARATOR . $collectionName)) {
+                $alternativeCollectionPath = $this->appConfig->s3alternative['filesDir'] . DIRECTORY_SEPARATOR . $collectionName;
+                if (!$fileSystemAdapter->testAndCreate($alternativeCollectionPath)) {
                     $this->response->setStatus(500);
-                    throw new Flooer_Exception('Failed to create alternative collection path', LOG_ALERT);
+                    throw new Flooer_Exception('Failed to create alternative new collection path: ' . $alternativeCollectionPath, LOG_ALERT);
                 }
             }
             $collectionData = array('active'       => $collectionActive,
@@ -446,9 +449,8 @@ class Files extends BaseController
 
         $id = $this->models->files->generateId();
         $originId = $id;
-        $pathCollection = $this->appConfig->general['filesDir'] . DIRECTORY_SEPARATOR . $collectionName;
-        $pathFile = $pathCollection . '/' . $name;
-        $name = $fileSystemAdapter->fixFilename($name, $pathFile);
+        $collectionPath = $this->appConfig->general['filesDir'] . DIRECTORY_SEPARATOR . $collectionName;
+        $name = $fileSystemAdapter->fixFilename($name, $collectionPath . DIRECTORY_SEPARATOR . $name);
         if (!$title) {
             $title = mb_substr(strip_tags($name), 0, 200);
         }
@@ -457,25 +459,26 @@ class Files extends BaseController
         if ($this->appConfig->s3alternative) {
             $alternativeCollectionDir = $this->appConfig->s3alternative['filesDir'] . DIRECTORY_SEPARATOR . $collectionName;
             $alternativeFilePath = $alternativeCollectionDir . DIRECTORY_SEPARATOR . $name;
-            $this->log->log(__METHOD__ . ' - copy uploaded file to alternative storage: ' . $alternativeCollectionDir . ' :: ' . (is_dir($alternativeCollectionDir) ? 'true' : 'false'));
+            $this->log->log(__METHOD__ . ' - check alternative storage path exists: ' . $alternativeCollectionDir . ' :: ' . (is_dir($alternativeCollectionDir) ? 'true' : 'false'));
             if (empty($this->request->local_file_path) && !$fileSystemAdapter->copyFile($_FILES['file']['tmp_name'], $alternativeFilePath)) {
                 $this->response->setStatus(500);
-                throw new Flooer_Exception('Failed to save the file', LOG_ALERT);
+                throw new Flooer_Exception('Failed to save the file: ' . $alternativeFilePath, LOG_ALERT);
             }
-            if (!empty($this->request->local_file_path) && !$fileSystemAdapter->copyFile($this->appConfig->general['filesDir'] . '/empty', $alternativeCollectionDir . '/' . $name)) {
+            if (!empty($this->request->local_file_path) && !$fileSystemAdapter->copyFile($this->appConfig->general['filesDir'] . '/empty', $alternativeFilePath)) {
                 $this->response->setStatus(500);
-                throw new Flooer_Exception('Failed to save the file', LOG_ALERT);
+                throw new Flooer_Exception('Failed to copy the empty dummy file to destination: ' . $alternativeFilePath, LOG_ALERT);
             }
         }
         // Save the uploaded file
-        $pathFile = $pathCollection . DIRECTORY_SEPARATOR . $name;
+        $pathFile = $collectionPath . DIRECTORY_SEPARATOR . $name;
+        $this->log->log(__METHOD__ . ' - check default storage path exists: ' . $collectionPath . ' :: ' . (is_dir($collectionPath) ? 'true' : 'false'));
         if (empty($this->request->local_file_path) && !$fileSystemAdapter->moveUploadedFile($_FILES['file']['tmp_name'], $pathFile)) {
             $this->response->setStatus(500);
-            throw new Flooer_Exception('Failed to save the file', LOG_ALERT);
+            throw new Flooer_Exception('Failed to save the file: ' . $pathFile, LOG_ALERT);
         }
-        if (!empty($this->request->local_file_path) && !$fileSystemAdapter->copyFile($this->appConfig->general['filesDir'] . '/empty', $pathCollection . '/' . $name)) {
+        if (!empty($this->request->local_file_path) && !$fileSystemAdapter->copyFile($this->appConfig->general['filesDir'] . '/empty', $pathFile)) {
             $this->response->setStatus(500);
-            throw new Flooer_Exception('Failed to save the file', LOG_ALERT);
+            throw new Flooer_Exception('Failed to copy the empty dummy file to destination: ' . $pathFile, LOG_ALERT);
         }
         // Add/Update the collection
         $this->models->collections->$collectionId = $collectionData;
@@ -1491,17 +1494,18 @@ class Files extends BaseController
      */
     private function isValidSignedUrl(): bool
     {
+        $result = false;
         if (!empty($this->request->client_id)) {
             $clients = parse_ini_file('configs/clients.ini', true);
             $url = $this->getScheme() . '://' . $this->getHost() . $this->request->getUri();
             $this->log->log(__METHOD__ . ' - ' . print_r($_SERVER, true), LOG_NOTICE);
-            $this->log->log(__METHOD__ . ' - verify signature for $url: ' . $url, LOG_NOTICE);
             if (isset($clients[$this->request->client_id]) && (UrlSigner::verifySignedUrl($url, $clients[$this->request->client_id]['secret']))) {
-                return true;
+                $result = true;
             }
         }
+        $this->log->log(__METHOD__ . ' - verify signature for $url: ' . ($url ? $url : '(url is empty caused by missing client_id)') . ' :: ' . ($result?'true':'false'), LOG_NOTICE);
 
-        return false;
+        return $result;
     }
 
     public function optionsUpload()

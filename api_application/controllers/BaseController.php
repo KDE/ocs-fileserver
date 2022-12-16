@@ -422,7 +422,12 @@ class BaseController extends Flooer_Controller
 
     protected function _generateWaveForm($src, $target)
     {
-        $returnString = exec('audiowaveform -i "' . $src . '" -o "' . $target . '" --pixels-per-second 20 --bits 8', $output, $code);
-        $returnString = $returnString;
+        $output = array();
+        $code = 0;
+        $this->log->log(__METHOD__ . ' :: system(\'' . '/usr/local/bin/audiowaveform -i "' . $src . '" -o "' . $target . '" --pixels-per-second 20 --bits 8\')');
+        $output = system('/bin/bash -c \'/usr/local/bin/audiowaveform -i "' . $src . '" -o "' . $target . '" --pixels-per-second 20 --bits 8 2>&1\'', $code);
+        $this->log->log(__METHOD__ . ' :: ' . $output . '(' . $code . ')');
+
+        return $code;
     }
 }

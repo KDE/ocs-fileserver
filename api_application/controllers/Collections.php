@@ -219,10 +219,18 @@ class Collections extends BaseController
             $title = $name;
         }
 
+        // create collection dir
         $collectionDir = $this->appConfig->general['filesDir'] . '/' . $name;
         if (!is_dir($collectionDir) && !mkdir($collectionDir)) {
             $this->response->setStatus(500);
             throw new Flooer_Exception('Failed to create collection', LOG_ALERT);
+        }
+
+        // now we do the same for the alternative storage path
+        $alternativeCollectionDir = $this->appConfig->s3alternative['filesDir'] . '/' . $name;
+        if (!is_dir($alternativeCollectionDir) && !mkdir($alternativeCollectionDir)) {
+            $this->response->setStatus(500);
+            throw new Flooer_Exception('Failed to create collection in alternative path', LOG_ALERT);
         }
 
         $this->models->collections->$id = array(
@@ -365,6 +373,7 @@ class Collections extends BaseController
             unlink($thumbnail);
         }
 
+        // move collection to trash dir
         $trashDir = $this->appConfig->general['filesDir'] . '/.trash';
         if (!is_dir($trashDir) && !mkdir($trashDir)) {
             $this->response->setStatus(500);
@@ -378,6 +387,22 @@ class Collections extends BaseController
         ) {
             $this->response->setStatus(500);
             throw new Flooer_Exception('Failed to remove the collection', LOG_ALERT);
+        }
+
+        // now we do the same for the alternative storage path
+        $alternativeTrashDir = $this->appConfig->s3alternative['filesDir'] . '/.trash';
+        if (!is_dir($alternativeTrashDir) && !mkdir($alternativeTrashDir)) {
+            $this->response->setStatus(500);
+            throw new Flooer_Exception('Failed to remove the collection in alternative path (1)', LOG_ALERT);
+        }
+        if (is_dir($this->appConfig->s3alternative['filesDir'] . '/' . $collection->name)
+            && !rename(
+                $this->appConfig->s3alternative['filesDir'] . '/' . $collection->name,
+                $alternativeTrashDir . '/' . $id . '-' . $collection->name
+            )
+        ) {
+            $this->response->setStatus(500);
+            throw new Flooer_Exception('Failed to remove the collection in alternative path (2)', LOG_ALERT);
         }
 
         $this->models->collections->$id = array('active' => 0);
@@ -402,71 +427,71 @@ class Collections extends BaseController
         $this->response->setStatus(403);
         throw new Flooer_Exception('Forbidden', LOG_NOTICE);
 
-        $id = null;
-        $userId = null;
-
-        if (!empty($this->request->id)) {
-            $id = $this->request->id;
-        }
-        if (!empty($this->request->u)) {
-            $userId = $this->request->u;
-        }
-
-        $collection = $this->models->collections->$id;
-
-        if (!$collection) {
-            $this->response->setStatus(404);
-            throw new Flooer_Exception('Not found', LOG_NOTICE);
-        }
-        else if (!$collection->active) {
-            $this->response->setStatus(403);
-            throw new Flooer_Exception('Forbidden', LOG_NOTICE);
-        }
-
-        $archive = '/tmp/archives/' . $collection->name . '.tar.gz';
-        $this->_generateArchive(
-            $this->appConfig->general['filesDir'] . '/' . $collection->name,
-            $archive
-        );
-
-        $profile = $this->models->profiles->getProfileByClientIdAndOwnerId(
-            $collection->client_id,
-            $collection->owner_id
-        );
-
-        $profileName = $collection->owner_id;
-        if ($profile) {
-            $profileName = $profile->name;
-        }
-
-        $collectionTitle = $collection->name;
-        if ($collection->title) {
-            $collectionTitle = $collection->title;
-        }
-
-        $filename = str_replace(' ', '_', $profileName)
-            . '_' . str_replace(' ', '_', $collectionTitle);
-
-        if (!$headeronly && $collection->downloaded_ip != $this->server->REMOTE_ADDR) {
-            $this->models->collections->updateDownloadedStatus($collection->id);
-
-            $downloadedId = $this->models->collections_downloaded->generateId();
-            $this->models->collections_downloaded->$downloadedId = array(
-                'client_id' => $collection->client_id,
-                'owner_id' => $collection->owner_id,
-                'collection_id' => $collection->id,
-                'user_id' => $userId
-            );
-        }
-
-        $this->_sendFile(
-            $archive,
-            $filename . '.tar.gz',
-            'application/x-gzip',
-            filesize($archive),
-            true,
-            $headeronly
-        );
+//        $id = null;
+//        $userId = null;
+//
+//        if (!empty($this->request->id)) {
+//            $id = $this->request->id;
+//        }
+//        if (!empty($this->request->u)) {
+//            $userId = $this->request->u;
+//        }
+//
+//        $collection = $this->models->collections->$id;
+//
+//        if (!$collection) {
+//            $this->response->setStatus(404);
+//            throw new Flooer_Exception('Not found', LOG_NOTICE);
+//        }
+//        else if (!$collection->active) {
+//            $this->response->setStatus(403);
+//            throw new Flooer_Exception('Forbidden', LOG_NOTICE);
+//        }
+//
+//        $archive = '/tmp/archives/' . $collection->name . '.tar.gz';
+//        $this->_generateArchive(
+//            $this->appConfig->general['filesDir'] . '/' . $collection->name,
+//            $archive
+//        );
+//
+//        $profile = $this->models->profiles->getProfileByClientIdAndOwnerId(
+//            $collection->client_id,
+//            $collection->owner_id
+//        );
+//
+//        $profileName = $collection->owner_id;
+//        if ($profile) {
+//            $profileName = $profile->name;
+//        }
+//
+//        $collectionTitle = $collection->name;
+//        if ($collection->title) {
+//            $collectionTitle = $collection->title;
+//        }
+//
+//        $filename = str_replace(' ', '_', $profileName)
+//            . '_' . str_replace(' ', '_', $collectionTitle);
+//
+//        if (!$headeronly && $collection->downloaded_ip != $this->server->REMOTE_ADDR) {
+//            $this->models->collections->updateDownloadedStatus($collection->id);
+//
+//            $downloadedId = $this->models->collections_downloaded->generateId();
+//            $this->models->collections_downloaded->$downloadedId = array(
+//                'client_id' => $collection->client_id,
+//                'owner_id' => $collection->owner_id,
+//                'collection_id' => $collection->id,
+//                'user_id' => $userId
+//            );
+//        }
+//
+//        $this->_sendFile(
+//            $archive,
+//            $filename . '.tar.gz',
+//            'application/x-gzip',
+//            filesize($archive),
+//            true,
+//            $headeronly
+//        );
     }
 
 }

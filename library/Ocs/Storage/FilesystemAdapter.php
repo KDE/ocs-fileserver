@@ -38,9 +38,9 @@ class FilesystemAdapter implements AdapterInterface
         return move_uploaded_file($from, $to);
     }
 
-    public function fixFilename(string $name, string $pathFile): string
+    public function fixFilename(string $name, string $collectionPath): string
     {
-        if (is_file($pathFile)) {
+        if (is_file($collectionPath . DIRECTORY_SEPARATOR . $name)) {
             $fix = date('YmdHis');
             if (preg_match("/^([^.]+)(\..+)/", $name, $matches)) {
                 $name = $matches[1] . '-' . $fix . $matches[2];
@@ -52,9 +52,9 @@ class FilesystemAdapter implements AdapterInterface
         return $name;
     }
 
-    public function prepareCollectionPath(string $collectionName): bool
+    public function prepareCollectionPath(string $collectionName, string $filePath): bool
     {
-        return !is_dir($this->appConfig->general['filesDir'] . '/' . $collectionName) && mkdir($this->appConfig->general['filesDir'] . '/' . $collectionName);
+        return !is_dir($filePath . DIRECTORY_SEPARATOR . $collectionName) && mkdir($filePath . DIRECTORY_SEPARATOR . $collectionName);
     }
 
     public function testAndCreate(string $dir): bool

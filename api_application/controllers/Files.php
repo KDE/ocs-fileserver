@@ -450,7 +450,7 @@ class Files extends BaseController
         $id = $this->models->files->generateId();
         $originId = $id;
         $collectionPath = $this->appConfig->general['filesDir'] . DIRECTORY_SEPARATOR . $collectionName;
-        $name = $fileSystemAdapter->fixFilename($name, $collectionPath . DIRECTORY_SEPARATOR . $name);
+        $name = $fileSystemAdapter->fixFilename($name, $collectionPath);
         if (!$title) {
             $title = mb_substr(strip_tags($name), 0, 200);
         }
@@ -774,11 +774,19 @@ class Files extends BaseController
                                     'size'  => $collection->size + $size,);
 
             $id = $this->models->files->generateId();
-            $name = $this->_fixFilename($name, $collectionName);
+            //$name = $this->_fixFilename($name, $collectionName);
+            $name = $fileSystemAdapter->fixFilename($name, $this->appConfig->general['filesDir'] . DIRECTORY_SEPARATOR . $collectionName);
             if (!$title) {
                 $title = mb_substr(strip_tags($name), 0, 200);
             }
 
+            if ($this->appConfig->s3alternative) {
+                // Copy the uploaded file to alternative storage
+                if (!$fileSystemAdapter->copyFile($_FILES['file']['tmp_name'], $this->appConfig->s3alternative['filesDir'] . '/' . $collectionName . '/' . $name)) {
+                    $this->response->setStatus(500);
+                    throw new Flooer_Exception('Failed to save the file in alternative storage', LOG_ALERT);
+                }
+            }
             // Save the uploaded file
             if (!$fileSystemAdapter->moveUploadedFile($_FILES['file']['tmp_name'], $this->appConfig->general['filesDir'] . '/' . $collectionName . '/' . $name)) {
                 $this->response->setStatus(500);

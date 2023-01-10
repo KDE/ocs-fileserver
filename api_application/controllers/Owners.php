@@ -64,6 +64,7 @@ class Owners extends BaseController
                     unlink($thumbnail);
                 }
 
+                // move collection to trash dir
                 $trashDir = $this->appConfig->general['filesDir'] . '/.trash';
                 if (!is_dir($trashDir) && !mkdir($trashDir)) {
                     $this->response->setStatus(500);
@@ -77,6 +78,22 @@ class Owners extends BaseController
                 ) {
                     $this->response->setStatus(500);
                     throw new Flooer_Exception('Failed to remove the collection', LOG_ALERT);
+                }
+
+                // do the same for the alternative storage path
+                $alternativeTrashDir = $this->appConfig->s3alternative['filesDir'] . '/.trash';
+                if (!is_dir($alternativeTrashDir) && !mkdir($alternativeTrashDir)) {
+                    $this->response->setStatus(500);
+                    throw new Flooer_Exception('Failed to remove the collection from alternative storage path (1)', LOG_ALERT);
+                }
+                if (is_dir($this->appConfig->s3alternative['filesDir'] . '/' . $collection->name)
+                    && !rename(
+                        $this->appConfig->s3alternative['filesDir'] . '/' . $collection->name,
+                        $alternativeTrashDir . '/' . $collection->id . '-' . $collection->name
+                    )
+                ) {
+                    $this->response->setStatus(500);
+                    throw new Flooer_Exception('Failed to remove the collection from alternative storage path (2)', LOG_ALERT);
                 }
 
                 $this->models->collections->{$collection->id} = array('active' => 0);

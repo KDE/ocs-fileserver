@@ -30,9 +30,9 @@ interface AdapterInterface
      */
     public function moveUploadedFile(string $from, string $to): bool;
 
-    public function fixFilename(string $name, string $pathFile): string;
+    public function fixFilename(string $name, string $collectionPath): string;
 
-    public function prepareCollectionPath(string $collectionName): bool;
+    public function prepareCollectionPath(string $collectionName, string $filePath): bool;
 
     public function testAndCreate(string $dir): bool;
 

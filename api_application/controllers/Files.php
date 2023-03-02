@@ -1131,33 +1131,27 @@ class Files extends BaseController
             throw new Flooer_Exception('Not found', LOG_NOTICE);
         }
 
-        // if the collection is inactive, we prohibit the download
-        if (!$collection->active) {
-            $this->log->log("Collection is inactive (file: $file->id; time-div: $expires;  client: $file->client_id; salt: $salt; hash: $hash; hashGiven: $hashGiven)", LOG_NOTICE);
-            $this->response->setStatus(404);
-            throw new Flooer_Exception('Not found', LOG_NOTICE);
+        // important note: When a collection is inactive, it means it is archived.
+        if ($collection->active) {
+            $collectionDir = $this->appConfig->general['filesDir'] . '/' . $collection->name;
+            $sendFileCollection = $collection->name;
         }
-//        else {
-//            $collectionDir = $this->appConfig->general['filesDir'] . '/.trash/' . $collection->id . '-' . $collection->name;
-//            $this->log->log("Collection inactive take it from trash(collection: $collection->id file: $file->id; time-div: $expires;  client: $file->client_id; salt: $salt; hash: $hash; hashGiven: $hashGiven)", LOG_NOTICE);
-//            $sendFileCollection = '.trash/' . $collection->id . '-' . $collection->name;
-//        }
-        $collectionDir = $this->appConfig->general['filesDir'] . '/' . $collection->name;
-        $sendFileCollection = $collection->name;
+        else {
+            $collectionDir = $this->appConfig->general['filesDir'] . '/.trash/' . $collection->id . '-' . $collection->name;
+            $this->log->log("Collection inactive take it from trash(collection: $collection->id file: $file->id; time-div: $expires;  client: $file->client_id; salt: $salt; hash: $hash; hashGiven: $hashGiven)", LOG_NOTICE);
+            $sendFileCollection = '.trash/' . $collection->id . '-' . $collection->name;
+        }
 
-        // if the file is inactive, we prohibit the download
-        if (!$file->active) {
-            $this->log->log("File is inactive (file: $file->id; time-div: $expires;  client: $file->client_id; salt: $salt; hash: $hash; hashGiven: $hashGiven)", LOG_NOTICE);
-            $this->response->setStatus(404);
-            throw new Flooer_Exception('Not found', LOG_NOTICE);
+        // important note: When a file is inactive, it means it is archived.
+        if ($file->active) {
+            $filePath = $collectionDir . '/' . $file->name;
+            $sendFilePath = 'data/files/' . $sendFileCollection . '/' . $file->name;
         }
-//        else {
-//            $filePath = $collectionDir . '/.trash/' . $file->id . '-' . $file->name;
-//            $this->log->log("File inactive take it from trash(file: $file->id; time-div: $expires;  client: $file->client_id; salt: $salt; hash: $hash; hashGiven: $hashGiven)", LOG_NOTICE);
-//            $sendFilePath = 'data/files/' . $sendFileCollection . '/.trash/' . $file->id . '-' . $file->name;
-//        }
-        $filePath = $collectionDir . '/' . $file->name;
-        $sendFilePath = 'data/files/' . $sendFileCollection . '/' . $file->name;
+        else {
+            $filePath = $collectionDir . '/.trash/' . $file->id . '-' . $file->name;
+            $this->log->log("File inactive take it from trash(file: $file->id; time-div: $expires;  client: $file->client_id; salt: $salt; hash: $hash; hashGiven: $hashGiven)", LOG_NOTICE);
+            $sendFilePath = 'data/files/' . $sendFileCollection . '/.trash/' . $file->id . '-' . $file->name;
+        }
 
         $fileName = $file->name;
         $fileType = $file->type;

@@ -980,6 +980,7 @@ class Files extends BaseController
     {
 //        $this->log->log(print_r($_SERVER, true));
 //        $this->log->log(print_r($_REQUEST, true));
+//        error_reporting(E_ALL | E_NOTICE | E_STRICT);
 
         $id = null;
         $as = null;

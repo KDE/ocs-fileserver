@@ -79,10 +79,10 @@ class BaseModel extends Flooer_Db_Table
     protected function _getReferer()
     {
         if (isset($_SERVER['HTTP_X_FORWARDED_REFERRER'])) {
-            return $_SERVER['HTTP_X_FORWARDED_REFERRER'];
+            return mb_strimwidth($_SERVER['HTTP_X_FORWARDED_REFERRER'],0,255);
         }
         if (!empty($_SERVER['HTTP_REFERER'])) {
-            return $_SERVER['HTTP_REFERER'];
+            return mb_strimwidth($_SERVER['HTTP_REFERER'],0,255);
         }
 
         return null;

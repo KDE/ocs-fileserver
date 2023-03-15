@@ -157,7 +157,7 @@ class Flooer_Application
                 // Continue to default
             default:
                 ini_set('display_errors', 0);
-                error_reporting(E_ERROR | E_WARNING | E_PARSE);
+                error_reporting(E_ERROR | E_WARNING | E_PARSE | E_USER_ERROR | E_USER_WARNING | E_USER_NOTICE);
                 break;
         }
         ini_set('memory_limit', $this->_config['memoryLimit']);

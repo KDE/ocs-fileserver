@@ -70,10 +70,10 @@ class BaseModel extends Flooer_Db_Table
         $ip = isset($_SERVER['HTTP_X_FORWARDED_FOR']) ? explode(',', $_SERVER['HTTP_X_FORWARDED_FOR']) : $_SERVER['REMOTE_ADDR'];
 
         if (is_array($ip)) {
-            return $ip[0];
+            return mb_strimwidth($ip[0],0,39);
         }
 
-        return $ip;
+        return mb_strimwidth($ip,0,39);
     }
 
     protected function _getReferer()

@@ -464,9 +464,9 @@ class Files extends BaseController
                 $this->response->setStatus(500);
                 throw new Flooer_Exception('Failed to save the file: ' . $alternativeFilePath, LOG_ALERT);
             }
-            if (!empty($this->request->local_file_path) && !$fileSystemAdapter->copyFile($this->appConfig->general['filesDir'] . '/empty', $alternativeFilePath)) {
+            if (!empty($this->request->local_file_path) && !$fileSystemAdapter->copyFile($this->appConfig->s3alternative['filesDir'] . '/empty', $alternativeFilePath)) {
                 $this->response->setStatus(500);
-                throw new Flooer_Exception('Failed to copy the empty dummy file to destination: ' . $alternativeFilePath, LOG_ALERT);
+                throw new Flooer_Exception('Failed to copy the empty dummy file ('.$this->appConfig->s3alternative['filesDir'] . '/empty'.') to destination: ' . $alternativeFilePath, LOG_ALERT);
             }
         }
         // Save the uploaded file
@@ -478,7 +478,7 @@ class Files extends BaseController
         }
         if (!empty($this->request->local_file_path) && !$fileSystemAdapter->copyFile($this->appConfig->general['filesDir'] . '/empty', $pathFile)) {
             $this->response->setStatus(500);
-            throw new Flooer_Exception('Failed to copy the empty dummy file to destination: ' . $pathFile, LOG_ALERT);
+            throw new Flooer_Exception('Failed to copy the empty dummy file ('.$this->appConfig->general['filesDir'] . '/empty'.') to destination: ' . $pathFile, LOG_ALERT);
         }
         // Add/Update the collection
         $this->models->collections->$collectionId = $collectionData;

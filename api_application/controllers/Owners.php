@@ -1,5 +1,7 @@
 <?php
 
+use Ocs\Storage\FilesystemAdapter;
+
 /**
  * ocs-fileserver
  *
@@ -20,20 +22,19 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with Foobar.  If not, see <http://www.gnu.org/licenses/>.
  **/
-
 class Owners extends BaseController
 {
 
-    public function deleteOwner()
-    {
+    /**
+     * @throws Flooer_Exception
+     */
+    public function deleteOwner() {
         if (!$this->_isAllowedAccess()) {
             $this->response->setStatus(403);
             throw new Flooer_Exception('Forbidden', LOG_NOTICE);
         }
 
-        if (empty($this->request->client_id)
-            || empty($this->request->id)
-        ) {
+        if (empty($this->request->client_id) || empty($this->request->id)) {
             $this->response->setStatus(404);
             throw new Flooer_Exception('Not found', LOG_NOTICE);
         }
@@ -48,14 +49,12 @@ class Owners extends BaseController
         }
 
         // Remove collections and related data
-        $collections = $this->models->collections->fetchRowset(
-            'WHERE active = :active AND client_id = :client_id AND owner_id = :owner_id',
-            array(
-                ':active' => 1,
-                ':client_id' => $clientId,
-                ':owner_id' => $ownerId
-            )
-        );
+        $collections = $this->models->collections->fetchRowset('WHERE active = :active AND client_id = :client_id AND owner_id = :owner_id',
+                                                               array(
+                                                                   ':active'    => 1,
+                                                                   ':client_id' => $clientId,
+                                                                   ':owner_id'  => $ownerId
+                                                               ));
         if ($collections) {
             $this->log->log("Remove collections (client:$clientId; owner:$ownerId)", LOG_NOTICE);
             foreach ($collections as $collection) {
@@ -64,36 +63,20 @@ class Owners extends BaseController
                     unlink($thumbnail);
                 }
 
+                $fileSystemAdapter = new FilesystemAdapter($this->appConfig);
+                //$fileSystemAdapter = new \Ocs\Storage\S3Adapter($this->appConfig);
+
                 // move collection to trash dir
                 $trashDir = $this->appConfig->general['filesDir'] . '/.trash';
-                if (!is_dir($trashDir) && !mkdir($trashDir)) {
+                if (!$fileSystemAdapter->testAndCreate($trashDir)) {
                     $this->response->setStatus(500);
                     throw new Flooer_Exception('Failed to remove the collection', LOG_ALERT);
                 }
-                if (is_dir($this->appConfig->general['filesDir'] . '/' . $collection->name)
-                    && !rename(
-                        $this->appConfig->general['filesDir'] . '/' . $collection->name,
-                        $trashDir . '/' . $collection->id . '-' . $collection->name
-                    )
-                ) {
+                $pathCollection = $this->appConfig->general['filesDir'] . '/' . $collection->name;
+                if (is_dir($pathCollection) && !rename($pathCollection,$trashDir . '/' . $collection->id . '-' . $collection->name))
+                {
                     $this->response->setStatus(500);
                     throw new Flooer_Exception('Failed to remove the collection', LOG_ALERT);
-                }
-
-                // do the same for the alternative storage path
-                $alternativeTrashDir = $this->appConfig->s3alternative['filesDir'] . '/.trash';
-                if (!is_dir($alternativeTrashDir) && !mkdir($alternativeTrashDir)) {
-                    $this->response->setStatus(500);
-                    throw new Flooer_Exception('Failed to remove the collection from alternative storage path (1)', LOG_ALERT);
-                }
-                if (is_dir($this->appConfig->s3alternative['filesDir'] . '/' . $collection->name)
-                    && !rename(
-                        $this->appConfig->s3alternative['filesDir'] . '/' . $collection->name,
-                        $alternativeTrashDir . '/' . $collection->id . '-' . $collection->name
-                    )
-                ) {
-                    $this->response->setStatus(500);
-                    throw new Flooer_Exception('Failed to remove the collection from alternative storage path (2)', LOG_ALERT);
                 }
 
                 $this->models->collections->{$collection->id} = array('active' => 0);
@@ -107,15 +90,12 @@ class Owners extends BaseController
         }
 
         // Remove user or owner from favorites
-        $favorites = $this->models->favorites->fetchRowset(
-            'WHERE client_id = :client_id'
-            . ' AND (user_id = :user_id OR owner_id = :owner_id)',
-            array(
-                ':client_id' => $clientId,
-                ':user_id' => $ownerId,
-                ':owner_id' => $ownerId
-            )
-        );
+        $favorites = $this->models->favorites->fetchRowset('WHERE client_id = :client_id' . ' AND (user_id = :user_id OR owner_id = :owner_id)',
+                                                           array(
+                                                               ':client_id' => $clientId,
+                                                               ':user_id'   => $ownerId,
+                                                               ':owner_id'  => $ownerId
+                                                           ));
         if ($favorites) {
             foreach ($favorites as $favorite) {
                 unset($this->models->favorites->{$favorite->id});

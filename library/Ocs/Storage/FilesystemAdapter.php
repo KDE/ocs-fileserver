@@ -57,6 +57,11 @@ class FilesystemAdapter implements AdapterInterface
         return !is_dir($filePath . DIRECTORY_SEPARATOR . $collectionName) && mkdir($filePath . DIRECTORY_SEPARATOR . $collectionName);
     }
 
+    /** Return true if dir exists and is writeable, otherwise it tries to create the path
+     *
+     * @param string $dir
+     * @return bool
+     */
     public function testAndCreate(string $dir): bool
     {
         if (is_dir($dir)) {
@@ -83,6 +88,14 @@ class FilesystemAdapter implements AdapterInterface
     public function isFile($from): bool
     {
         return is_file($from);
+    }
+
+    public function isDir($from) {
+        return is_dir($from);
+    }
+
+    public function renameDir($from, $to) {
+        return is_dir($from) && is_dir(dirname($to)) && rename($from, $to);
     }
 
 }

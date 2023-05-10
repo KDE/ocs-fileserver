@@ -1,4 +1,5 @@
-<?php /** @noinspection PhpUndefinedFieldInspection */
+<?php
+/** @noinspection PhpUndefinedFieldInspection */
 
 /**
  * file server - part of Opendesktop.org platform project <https://www.opendesktop.org>.
@@ -18,15 +19,13 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-
 class Waveform extends BaseController
 {
 
     /**
      * @throws Flooer_Exception
      */
-    public function getFile()
-    {
+    public function getFile() {
         $id = null;
 
         if (!empty($this->request->id)) {
@@ -45,7 +44,7 @@ class Waveform extends BaseController
             $this->response->setStatus(404);
             throw new Flooer_Exception('Not found', LOG_NOTICE);
         }
-        if (substr( $file->type, 0, 5 ) !== "audio") {
+        if (substr($file->type, 0, 5) !== "audio") {
             $this->response->setStatus(404);
             throw new Flooer_Exception('Not an audio file (' . $file->id . ')', LOG_NOTICE);
         }
@@ -80,24 +79,9 @@ class Waveform extends BaseController
             $this->_sendFile($fileJsonWaveform, $fileName, $fileType, filesize($fileJsonWaveform), true, false);
         }
 
-        if ($this->appConfig->s3alternative) {
-            $alternativeCollectionDir = $this->appConfig->s3alternative['filesDir'] . '/' . $collection->name;
-            $alternativeFilePath = $alternativeCollectionDir . DIRECTORY_SEPARATOR . $file->name;
-            $alternativeJsonWaveForm = $alternativeFilePath . '.json';
-            $this->log->log(__METHOD__ . ' - check alternative storage for file: ' . $alternativeFilePath . ' :: ' . (is_file($alternativeFilePath) ? 'true' : 'false'));
-            if (is_file($alternativeJsonWaveForm)) {
-                $this->_sendFile($alternativeJsonWaveForm, $fileName, $fileType, filesize($alternativeJsonWaveForm), true, false);
-            }
-            $this->_generateWaveForm($alternativeFilePath, $alternativeJsonWaveForm);
-            if (file_exists($alternativeJsonWaveForm)) {
-                $this->_sendFile($alternativeJsonWaveForm, $fileName, $fileType, filesize($alternativeJsonWaveForm), true, false);
-            }
-        }
-
         $this->log->log("Waveform file not generated (file: $file->id)", LOG_NOTICE);
         $this->response->setStatus(404);
         throw new Flooer_Exception('File Not found', LOG_NOTICE);
     }
-
 
 }

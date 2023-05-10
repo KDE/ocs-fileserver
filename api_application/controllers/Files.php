@@ -171,7 +171,7 @@ class Files extends BaseController
      *
      * @return bool
      */
-    public function testFileUpload($element_name, &$error_message): bool
+    protected function testFileUpload($element_name, &$error_message): bool
     {
         if (!isset($_FILES[$element_name])) {
             $error_message = "No file upload with name '$element_name' in request.";
@@ -227,8 +227,7 @@ class Files extends BaseController
     /**
      * @throws Flooer_Exception
      */
-    public function postFile()
-    {
+    public function postFile() {
         if (!$this->_isAllowedAccess()) {
             $this->response->setStatus(403);
             throw new Flooer_Exception('Forbidden', LOG_NOTICE);
@@ -260,8 +259,10 @@ class Files extends BaseController
 
         if ($errors) {
             $this->response->setStatus(400);
-            $this->_setResponseContent('error', array('message' => 'Validation error',
-                                                      'errors'  => $errors,));
+            $this->_setResponseContent('error', array(
+                'message' => 'Validation error',
+                'errors'  => $errors,
+            ));
 
             return;
         }
@@ -336,8 +337,16 @@ class Files extends BaseController
                     $name = $filter->filter(basename($this->request->local_file_path));
                     $externalUri = $this->_detectLinkInTags($tags);
                     if ($name == 'empty' && !empty($externalUri)) {
+                        $fileAttribs = $this->get_remote_file_info($externalUri);
+                        $size = isset($fileAttribs['fileSize']) ? (int)$fileAttribs['fileSize'] : 0;
+
+                        //$data = get_headers($externalUri, true);
+                        //$size = isset($data['Content-Length']) ? (int)$data['Content-Length'] : 0;
+
                         $type = $this->_detectMimeTypeFromUri($externalUri);
-                        $size = $this->_detectFilesizeFromUri($externalUri);
+                        if (0 == $size) {
+                            $size = $this->_detectFilesizeFromUri($externalUri);
+                        }
                     } else {
                         $info = new finfo(FILEINFO_MIME_TYPE);
                         $type = $info->file($this->request->local_file_path);
@@ -388,7 +397,7 @@ class Files extends BaseController
         // ------------------------------------------------
 
 
-        // Get ID3 tags in the file
+        // Get ID3 tags in the file. 'getid3' may not work on network storage
         $id3Tags = $this->_getId3Tags($type, $_FILES['file']['tmp_name']);
 
         $fileSystemAdapter = new FilesystemAdapter($this->appConfig);
@@ -398,13 +407,14 @@ class Files extends BaseController
         $collectionName = null;
         $collectionData = array();
         if ($collectionId) {
-            // Get specified collection
+            // Get specified collection and check owner and client
             $collection = $this->models->collections->$collectionId;
             if (!$collection || $collection->client_id != $clientId || $collection->owner_id != $ownerId) {
                 $this->response->setStatus(403);
                 throw new Flooer_Exception('Forbidden', LOG_NOTICE);
             }
             $collectionName = $collection->name;
+            // add file count and size
             $collectionData = array('files' => $collection->files + 1,
                                     'size'  => $collection->size + $size,);
         } else {
@@ -423,14 +433,7 @@ class Files extends BaseController
             $collectionPath = $this->appConfig->general['filesDir'] . DIRECTORY_SEPARATOR . $collectionName;
             if (!$fileSystemAdapter->testAndCreate($collectionPath)) {
                 $this->response->setStatus(500);
-                throw new Flooer_Exception('Failed to create new collection: ' . $collectionPath, LOG_ALERT);
-            }
-            if ($this->appConfig->s3alternative) {
-                $alternativeCollectionPath = $this->appConfig->s3alternative['filesDir'] . DIRECTORY_SEPARATOR . $collectionName;
-                if (!$fileSystemAdapter->testAndCreate($alternativeCollectionPath)) {
-                    $this->response->setStatus(500);
-                    throw new Flooer_Exception('Failed to create alternative new collection path: ' . $alternativeCollectionPath, LOG_ALERT);
-                }
+                throw new Flooer_Exception('Failed to create new collection path: ' . $collectionPath, LOG_ALERT);
             }
             $collectionData = array('active'       => $collectionActive,
                                     'client_id'    => $clientId,
@@ -455,26 +458,12 @@ class Files extends BaseController
             $title = mb_substr(strip_tags($name), 0, 200);
         }
 
-        // copy the file to the alternative storage ... if defined
-        if ($this->appConfig->s3alternative) {
-            $alternativeCollectionDir = $this->appConfig->s3alternative['filesDir'] . DIRECTORY_SEPARATOR . $collectionName;
-            $alternativeFilePath = $alternativeCollectionDir . DIRECTORY_SEPARATOR . $name;
-            $this->log->log(__METHOD__ . ' - check alternative storage path exists: ' . $alternativeCollectionDir . ' :: ' . (is_dir($alternativeCollectionDir) ? 'true' : 'false'));
-            if (empty($this->request->local_file_path) && !$fileSystemAdapter->copyFile($_FILES['file']['tmp_name'], $alternativeFilePath)) {
-                $this->response->setStatus(500);
-                throw new Flooer_Exception('Failed to save the file: ' . $alternativeFilePath, LOG_ALERT);
-            }
-            if (!empty($this->request->local_file_path) && !$fileSystemAdapter->copyFile($this->appConfig->s3alternative['filesDir'] . '/empty', $alternativeFilePath)) {
-                $this->response->setStatus(500);
-                throw new Flooer_Exception('Failed to copy the empty dummy file ('.$this->appConfig->s3alternative['filesDir'] . '/empty'.') to destination: ' . $alternativeFilePath, LOG_ALERT);
-            }
-        }
         // Save the uploaded file
         $pathFile = $collectionPath . DIRECTORY_SEPARATOR . $name;
-        $this->log->log(__METHOD__ . ' - check default storage path exists: ' . $collectionPath . ' :: ' . (is_dir($collectionPath) ? 'true' : 'false'));
+        $this->log->log(__METHOD__ . ' - check general storage path exists: ' . $collectionPath . ' :: ' . (is_dir($collectionPath) ? 'true' : 'false'));
         if (empty($this->request->local_file_path) && !$fileSystemAdapter->moveUploadedFile($_FILES['file']['tmp_name'], $pathFile)) {
             $this->response->setStatus(500);
-            throw new Flooer_Exception('Failed to save the file: ' . $pathFile, LOG_ALERT);
+            throw new Flooer_Exception('Failed to save the file: ' . $_FILES['file']['tmp_name'] . ' --> ' . $pathFile, LOG_ALERT);
         }
         if (!empty($this->request->local_file_path) && !$fileSystemAdapter->copyFile($this->appConfig->general['filesDir'] . '/empty', $pathFile)) {
             $this->response->setStatus(500);
@@ -603,8 +592,7 @@ class Files extends BaseController
     /**
      * @throws Flooer_Exception
      */
-    public function putFile()
-    {
+    public function putFile() {
         if (!$this->_isAllowedAccess()) {
             $this->response->setStatus(403);
             throw new Flooer_Exception('Forbidden', LOG_NOTICE);
@@ -616,8 +604,10 @@ class Files extends BaseController
         }
         if ($errors) {
             $this->response->setStatus(400);
-            $this->_setResponseContent('error', array('message' => 'File upload error',
-                                                      'errors'  => $errors,));
+            $this->_setResponseContent('error', array(
+                'message' => 'File upload error',
+                'errors'  => $errors,
+            ));
 
             return;
         }
@@ -630,8 +620,10 @@ class Files extends BaseController
         }
         if ($errors) {
             $this->response->setStatus(400);
-            $this->_setResponseContent('error', array('message' => 'Validation error',
-                                                      'errors'  => $errors,));
+            $this->_setResponseContent('error', array(
+                'message' => 'Validation error',
+                'errors'  => $errors,
+            ));
 
             return;
         }
@@ -764,7 +756,7 @@ class Files extends BaseController
             // Remove old file
             $this->_removeFile($file);
 
-            // Get ID3 tags in the file
+            // Get ID3 tags in the file. 'getid3' may not work on a network storage
             $id3Tags = $this->_getId3Tags($type, $_FILES['file']['tmp_name']);
 
             // Prepare to append the file to collection
@@ -774,21 +766,14 @@ class Files extends BaseController
                                     'size'  => $collection->size + $size,);
 
             $id = $this->models->files->generateId();
-            //$name = $this->_fixFilename($name, $collectionName);
-            $name = $fileSystemAdapter->fixFilename($name, $this->appConfig->general['filesDir'] . DIRECTORY_SEPARATOR . $collectionName);
+            $collectionPath = $this->appConfig->general['filesDir'] . DIRECTORY_SEPARATOR . $collectionName;
+            $name = $fileSystemAdapter->fixFilename($name, $collectionPath);
             if (!$title) {
                 $title = mb_substr(strip_tags($name), 0, 200);
             }
 
-            if ($this->appConfig->s3alternative) {
-                // Copy the uploaded file to alternative storage
-                if (!$fileSystemAdapter->copyFile($_FILES['file']['tmp_name'], $this->appConfig->s3alternative['filesDir'] . '/' . $collectionName . '/' . $name)) {
-                    $this->response->setStatus(500);
-                    throw new Flooer_Exception('Failed to save the file in alternative storage', LOG_ALERT);
-                }
-            }
             // Save the uploaded file
-            if (!$fileSystemAdapter->moveUploadedFile($_FILES['file']['tmp_name'], $this->appConfig->general['filesDir'] . '/' . $collectionName . '/' . $name)) {
+            if (!$fileSystemAdapter->moveUploadedFile($_FILES['file']['tmp_name'], $collectionPath . DIRECTORY_SEPARATOR . $name)) {
                 $this->response->setStatus(500);
                 throw new Flooer_Exception('Failed to save the file', LOG_ALERT);
             }
@@ -860,8 +845,7 @@ class Files extends BaseController
     /**
      * @throws Flooer_Exception
      */
-    private function _removeFile(Flooer_Db_Table_Row &$file)
-    {
+    private function _removeFile(Flooer_Db_Table_Row &$file) {
         // Please be care the remove process in Collections::deleteCollection()
 
         $id = $file->id;
@@ -871,31 +855,20 @@ class Files extends BaseController
         $fileSystemAdapter = new FilesystemAdapter($this->appConfig);
 //        $fileSystemAdapter = new S3Adapter($this->appConfig);
 
-        if ($this->appConfig->s3alternative) {
-            $alternativeTrashDir = $this->appConfig->s3alternative['filesDir'] . '/' . $collection->name . '/.trash';
-            $this->log->log(__METHOD__ . ' - test alternative trash dir exists: ' . $alternativeTrashDir . ' :: ' . (is_dir($alternativeTrashDir) ? 'true' : 'false'));
-            if (!$fileSystemAdapter->testAndCreate($alternativeTrashDir)) {
-                $this->response->setStatus(500);
-                throw new Flooer_Exception('Failed to remove the file from alternative storage', LOG_ALERT);
-            }
-            $alternativeFilePath = $this->appConfig->s3alternative['filesDir'] . '/' . $collection->name . '/' . $file->name;
-            $this->log->log(__METHOD__ . ' - move file to alternative trash dir: ' . $alternativeFilePath . ' :: ' . (is_file($alternativeFilePath) ? 'true' : 'false'));
-            if (is_file($alternativeFilePath)) {
-                if (!$fileSystemAdapter->moveFile($alternativeFilePath, $alternativeTrashDir . '/' . $id . '-' . $file->name)) {
-                    $this->response->setStatus(500);
-                    throw new Flooer_Exception('Failed to remove the file from alternative storage', LOG_ALERT);
-                }
-            }
-        }
-        $trashDir = $this->appConfig->general['filesDir'] . '/' . $collection->name . '/.trash';
+        $trashDir = $this->appConfig->general['filesDir'] . DIRECTORY_SEPARATOR . $collection->name . '/.trash';
         $this->log->log(__METHOD__ . ' - test trash dir exists: ' . $trashDir . ' :: ' . (is_dir($trashDir) ? 'true' : 'false'));
-        if (false == $fileSystemAdapter->testAndCreate($trashDir)) {
+        if (!$fileSystemAdapter->testAndCreate($trashDir)) {
             $this->response->setStatus(500);
-            throw new Flooer_Exception('Failed to remove the file', LOG_ALERT);
+            throw new Flooer_Exception('Failed to create trash dir ' . $trashDir, LOG_ALERT);
         }
-        if (true != $fileSystemAdapter->moveFile($this->appConfig->general['filesDir'] . '/' . $collection->name . '/' . $file->name, $trashDir . '/' . $id . '-' . $file->name)) {
-            $this->response->setStatus(500);
-            throw new Flooer_Exception('Failed to remove the file', LOG_ALERT);
+        $from = $this->appConfig->general['filesDir'] . DIRECTORY_SEPARATOR . $collection->name . DIRECTORY_SEPARATOR . $file->name;
+        if (is_file($from)) {
+            if (!$fileSystemAdapter->moveFile($from, $trashDir . '/' . $id . '-' . $file->name)) {
+                $this->response->setStatus(500);
+                throw new Flooer_Exception('Failed to remove the file ' . $from, LOG_ALERT);
+            }
+        } else {
+            $this->log->log(__METHOD__ . ' - File could not be found. But we continue and set file inactive in the database. ' . $from,LOG_WARNING);
         }
 
         $this->models->files->$id = array('active' => 0);
@@ -904,10 +877,19 @@ class Files extends BaseController
         $this->models->media->deleteByFileId($id);
         $this->models->media_played->deleteByFileId($id);
 
-        $this->models->collections->$collectionId = array('files' => $collection->files - 1,
-                                                          'size'  => $collection->size - $file->size,);
+        $this->models->collections->$collectionId = array(
+            'files' => $collection->files - 1,
+            'size'  => $collection->size - $file->size,
+        );
     }
 
+    /**
+     * @param $name
+     * @param $collectionName
+     *
+     * @return mixed|string
+     * @deprecated
+     */
     private function _fixFilename($name, $collectionName)
     {
         if (is_file($this->appConfig->general['filesDir'] . '/' . $collectionName . '/' . $name)) {
@@ -978,10 +960,6 @@ class Files extends BaseController
      */
     public function getDownload($headeronly = false)
     {
-//        $this->log->log(print_r($_SERVER, true));
-//        $this->log->log(print_r($_REQUEST, true));
-//        error_reporting(E_ALL | E_NOTICE | E_STRICT);
-
         $id = null;
         $as = null;
         $userId = null;
@@ -1051,14 +1029,12 @@ class Files extends BaseController
         $collectionId = $file->collection_id;
 
         $salt = $this->_getDownloadSecret($file->client_id);
-        //20181009 ronald: change hash from MD5 to SHA512
-        //$hash = md5($salt . $collectionId . $timestamp);
         $hash = hash('sha512', $salt . $collectionId . $validUntil);
         $expires = $validUntil - time();
 
         $agent = null;
         if (isset($_SERVER)) {
-            $agent = $_SERVER['HTTP_USER_AGENT'];
+            $agent = $_SERVER['HTTP_USER_AGENT'] ?? 'unidentified';
         }
 
         // Log
@@ -1135,23 +1111,21 @@ class Files extends BaseController
         // important note: When a collection is inactive, it means it is archived.
         if ($collection->active) {
             $collectionDir = $this->appConfig->general['filesDir'] . '/' . $collection->name;
-            $sendFileCollection = $collection->name;
-        }
-        else {
+//            $sendFileCollection = $collection->name;
+        } else {
             $collectionDir = $this->appConfig->general['filesDir'] . '/.trash/' . $collection->id . '-' . $collection->name;
             $this->log->log("Collection inactive take it from trash(collection: $collection->id file: $file->id; time-div: $expires;  client: $file->client_id; salt: $salt; hash: $hash; hashGiven: $hashGiven)", LOG_NOTICE);
-            $sendFileCollection = '.trash/' . $collection->id . '-' . $collection->name;
+//            $sendFileCollection = '.trash/' . $collection->id . '-' . $collection->name;
         }
 
         // important note: When a file is inactive, it means it is archived.
         if ($file->active) {
             $filePath = $collectionDir . '/' . $file->name;
-            $sendFilePath = 'data/files/' . $sendFileCollection . '/' . $file->name;
-        }
-        else {
+//            $sendFilePath = 'data/files/' . $sendFileCollection . '/' . $file->name;
+        } else {
             $filePath = $collectionDir . '/.trash/' . $file->id . '-' . $file->name;
             $this->log->log("File inactive take it from trash(file: $file->id; time-div: $expires;  client: $file->client_id; salt: $salt; hash: $hash; hashGiven: $hashGiven)", LOG_NOTICE);
-            $sendFilePath = 'data/files/' . $sendFileCollection . '/.trash/' . $file->id . '-' . $file->name;
+//            $sendFilePath = 'data/files/' . $sendFileCollection . '/.trash/' . $file->id . '-' . $file->name;
         }
 
         $fileName = $file->name;
@@ -1204,13 +1178,17 @@ class Files extends BaseController
                 }
 
                 // save download in impression table
-                $this->modelOcs->ocs_downloads->save(array('file_id' => $file->id,
-                                                           'ip'      => $ip,
-                                                           'fp'      => $fp,
-                                                           'u'       => $userId,));
+//                $this->modelOcs->ocs_downloads->save(array('file_id' => $file->id,
+//                                                           'ip'      => $ip,
+//                                                           'fp'      => $fp,
+//                                                           'u'       => $userId,));
             } catch (Exception $exc) {
                 //echo $exc->getTraceAsString();
                 $this->log->log("ERROR saving Download Data to DB: $exc->getMessage()", LOG_ERR);
+                $this->response->setStatus(500);
+                $this->_setResponseContent('error', array('message' => 'internal error'));
+
+                return;
             }
         }
 
@@ -1220,26 +1198,33 @@ class Files extends BaseController
             $this->response->redirect($externalUri);
         }
 
-        if (getenv('MOD_X_ACCEL_REDIRECT_ENABLED') === 'on') {
-            $this->_xSendFile($sendFilePath, $filePath, $fileName, $fileType, $fileSize, true, $headeronly);
-        }
+//        if (getenv('MOD_X_ACCEL_REDIRECT_ENABLED') === 'on') {
+//            $this->_xSendFile($sendFilePath, $filePath, $fileName, $fileType, $fileSize, true, $headeronly);
+//        }
 
-        if (getenv('X_OCS_ACCEL_REDIRECT_ENABLED') === 'on') {
-            $this->_xSendFile($sendFilePath, $filePath, $fileName, $fileType, $fileSize, true, $headeronly);
-        }
+//        if (getenv('X_OCS_ACCEL_REDIRECT_ENABLED') === 'on') {
+//            $this->_xSendFile($sendFilePath, $filePath, $fileName, $fileType, $fileSize, true, $headeronly);
+//        }
 
         if (getenv('X_OCS_S3_DOWNLOAD_ENABLED') === 'on') {
+            $this->log->log(__METHOD__ . ' - check storage for file: ' . $filePath . ' :: ' . (is_file($filePath) ? 'true' : 'false'));
+            if (is_file($filePath)) {
+                $sendFilePath = preg_replace("|^{$this->appConfig->general['basePath']}|", '', $filePath);
+                $this->_s3SendFile($sendFilePath, $filePath, $fileName, $fileType, $fileSize, true, $headeronly, $this->appConfig->s3storage);
+            } else
             // checks if the alternate storage contains the file. If it does, we continue with that file path.
-            if ($this->appConfig->s3alternative) {
-                $alternativeCollectionDir = $this->appConfig->s3alternative['filesDir'] . '/' . $collection->name;
+            if ($this->appConfig->s3storage2) {
+                $alternativeCollectionDir = rtrim($this->appConfig->s3storage2['basePath'],'/') . '/' . preg_replace("|^{$this->appConfig->general['basePath']}|", '', $this->appConfig->general['filesDir']) . '/' . $collection->name;
                 $alternativeFilePath = $alternativeCollectionDir . DIRECTORY_SEPARATOR . $file->name;
+                $sendFilePath = preg_replace("|^{$this->appConfig->s3storage2['basePath']}|", '', $alternativeFilePath);
                 $this->log->log(__METHOD__ . ' - check alternative storage for file: ' . $alternativeFilePath . ' :: ' . (is_file($alternativeFilePath) ? 'true' : 'false'));
                 if (is_file($alternativeFilePath)) {
-                    $this->_s3SendFile($sendFilePath, $alternativeFilePath, $fileName, $fileType, $fileSize, true, $headeronly, $this->appConfig->s3alternative);
+                    $this->_s3SendFile($sendFilePath, $alternativeFilePath, $fileName, $fileType, $fileSize, true, $headeronly, $this->appConfig->s3storage2);
                 }
             }
-
-            $this->_s3SendFile($sendFilePath, $filePath, $fileName, $fileType, $fileSize, true, $headeronly, $this->appConfig->s3download);
+            $this->log->log(__METHOD__ . ' - file not found. ' . $filePath, LOG_ERR);
+            $this->response->setStatus(500);
+            $this->_setResponseContent('error', array('message' => 'internal error'));
         }
 
         $this->_sendFile($filePath, $fileName, $fileType, $fileSize, true, $headeronly);
@@ -1356,34 +1341,40 @@ class Files extends BaseController
      *
      * @return string
      */
-    private function generateSignedDownloadUrl(string $sendFilePath,
-                                               array $s3Config = null,
-                                               bool   $withoutHttpScheme = true): string
-    {
+    private function generateSignedDownloadUrl(string $sendFilePath, array $s3Config = null,
+                                               bool   $withoutHttpScheme = true): string {
         if (false == $s3Config['enabled']) {
             return $sendFilePath;
         }
 
-        // Instantiate an Amazon S3 client.
+        // Instantiate an S3 client.
         if (empty($s3Config['endpoint'])) {
-            $s3Client = new S3Client(['credentials' => new Credentials($s3Config['key'], $s3Config['secret']),
-                                      'version'     => 'latest',
-                                      'region'      => $s3Config['region'],]);
+            $s3Client = new S3Client([
+                                         'credentials' => new Credentials($s3Config['key'], $s3Config['secret']),
+                                         'version'     => 'latest',
+                                         'region'      => $s3Config['region'],
+                                     ]);
         } else {
-            $s3Client = new S3Client(['credentials' => new Credentials($s3Config['key'], $s3Config['secret']),
-                                      'version'     => 'latest',
-                                      'region'      => $s3Config['region'],
-                                      'endpoint'    => $s3Config['endpoint'],]);
+            $s3Client = new S3Client([
+                                         'credentials' => new Credentials($s3Config['key'], $s3Config['secret']),
+                                         'version'     => 'latest',
+                                         'region'      => $s3Config['region'],
+                                         'endpoint'    => $s3Config['endpoint'],
+                                     ]);
         }
 
         // Creating a pre-signed URL and request
-        $cmd = $s3Client->getCommand('GetObject', ['Bucket' => $s3Config['bucket'], 'Key' => $sendFilePath,'ResponseContentDisposition' => 'attachment;%20'.basename($sendFilePath),]);
+        $cmd = $s3Client->getCommand('GetObject', [
+            'Bucket'                     => $s3Config['bucket'],
+            'Key'                        => $sendFilePath,
+            'ResponseContentDisposition' => 'attachment;%20' . basename($sendFilePath),
+        ]);
         $request = $s3Client->createPresignedRequest($cmd, $s3Config['signedUrlExpires']);
 
         $uri = (string)$request->getUri();
 
         if (!empty($s3Config['cdn']) && !empty($s3Config['endpoint'])) {
-            $host = preg_replace("(^https?://)", "", $s3Config['cdn'] );
+            $host = preg_replace("(^https?://)", "", $s3Config['cdn']);
             $uri = (string)$request->getUri()->withHost($host);
         }
 
@@ -1392,22 +1383,12 @@ class Files extends BaseController
         }
 
         return $uri;
-
     }
 
-    private function _s3SendFile(string $sendFilePath,
-                                 string $filePath,
-                                 string $fileName,
-                                 string $fileType,
-                                 bool   $fileSize,
-                                 bool   $attachment,
-                                        $headeronly,
-                                 array $appconfig)
-    {
-        if (($headeronly) or (false == $appconfig['enabled'])) {
+    private function _s3SendFile(string $sendFilePath, string $filePath, string $fileName, string $fileType, bool   $fileSize, bool $attachment, $headeronly, array $appconfig) {
+        if (($headeronly) or !$appconfig['enabled']) {
             $this->_sendFile($filePath, $fileName, $fileType, $fileSize, true, $headeronly);
         }
-
         $signedUrl = $this->generateSignedDownloadUrl($sendFilePath, $appconfig, false);
         $this->log->log("Response (redirect: $signedUrl)", LOG_NOTICE);
 

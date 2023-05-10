@@ -1,5 +1,7 @@
 <?php /** @noinspection PhpUndefinedFieldInspection */
 
+use Ocs\Storage\FilesystemAdapter;
+
 /**
  * ocs-fileserver
  *
@@ -219,18 +221,14 @@ class Collections extends BaseController
             $title = $name;
         }
 
+        $fileSystemAdapter = new FilesystemAdapter($this->appConfig);
+        //$fileSystemAdapter = new S3Adapter($this->appConfig);
+
         // create collection dir
-        $collectionDir = $this->appConfig->general['filesDir'] . '/' . $name;
-        if (!is_dir($collectionDir) && !mkdir($collectionDir)) {
+        $collectionDir = $this->appConfig->general['filesDir'] . DIRECTORY_SEPARATOR . $name;
+        if (!$fileSystemAdapter->testAndCreate($collectionDir)) {
             $this->response->setStatus(500);
             throw new Flooer_Exception('Failed to create collection', LOG_ALERT);
-        }
-
-        // now we do the same for the alternative storage path
-        $alternativeCollectionDir = $this->appConfig->s3alternative['filesDir'] . '/' . $name;
-        if (!is_dir($alternativeCollectionDir) && !mkdir($alternativeCollectionDir)) {
-            $this->response->setStatus(500);
-            throw new Flooer_Exception('Failed to create collection in alternative path', LOG_ALERT);
         }
 
         $this->models->collections->$id = array(
@@ -342,8 +340,7 @@ class Collections extends BaseController
         );
     }
 
-    public function deleteCollection()
-    {
+    public function deleteCollection() {
         // Please be care the remove process in Owners::deleteOwner()
 
         if (!$this->_isAllowedAccess()) {
@@ -362,8 +359,7 @@ class Collections extends BaseController
         if (!$collection) {
             $this->response->setStatus(404);
             throw new Flooer_Exception('Not found', LOG_NOTICE);
-        }
-        else if (!$collection->active || $collection->client_id != $this->request->client_id) {
+        } else if (!$collection->active || $collection->client_id != $this->request->client_id) {
             $this->response->setStatus(403);
             throw new Flooer_Exception('Forbidden', LOG_NOTICE);
         }
@@ -373,36 +369,21 @@ class Collections extends BaseController
             unlink($thumbnail);
         }
 
+        $fileSystemAdapter = new FilesystemAdapter($this->appConfig);
+        //$fileSystemAdapter = new \Ocs\Storage\S3Adapter($this->appConfig);
+
         // move collection to trash dir
         $trashDir = $this->appConfig->general['filesDir'] . '/.trash';
-        if (!is_dir($trashDir) && !mkdir($trashDir)) {
+        if (!$fileSystemAdapter->testAndCreate($trashDir)) {
+            $this->log->log(__METHOD__ . " - trash dir not found and could not be created: $trashDir");
             $this->response->setStatus(500);
             throw new Flooer_Exception('Failed to remove the collection', LOG_ALERT);
         }
-        if (is_dir($this->appConfig->general['filesDir'] . '/' . $collection->name)
-            && !rename(
-                $this->appConfig->general['filesDir'] . '/' . $collection->name,
-                $trashDir . '/' . $id . '-' . $collection->name
-            )
-        ) {
+        $pathCollection = $this->appConfig->general['filesDir'] . '/' . $collection->name;
+        if (is_dir($pathCollection) && !rename($pathCollection, $trashDir . '/' . $id . '-' . $collection->name))
+        {
             $this->response->setStatus(500);
             throw new Flooer_Exception('Failed to remove the collection', LOG_ALERT);
-        }
-
-        // now we do the same for the alternative storage path
-        $alternativeTrashDir = $this->appConfig->s3alternative['filesDir'] . '/.trash';
-        if (!is_dir($alternativeTrashDir) && !mkdir($alternativeTrashDir)) {
-            $this->response->setStatus(500);
-            throw new Flooer_Exception('Failed to remove the collection in alternative path (1)', LOG_ALERT);
-        }
-        if (is_dir($this->appConfig->s3alternative['filesDir'] . '/' . $collection->name)
-            && !rename(
-                $this->appConfig->s3alternative['filesDir'] . '/' . $collection->name,
-                $alternativeTrashDir . '/' . $id . '-' . $collection->name
-            )
-        ) {
-            $this->response->setStatus(500);
-            throw new Flooer_Exception('Failed to remove the collection in alternative path (2)', LOG_ALERT);
         }
 
         $this->models->collections->$id = array('active' => 0);

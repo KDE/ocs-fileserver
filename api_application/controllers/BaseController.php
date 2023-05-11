@@ -402,7 +402,7 @@ class BaseController extends Flooer_Controller
         return strlen(stream_get_contents($fp));
     }
 
-    function get_remote_file_info($url) {
+    function getRemoteFileInfo($url) {
         $ch = curl_init($url);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
         curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);

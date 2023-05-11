@@ -337,7 +337,7 @@ class Files extends BaseController
                     $name = $filter->filter(basename($this->request->local_file_path));
                     $externalUri = $this->_detectLinkInTags($tags);
                     if ($name == 'empty' && !empty($externalUri)) {
-                        $fileAttribs = $this->get_remote_file_info($externalUri);
+                        $fileAttribs = $this->getRemoteFileInfo($externalUri);
                         $size = isset($fileAttribs['fileSize']) ? (int)$fileAttribs['fileSize'] : 0;
 
                         //$data = get_headers($externalUri, true);

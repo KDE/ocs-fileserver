@@ -339,6 +339,7 @@ class Files extends BaseController
                     if ($name == 'empty' && !empty($externalUri)) {
                         $fileAttribs = $this->getRemoteFileInfo($externalUri);
                         $size = isset($fileAttribs['fileSize']) ? (int)$fileAttribs['fileSize'] : 0;
+                        $this->log->log(__METHOD__ . " - file size detected: $size");
 
                         //$data = get_headers($externalUri, true);
                         //$size = isset($data['Content-Length']) ? (int)$data['Content-Length'] : 0;
@@ -346,6 +347,7 @@ class Files extends BaseController
                         $type = $this->_detectMimeTypeFromUri($externalUri);
                         if (0 == $size) {
                             $size = $this->_detectFilesizeFromUri($externalUri);
+                            $this->log->log(__METHOD__ . " - file size detected: $size");
                         }
                     } else {
                         $info = new finfo(FILEINFO_MIME_TYPE);

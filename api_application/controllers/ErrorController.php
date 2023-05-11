@@ -24,18 +24,14 @@
 class ErrorController extends BaseController
 {
 
-    public function catchError()
-    {
+    public function catchError() {
         $status = 'error';
         $statusCode = $this->response->getStatus();
         if ($statusCode && $statusCode >= 500) {
             $status = 'failure';
         }
 
-        $this->_setResponseContent(
-            $status,
-            array('message' => $this->exception->getMessage())
-        );
+        $this->_setResponseContent($status, array('message' => $this->exception->getMessage() . " (id: {$this->getRequestId()})"));
     }
 
 }

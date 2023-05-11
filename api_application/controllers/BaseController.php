@@ -402,7 +402,7 @@ class BaseController extends Flooer_Controller
         return strlen(stream_get_contents($fp));
     }
 
-    function getRemoteFileInfo($url) {
+    protected function getRemoteFileInfo($url) {
         $ch = curl_init($url);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
         curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
@@ -426,7 +426,7 @@ class BaseController extends Flooer_Controller
         $host = isset($_SERVER['HTTP_X_FORWARDED_HOST']) ? $_SERVER['HTTP_X_FORWARDED_HOST'] : (isset($_SERVER['HTTP_HOST']) ? $_SERVER['HTTP_HOST'] : null);
         $host = isset($host) ? $host : $_SERVER['SERVER_NAME'];
 
-        return $host;
+        return mb_strimwidth($host,0,255);
     }
 
     protected function getScheme()
@@ -436,7 +436,30 @@ class BaseController extends Flooer_Controller
         $scheme = isset($scheme) ? $scheme : (isset($_SERVER['HTTPS']) ? $_SERVER['HTTPS'] : null);
         $scheme = isset($scheme) ? $scheme : (isset($_SERVER['SERVER_PORT']) AND $_SERVER['SERVER_PORT'] == '443' ? 'https' : 'http');
 
-        return $scheme;
+        return mb_strimwidth($scheme,0,4);
+    }
+
+    protected function getIpAddress() {
+        $ip = isset($_SERVER['HTTP_X_FORWARDED_FOR']) ? explode(',', $_SERVER['HTTP_X_FORWARDED_FOR']) : $_SERVER['REMOTE_ADDR'];
+
+        if (is_array($ip)) {
+            return mb_strimwidth($ip[0],0,39);
+        }
+
+        if (false === filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4 | FILTER_FLAG_IPV6 | FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE)) {
+            return null;
+        }
+        return mb_strimwidth($ip,0,39);
+    }
+
+    protected function getRequestId() {
+        $request_id = $_SERVER['UNIQUE_ID'] ?? ($_SERVER['HTTP_X_REQUEST_ID'] ?? null);
+
+        return mb_strimwidth($request_id, 0, 25);
+    }
+
+    protected function logWithRequestId($message, $priority = null) {
+        return $this->log->log($message . "; request id: {$this->getRequestId()}", $priority);
     }
 
     protected function _generateWaveForm($src, $target)

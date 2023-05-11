@@ -339,7 +339,7 @@ class Files extends BaseController
                     if ($name == 'empty' && !empty($externalUri)) {
                         $fileAttribs = $this->getRemoteFileInfo($externalUri);
                         $size = isset($fileAttribs['fileSize']) ? (int)$fileAttribs['fileSize'] : 0;
-                        $this->log->log(__METHOD__ . " - file size detected: $size");
+                        $this->logWithRequestId(__METHOD__ . " - file size detected: $size");
 
                         //$data = get_headers($externalUri, true);
                         //$size = isset($data['Content-Length']) ? (int)$data['Content-Length'] : 0;
@@ -347,7 +347,7 @@ class Files extends BaseController
                         $type = $this->_detectMimeTypeFromUri($externalUri);
                         if (0 >= $size) {
                             $size = $this->_detectFilesizeFromUri($externalUri);
-                            $this->log->log(__METHOD__ . " - file size detected: $size");
+                            $this->logWithRequestId(__METHOD__ . " - file size detected: $size");
                         }
                     } else {
                         $info = new finfo(FILEINFO_MIME_TYPE);
@@ -462,7 +462,7 @@ class Files extends BaseController
 
         // Save the uploaded file
         $pathFile = $collectionPath . DIRECTORY_SEPARATOR . $name;
-        $this->log->log(__METHOD__ . ' - check general storage path exists: ' . $collectionPath . ' :: ' . (is_dir($collectionPath) ? 'true' : 'false'));
+        $this->logWithRequestId(__METHOD__ . ' - check general storage path exists: ' . $collectionPath . ' :: ' . (is_dir($collectionPath) ? 'true' : 'false'));
         if (empty($this->request->local_file_path) && !$fileSystemAdapter->moveUploadedFile($_FILES['file']['tmp_name'], $pathFile)) {
             $this->response->setStatus(500);
             throw new Flooer_Exception('Failed to save the file: ' . $_FILES['file']['tmp_name'] . ' --> ' . $pathFile, LOG_ALERT);
@@ -858,7 +858,7 @@ class Files extends BaseController
 //        $fileSystemAdapter = new S3Adapter($this->appConfig);
 
         $trashDir = $this->appConfig->general['filesDir'] . DIRECTORY_SEPARATOR . $collection->name . '/.trash';
-        $this->log->log(__METHOD__ . ' - test trash dir exists: ' . $trashDir . ' :: ' . (is_dir($trashDir) ? 'true' : 'false'));
+        $this->logWithRequestId(__METHOD__ . ' - test trash dir exists: ' . $trashDir . ' :: ' . (is_dir($trashDir) ? 'true' : 'false'));
         if (!$fileSystemAdapter->testAndCreate($trashDir)) {
             $this->response->setStatus(500);
             throw new Flooer_Exception('Failed to create trash dir ' . $trashDir, LOG_ALERT);
@@ -870,7 +870,7 @@ class Files extends BaseController
                 throw new Flooer_Exception('Failed to remove the file ' . $from, LOG_ALERT);
             }
         } else {
-            $this->log->log(__METHOD__ . ' - File could not be found. But we continue and set file inactive in the database. ' . $from,LOG_WARNING);
+            $this->logWithRequestId(__METHOD__ . ' - File could not be found. But we continue and set file inactive in the database. ' . $from,LOG_WARNING);
         }
 
         $this->models->files->$id = array('active' => 0);
@@ -1040,7 +1040,7 @@ class Files extends BaseController
         }
 
         // Log
-        $this->log->log("Prepare Download (client: $file->client_id; salt: $salt; hash: $hash; hashGiven: $hashGiven; agent: $agent)", LOG_NOTICE);
+        $this->logWithRequestId("Prepare Download (collection: $file->collection_id; file: $file->id; agent: $agent; remote ip: {$this->getIpAddress()};  request uri: {$_SERVER['REQUEST_URI']})", LOG_NOTICE);
 
         //Save all(!) download requests, but not for preview downloads
         //remark: I really don't understand why we keep all this shit (20210125 alex)
@@ -1068,14 +1068,14 @@ class Files extends BaseController
                 $this->models->files_downloaded_all->$downloadedId = $data;
             } catch (Exception $exc) {
                 //echo $exc->getTraceAsString();
-                $this->log->log("ERROR saving Download Data to DB: {$exc->getMessage()} :: {$exc->getTraceAsString()}", LOG_ERR);
+                $this->logWithRequestId("ERROR saving Download Data to DB: {$exc->getMessage()} :: {$exc->getTraceAsString()}", LOG_ERR);
             }
         }
 
         // check preconditions
         if (0 >= $expires) {
             // Log
-            $this->log->log("Download expired (file: $file->id; time-div: $expires;  client: $file->client_id; salt: $salt; hash: $hash; hashGiven: $hashGiven)", LOG_NOTICE);
+            $this->logWithRequestId("Download expired (file: $file->id; time-div: $expires;  )", LOG_NOTICE);
             $this->response->setStatus(410);
             $this->_setResponseContent('error', array('message' => 'link expired'));
 
@@ -1083,14 +1083,14 @@ class Files extends BaseController
         }
         if ($hashGiven != $hash) {
             // Log
-            $this->log->log("Download hash invalid (file: $file->id; time-div: $expires;  client: $file->client_id; salt: $salt; hash: $hash; hashGiven: $hashGiven)", LOG_NOTICE);
+            $this->logWithRequestId("Download hash invalid (file: $file->id; hash: $hash; hashGiven: $hashGiven; )", LOG_NOTICE);
             $this->response->setStatus(400);
             $this->_setResponseContent('error', array('message' => 'link invalid'));
 
             return;
         }
         if ($this->tooManyRequests($payloadHash, self::BLOCKING_PERIOD)) {
-            $this->log->log("Too many requests (file: $file->id; time-div: $expires;  client: $file->client_id; salt: $salt; hash: $hash; hashGiven: $hashGiven)", LOG_NOTICE);
+            $this->logWithRequestId("Too many requests (file: $file->id; payload hash: $payloadHash;  )", LOG_NOTICE);
             $this->response->setStatus(429);
             $this->_setResponseContent('error', array('message' => 'too many requests'));
 
@@ -1098,14 +1098,14 @@ class Files extends BaseController
         }
         $uniqueDownload = $this->uniqueDownload($payloadHash, $expires);
         if (!$uniqueDownload) {
-            $this->log->log("Too many downloads for one token (file: $file->id; time-div: $expires;  client: $file->client_id; salt: $salt; hash: $hash; hashGiven: $hashGiven)", LOG_NOTICE);
+            $this->logWithRequestId("Too many downloads for one token (file: $file->id; time-div: $expires;  paypload hash: $payloadHash;  )", LOG_NOTICE);
         }
 
 
         // incoming Link is ok, go on and check collection and file
         $collection = $this->models->collections->$collectionId;
         if (!$collection) {
-            $this->log->log("Collection not found (file: $file->id; time-div: $expires;  client: $file->client_id; salt: $salt; hash: $hash; hashGiven: $hashGiven)", LOG_NOTICE);
+            $this->logWithRequestId("Collection not found (collection id: $collectionId; file: $file->id;  )", LOG_NOTICE);
             $this->response->setStatus(404);
             throw new Flooer_Exception('Not found', LOG_NOTICE);
         }
@@ -1116,7 +1116,7 @@ class Files extends BaseController
 //            $sendFileCollection = $collection->name;
         } else {
             $collectionDir = $this->appConfig->general['filesDir'] . '/.trash/' . $collection->id . '-' . $collection->name;
-            $this->log->log("Collection inactive take it from trash(collection: $collection->id file: $file->id; time-div: $expires;  client: $file->client_id; salt: $salt; hash: $hash; hashGiven: $hashGiven)", LOG_NOTICE);
+            $this->logWithRequestId("Collection inactive take it from trash (collection: $collection->id; file: $file->id; )", LOG_NOTICE);
 //            $sendFileCollection = '.trash/' . $collection->id . '-' . $collection->name;
         }
 
@@ -1126,7 +1126,7 @@ class Files extends BaseController
 //            $sendFilePath = 'data/files/' . $sendFileCollection . '/' . $file->name;
         } else {
             $filePath = $collectionDir . '/.trash/' . $file->id . '-' . $file->name;
-            $this->log->log("File inactive take it from trash(file: $file->id; time-div: $expires;  client: $file->client_id; salt: $salt; hash: $hash; hashGiven: $hashGiven)", LOG_NOTICE);
+            $this->logWithRequestId("File inactive take it from trash (file: $file->id; )", LOG_NOTICE);
 //            $sendFilePath = 'data/files/' . $sendFileCollection . '/.trash/' . $file->id . '-' . $file->name;
         }
 
@@ -1139,7 +1139,7 @@ class Files extends BaseController
             // But don't make zsync for external URI
             if (!empty($this->_detectLinkInTags($file->tags))) {
                 $this->response->setStatus(404);
-                throw new Flooer_Exception('Not found', LOG_NOTICE);
+                throw new Flooer_Exception('Not found. (request id: '.$this->getRequestId().')', LOG_NOTICE);
             }
 
             $zsyncPath = $this->appConfig->general['zsyncDir'] . '/' . $file->id . '.zsync';
@@ -1186,9 +1186,9 @@ class Files extends BaseController
 //                                                           'u'       => $userId,));
             } catch (Exception $exc) {
                 //echo $exc->getTraceAsString();
-                $this->log->log("ERROR saving Download Data to DB: $exc->getMessage()", LOG_ERR);
+                $this->logWithRequestId("ERROR saving Download Data to DB: $exc->getMessage()", LOG_ERR);
                 $this->response->setStatus(500);
-                $this->_setResponseContent('error', array('message' => 'internal error'));
+                $this->_setResponseContent('error', array('message' => 'internal error' . " (id: {$this->getRequestId()})"));
 
                 return;
             }
@@ -1209,7 +1209,7 @@ class Files extends BaseController
 //        }
 
         if (getenv('X_OCS_S3_DOWNLOAD_ENABLED') === 'on') {
-            $this->log->log(__METHOD__ . ' - check storage for file: ' . $filePath . ' :: ' . (is_file($filePath) ? 'true' : 'false'));
+            $this->logWithRequestId(__METHOD__ . ' - check storage for file: ' . $filePath . ' :: ' . (is_file($filePath) ? 'true' : 'false'));
             if (is_file($filePath)) {
                 $sendFilePath = preg_replace("|^{$this->appConfig->general['basePath']}|", '', $filePath);
                 $this->_s3SendFile($sendFilePath, $filePath, $fileName, $fileType, $fileSize, true, $headeronly, $this->appConfig->s3storage);
@@ -1219,14 +1219,16 @@ class Files extends BaseController
                 $alternativeCollectionDir = rtrim($this->appConfig->s3storage2['basePath'],'/') . '/' . preg_replace("|^{$this->appConfig->general['basePath']}|", '', $this->appConfig->general['filesDir']) . '/' . $collection->name;
                 $alternativeFilePath = $alternativeCollectionDir . DIRECTORY_SEPARATOR . $file->name;
                 $sendFilePath = preg_replace("|^{$this->appConfig->s3storage2['basePath']}|", '', $alternativeFilePath);
-                $this->log->log(__METHOD__ . ' - check alternative storage for file: ' . $alternativeFilePath . ' :: ' . (is_file($alternativeFilePath) ? 'true' : 'false'));
+                $this->logWithRequestId(__METHOD__ . ' - check alternative storage for file: ' . $alternativeFilePath . ' :: ' . (is_file($alternativeFilePath) ? 'true' : 'false'));
                 if (is_file($alternativeFilePath)) {
                     $this->_s3SendFile($sendFilePath, $alternativeFilePath, $fileName, $fileType, $fileSize, true, $headeronly, $this->appConfig->s3storage2);
                 }
             }
-            $this->log->log(__METHOD__ . ' - file not found. ' . $filePath, LOG_ERR);
+            $this->logWithRequestId(__METHOD__ . ' - file not found. ' . $filePath, LOG_ERR);
             $this->response->setStatus(500);
-            $this->_setResponseContent('error', array('message' => 'internal error'));
+            $this->_setResponseContent('error', array('message' => 'file not found' . " (id: {$this->getRequestId()})"));
+
+            return;
         }
 
         $this->_sendFile($filePath, $fileName, $fileType, $fileSize, true, $headeronly);
@@ -1324,7 +1326,7 @@ class Files extends BaseController
             $signedUrl = $this->generateSignedDownloadUrl($sendFilePath, $this->appConfig->awss3);
             $path = $this->appConfig->awss3['pathPrefix'] . $signedUrl;
         }
-        $this->log->log("Response (mod_accel_redirect: $path)", LOG_NOTICE);
+        $this->logWithRequestId("Response (mod_accel_redirect: $path)", LOG_NOTICE);
 
         $this->response->setHeader($this->appConfig->xsendfile['headerName'], $path);
         $this->response->send();
@@ -1392,7 +1394,7 @@ class Files extends BaseController
             $this->_sendFile($filePath, $fileName, $fileType, $fileSize, true, $headeronly);
         }
         $signedUrl = $this->generateSignedDownloadUrl($sendFilePath, $appconfig, false);
-        $this->log->log("Response (redirect: $signedUrl)", LOG_NOTICE);
+        $this->logWithRequestId("Response (redirect: $signedUrl)", LOG_NOTICE);
 
         $this->response->setHeader('Location', $signedUrl);
         $this->response->setStatus(302);
@@ -1484,12 +1486,12 @@ class Files extends BaseController
         if (!empty($this->request->client_id)) {
             $clients = parse_ini_file('configs/clients.ini', true);
             $url = $this->getScheme() . '://' . $this->getHost() . $this->request->getUri();
-            $this->log->log(__METHOD__ . ' - ' . print_r($_SERVER, true), LOG_NOTICE);
+            $this->logWithRequestId(__METHOD__ . ' - ' . print_r($_SERVER, true), LOG_NOTICE);
             if (isset($clients[$this->request->client_id]) && (UrlSigner::verifySignedUrl($url, $clients[$this->request->client_id]['secret']))) {
                 $result = true;
             }
         }
-        $this->log->log(__METHOD__ . ' - verify signature for $url: ' . ($url ? $url : '(url is empty caused by missing client_id)') . ' :: ' . ($result?'true':'false'), LOG_NOTICE);
+        $this->logWithRequestId(__METHOD__ . ' - verify signature for $url: ' . ($url ? $url : '(url is empty caused by missing client_id)') . ' :: ' . ($result?'true':'false'), LOG_NOTICE);
 
         return $result;
     }

@@ -345,7 +345,7 @@ class Files extends BaseController
                         //$size = isset($data['Content-Length']) ? (int)$data['Content-Length'] : 0;
 
                         $type = $this->_detectMimeTypeFromUri($externalUri);
-                        if (0 == $size) {
+                        if (0 >= $size) {
                             $size = $this->_detectFilesizeFromUri($externalUri);
                             $this->log->log(__METHOD__ . " - file size detected: $size");
                         }

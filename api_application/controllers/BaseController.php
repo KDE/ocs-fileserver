@@ -436,7 +436,7 @@ class BaseController extends Flooer_Controller
         $scheme = isset($scheme) ? $scheme : (isset($_SERVER['HTTPS']) ? $_SERVER['HTTPS'] : null);
         $scheme = isset($scheme) ? $scheme : (isset($_SERVER['SERVER_PORT']) AND $_SERVER['SERVER_PORT'] == '443' ? 'https' : 'http');
 
-        return mb_strimwidth($scheme,0,4);
+        return mb_strimwidth($scheme,0,5);
     }
 
     protected function getIpAddress() {

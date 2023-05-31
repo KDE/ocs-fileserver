@@ -1240,14 +1240,15 @@ class Files extends BaseController
      *
      * @return bool
      */
-    private function tooManyRequests(string $payloadHash, int $expires): bool
-    {
+    private function tooManyRequests(string $payloadHash, int $expires): bool {
         $ttl = intval($this->appConfig->redis['ttl']);
         if (0 < $expires) {
             $ttl = $expires;
         }
-        $request = array('count'     => 1,
-                         'last_seen' => time(),);
+        $request = array(
+            'count'     => 1,
+            'last_seen' => time(),
+        );
         if ($this->redisCache) {
             if ($this->redisCache->has($payloadHash)) {
                 $request = $this->redisCache->get($payloadHash);
@@ -1264,6 +1265,42 @@ class Files extends BaseController
                 }
             }
             $this->redisCache->set($payloadHash, $request, $ttl);
+        }
+
+        return false;
+    }
+
+    /**
+     * @param string $ip
+     * @param int    $expires
+     *
+     * @return bool
+     */
+    private function tooManyRequestsFromIP(string $ip, int $expires): bool {
+        $ttl = intval($this->appConfig->redis['ttl']);
+        if (0 < $expires) {
+            $ttl = $expires;
+        }
+        $request = array(
+            'count'     => 1,
+            'last_seen' => time(),
+        );
+        if ($this->redisCache) {
+            if ($this->redisCache->has($ip)) {
+                $request = $this->redisCache->get($ip);
+                if ($request['count'] > self::MAX_REQUEST_PER_MINUTE) {
+                    return true;
+                }
+                // Count (only) new requests made in last minute
+                if ($request["last_seen"] >= time() - self::MIN_TIME) {
+                    $request['count'] += 1;
+                } else {
+                    // restart timer
+                    $request['last_seen'] = time();
+                    $request['count'] = 1;
+                }
+            }
+            $this->redisCache->set($ip, $request, $ttl);
         }
 
         return false;

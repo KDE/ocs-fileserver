@@ -1,5 +1,7 @@
 <?php
 
+use Ocs\Storage\FilesystemAdapter;
+
 /**
  * ocs-fileserver
  *
@@ -33,6 +35,16 @@ class Index extends BaseController
 
         $this->response->setStatus(403);
         throw new Flooer_Exception('Forbidden', LOG_NOTICE);
+    }
+
+    public function getHealth() {
+        $filesystem = new FilesystemAdapter($this->appConfig);
+        if ($filesystem->isFile($this->appConfig->general['filesDir'] . '/empty')) {
+            $this->_setResponseContent('success',['message' => "I'm alive."]);
+            return;
+        }
+        $this->response->setStatus(500);
+        throw new Flooer_Exception('Internal Server Error: Resource not accessible.', LOG_NOTICE);
     }
 
 }

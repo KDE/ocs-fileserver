@@ -432,9 +432,13 @@ class BaseController extends Flooer_Controller
     protected function getScheme()
     {
         $scheme = isset($_SERVER['HTTP_X_FORWARDED_PROTO']) ? $_SERVER['HTTP_X_FORWARDED_PROTO'] : null;
+        $this->logWithRequestId(__METHOD__ . " - Scheme: $scheme");
         $scheme = isset($scheme) ? $scheme : (isset($_SERVER['REQUEST_SCHEME']) ? $_SERVER['REQUEST_SCHEME'] : null);
+        $this->logWithRequestId(__METHOD__ . " - Scheme: $scheme");
         $scheme = isset($scheme) ? $scheme : (isset($_SERVER['HTTPS']) ? $_SERVER['HTTPS'] : null);
+        $this->logWithRequestId(__METHOD__ . " - Scheme: $scheme");
         $scheme = isset($scheme) ? $scheme : (isset($_SERVER['SERVER_PORT']) AND $_SERVER['SERVER_PORT'] == '443' ? 'https' : 'http');
+        $this->logWithRequestId(__METHOD__ . " - Scheme: $scheme");
 
         return mb_strimwidth($scheme,0,5);
     }

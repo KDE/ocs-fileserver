@@ -1,6 +1,4 @@
 <?php
-/** @noinspection PhpUndefinedFieldInspection */
-
 /**
  * file server - part of Opendesktop.org platform project <https://www.opendesktop.org>.
  *

@@ -400,7 +400,21 @@ class Files extends BaseController
 
 
         // Get ID3 tags in the file. 'getid3' may not work on network storage
-        $id3Tags = $this->_getId3Tags($type, $_FILES['file']['tmp_name']);
+        $this->logWithRequestId(__METHOD__ . " - \$FILES: " . print_r($_FILES, true));
+        $id3Tags = $this->_getId3Tags($type, $_FILES['file']['tmp_name'], $_FILES['file']['name']);
+
+        //check if it is a zynthbox file and validate tags
+        if ($this->isZynthboxFile($_FILES['file'], $type, $id3Tags)) {
+            $sketchChecker = new Zynthbox\SketchChecker();
+            $result = $sketchChecker->validate($_FILES['file']['tmp_name'], $_FILES['file']['name'], $id3Tags);
+            if (!$result['isValid']) {
+                $this->response->setStatus(400);
+                throw new Flooer_Exception($result['errorString'], LOG_ERR);
+            }
+            if (isset($result['suggestedTags'])) {
+                $this->addTags($tags, $result['suggestedTags']);
+            }
+        }
 
         $fileSystemAdapter = new FilesystemAdapter($this->appConfig);
 //        $fileSystemAdapter = new \Ocs\Storage\S3Adapter($this->appConfig);
@@ -502,14 +516,13 @@ class Files extends BaseController
         return $this->models->files->getFile($id);
     }
 
-    private function _getId3Tags($filetype, $filepath)
+    private function _getId3Tags($filetype, $fileTmpPath)
     {
         // NOTE: getid3 may not work for a files in a network storage.
         $id3Tags = null;
         if (strpos($filetype, 'audio/') !== false || strpos($filetype, 'video/') !== false || strpos($filetype, 'application/ogg') !== false) {
-            require_once 'getid3/getid3.php';
             $getID3 = new getID3();
-            $id3Tags = $getID3->analyze($filepath);
+            $id3Tags = $getID3->analyze($fileTmpPath);
             getid3_lib::CopyTagsToComments($id3Tags);
         }
 
@@ -753,14 +766,27 @@ class Files extends BaseController
                 $contentPage = $file->content_page;
             }
 
+            // Get ID3 tags in the file. 'getid3' may not work on a network storage
+            $id3Tags = $this->_getId3Tags($type, $_FILES['file']['tmp_name']);
+
+            //check if it is a zynthbox file and validate tags
+            if ($this->isZynthboxFile($_FILES['file'], $type, $id3Tags)) {
+                $sketchChecker = new Zynthbox\SketchChecker();
+                $result = $sketchChecker->validate($_FILES['file']['tmp_name'], $_FILES['file']['name'], $id3Tags);
+                if (!$result['isValid']) {
+                    $this->response->setStatus(400);
+                    throw new Flooer_Exception($result['errorString'], LOG_ERR);
+                }
+                if (isset($result['suggestedTags'])) {
+                    $this->addTags($tags, $result['suggestedTags']);
+                }
+            }
+
             $fileSystemAdapter = new FilesystemAdapter($this->appConfig);
 //            $fileSystemAdapter = new S3Adapter($this->appConfig);
 
             // Remove old file
             $this->_removeFile($file);
-
-            // Get ID3 tags in the file. 'getid3' may not work on a network storage
-            $id3Tags = $this->_getId3Tags($type, $_FILES['file']['tmp_name']);
 
             // Prepare to append the file to collection
             $collection = $this->models->collections->$collectionId;
@@ -1041,7 +1067,7 @@ class Files extends BaseController
         }
 
         // Log
-        $this->logWithRequestId("Prepare Download (collection: $file->collection_id; file: $file->id; agent: $agent; remote ip: {$this->getIpAddress()};  request uri: {$_SERVER['REQUEST_URI']})", LOG_NOTICE);
+        $this->logWithRequestId("Prepare Download (collection: $file->collection_id; file: $file->id; isFilePreview: $isFilepreview; agent: $agent; remote ip: {$this->getIpAddress()};  request uri: {$_SERVER['REQUEST_URI']})", LOG_NOTICE);
 
         //Save all(!) download requests, but not for preview downloads
         //remark: I really don't understand why we keep all this shit (20210125 alex)
@@ -1099,7 +1125,7 @@ class Files extends BaseController
         }
         $uniqueDownload = $this->uniqueDownload($payloadHash, $expires);
         if (!$uniqueDownload) {
-            $this->logWithRequestId("Too many downloads for one token (file: $file->id; time-div: $expires;  paypload hash: $payloadHash;  )", LOG_NOTICE);
+            $this->logWithRequestId("Too many downloads for one token (file: $file->id; time-div: $expires;  payload hash: $payloadHash;  )", LOG_NOTICE);
         }
 
 
@@ -1586,4 +1612,52 @@ class Files extends BaseController
 
         $this->_setResponseContent('success', array('file' => $file));
     }
+
+    /**
+     * Checks if a given file is a Zynthbox sketch file.
+     *
+     * @param array  $fileInfo The file information array.
+     * @param string $mimetype The file mimetype.
+     * @param array  $id3Tags
+     *
+     * @return bool  Returns true if the file is a Zynthbox sketch file, false otherwise.
+     */
+    protected function isZynthboxFile(array $fileInfo, string $mimetype, $id3Tags): bool {
+        // We run a few basic tests to determine if it could be a Zynthbox sketch file.
+        if (substr($fileInfo['name'], -10) !== "sketch.wav" ) {
+            return false;
+        }
+        if ($mimetype != "audio/x-wav") {
+            return false;
+        }
+        if (isset($id3Tags['error'])) {
+            return false;
+        }
+
+        return true;
+    }
+
+    protected function addTags(?string $tags, $suggestedTags) {
+        if (empty($tags)) {
+            return $suggestedTags;
+        }
+
+        $arrayTags = $this->createTagsArray($tags);
+        $arraySuggested = $this->createTagsArray($suggestedTags);
+        $result = $arrayTags + $arraySuggested;
+
+        return $tags . ',' . $suggestedTags;
+    }
+
+    private function createTagsArray(string $tags) {
+        $result = [];
+        foreach (explode(',', $tags) as $item) {
+            list($key, $value) = explode('##', $item);
+            $result[$key] = $value;
+        }
+
+        return $result;
+    }
+
+
 }

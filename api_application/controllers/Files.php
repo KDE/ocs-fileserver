@@ -691,6 +691,7 @@ class Files extends BaseController
             $this->response->setStatus(404);
             throw new Flooer_Exception('Not found', LOG_NOTICE);
         } else {
+            // There were error messages from users that there were problems with the file upload. It seems that the script in the web browser tried to update a file that was no longer active. Why is this?
             if (!$file->active || $file->client_id != $this->request->client_id) {
                 $this->response->setStatus(403);
                 throw new Flooer_Exception('Forbidden', LOG_NOTICE);

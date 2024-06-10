@@ -196,16 +196,20 @@ class BaseController extends Flooer_Controller
 
     protected function _isAllowedAccess()
     {
+        $this->logWithRequestId(__METHOD__ . " - {$this->request->client_id}; {$this->request->secret}");
         if (!empty($this->request->client_id)
             && !empty($this->request->secret)
         ) {
             $clients = parse_ini_file('configs/clients.ini', true);
+            $this->logWithRequestId(__METHOD__ . " - {$this->request->client_id}; " . print_r($clients[$this->request->client_id], true));
             if (isset($clients[$this->request->client_id])
                 && $clients[$this->request->client_id]['secret'] === $this->request->secret
             ) {
+                $this->logWithRequestId(__METHOD__ . " - return true");
                 return true;
             }
         }
+        $this->logWithRequestId(__METHOD__ . " - return false");
         return false;
     }
 
@@ -467,7 +471,8 @@ class BaseController extends Flooer_Controller
         $output = array();
         $code = 0;
         $this->log->log(__METHOD__ . ' :: system(\'' . '/usr/local/bin/audiowaveform -i "' . $src . '" -o "' . $target . '" --pixels-per-second 20 --bits 8\')');
-        $output = system('/bin/bash -c \'/usr/local/bin/audiowaveform -i "' . $src . '" -o "' . $target . '" --pixels-per-second 20 --bits 8 2>&1\'', $code);
+//        $output = system('/bin/bash -c \'/usr/local/bin/audiowaveform -i "' . $src . '" -o "' . $target . '" --pixels-per-second 20 --bits 8 2>&1\'', $code);
+        $output = system('/bin/bash -c \'/usr/local/bin/audiowaveform -i "' . $src . '" -o "' . $target . '" -z auto  2>&1\'', $code);
         $this->log->log(__METHOD__ . ' :: ' . $output . '(' . $code . ')');
 
         return $code;

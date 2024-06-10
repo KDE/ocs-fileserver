@@ -13,24 +13,25 @@
   "homepage": "https://www.opendesktop.org/",
   "require": {
     "php": "^7.4",
-    "ext-fileinfo": "*",
-    "ext-gd": "*",
-    "ext-json": "*",
-    "ext-dom": "*",
     "ext-ctype": "*",
     "ext-curl": "*",
+    "ext-dom": "*",
+    "ext-fileinfo": "*",
+    "ext-gd": "*",
+    "ext-iconv": "*",
+    "ext-json": "*",
     "ext-libxml": "*",
-    "ext-simplexml": "*",
     "ext-mbstring": "*",
     "ext-pdo": "*",
-    "ext-sqlite3": "*",
-    "ext-iconv": "*",
-    "ext-zlib": "*",
-    "ext-xml": "*",
     "ext-redis": "*",
+    "ext-simplexml": "*",
+    "ext-sqlite3": "*",
+    "ext-xml": "*",
     "ext-zip": "*",
-    "aws/aws-sdk-php": "^3.173",
-    "laminas/laminas-inputfilter": "^2"
+    "ext-zlib": "*",
+    "aws/aws-sdk-php": "^3.1",
+    "laminas/laminas-inputfilter": "^2",
+    "james-heinrich/getid3": "^1.9"
   },
   "autoload": {
     "classmap": ["api_application/", "library/"],
@@ -38,13 +39,11 @@
       "Flooer_": "library/",
       "RedisCache": "library/",
       "JWT": "library/",
-      "getid3": "library/getid3/",
       "EPubReader": "library/"
     },
     "psr-4": {
-      "Ocs\\Storage\\": "library/Ocs/Storage/",
-      "Ocs\\Url\\": "library/Ocs/Url/",
-      "Ocs\\Filter\\File\\": "library/Ocs/Filter/File"
+      "Ocs\\": "library/Ocs/",
+      "Zynthbox\\": "library/Zynthbox/"
     }
   }
 }

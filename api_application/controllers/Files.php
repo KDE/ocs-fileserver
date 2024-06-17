@@ -412,7 +412,7 @@ class Files extends BaseController
                 throw new Flooer_Exception($result['errorString'], LOG_ERR);
             }
             if (isset($result['suggestedTags'])) {
-                $this->addTags($tags, $result['suggestedTags']);
+                $tags = $this->addTags($tags, $result['suggestedTags']);
             }
         }
 
@@ -778,7 +778,7 @@ class Files extends BaseController
                     throw new Flooer_Exception($result['errorString'], LOG_ERR);
                 }
                 if (isset($result['suggestedTags'])) {
-                    $this->addTags($tags, $result['suggestedTags']);
+                    $tags = $this->addTags($tags, $result['suggestedTags']);
                 }
             }
 
@@ -1638,26 +1638,31 @@ class Files extends BaseController
     }
 
     protected function addTags(?string $tags, $suggestedTags) {
+        $addSuggestedTags = $suggestedTags;
+        if (is_array($suggestedTags)) {
+            $addSuggestedTags = implode(',', $suggestedTags);
+        }
+
         if (empty($tags)) {
-            return $suggestedTags;
+            return $addSuggestedTags;
         }
 
-        $arrayTags = $this->createTagsArray($tags);
-        $arraySuggested = $this->createTagsArray($suggestedTags);
-        $result = $arrayTags + $arraySuggested;
+//        $arrayTags = $this->createTagsArray($tags);
+//        $arraySuggested = $this->createTagsArray($suggestedTags);
+//        $result = $arrayTags + $arraySuggested;
 
-        return $tags . ',' . $suggestedTags;
+        return $tags . ',' . $addSuggestedTags;
     }
 
-    private function createTagsArray(string $tags) {
-        $result = [];
-        foreach (explode(',', $tags) as $item) {
-            list($key, $value) = explode('##', $item);
-            $result[$key] = $value;
-        }
-
-        return $result;
-    }
+//    private function createTagsArray(string $tags) {
+//        $result = [];
+//        foreach (explode(',', $tags) as $item) {
+//            list($key, $value) = explode('##', $item);
+//            $result[$key] = $value;
+//        }
+//
+//        return $result;
+//    }
 
 
 }

@@ -1647,22 +1647,7 @@ class Files extends BaseController
             return $addSuggestedTags;
         }
 
-//        $arrayTags = $this->createTagsArray($tags);
-//        $arraySuggested = $this->createTagsArray($suggestedTags);
-//        $result = $arrayTags + $arraySuggested;
-
-        return $tags . ',' . $addSuggestedTags;
+        return rtrim($tags . ',' . $addSuggestedTags, ',');
     }
-
-//    private function createTagsArray(string $tags) {
-//        $result = [];
-//        foreach (explode(',', $tags) as $item) {
-//            list($key, $value) = explode('##', $item);
-//            $result[$key] = $value;
-//        }
-//
-//        return $result;
-//    }
-
 
 }

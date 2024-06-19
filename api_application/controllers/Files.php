@@ -404,7 +404,7 @@ class Files extends BaseController
         $id3Tags = $this->_getId3Tags($type, $_FILES['file']['tmp_name'], $_FILES['file']['name']);
 
         //check if it is a zynthbox file and validate tags
-        if ($this->isZynthboxFile($_FILES['file'], $type, $id3Tags)) {
+        if ($this->isZynthboxFile((array)$_FILES['file'], $type, $id3Tags)) {
             $sketchChecker = new Zynthbox\SketchChecker();
             $result = $sketchChecker->validate($_FILES['file']['tmp_name'], $_FILES['file']['name'], $id3Tags);
             if (!$result['isValid']) {
@@ -770,7 +770,7 @@ class Files extends BaseController
             $id3Tags = $this->_getId3Tags($type, $_FILES['file']['tmp_name']);
 
             //check if it is a zynthbox file and validate tags
-            if ($this->isZynthboxFile($_FILES['file'], $type, $id3Tags)) {
+            if ($this->isZynthboxFile((array)$_FILES['file'], $type, $id3Tags)) {
                 $sketchChecker = new Zynthbox\SketchChecker();
                 $result = $sketchChecker->validate($_FILES['file']['tmp_name'], $_FILES['file']['name'], $id3Tags);
                 if (!$result['isValid']) {
@@ -1623,6 +1623,9 @@ class Files extends BaseController
      * @return bool  Returns true if the file is a Zynthbox sketch file, false otherwise.
      */
     protected function isZynthboxFile(array $fileInfo, string $mimetype, $id3Tags): bool {
+        if (empty($fileInfo)) {
+            return false;
+        }
         // We run a few basic tests to determine if it could be a Zynthbox sketch file.
         if (substr($fileInfo['name'], -10) !== "sketch.wav" ) {
             return false;

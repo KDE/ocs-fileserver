@@ -40,12 +40,15 @@ class FilesystemAdapter implements AdapterInterface
 
     public function fixFilename(string $name, string $collectionPath): string
     {
-        if (is_file($collectionPath . DIRECTORY_SEPARATOR . $name)) {
-            $fix = date('YmdHis');
-            if (preg_match("/^([^.]+)(\..+)/", $name, $matches)) {
-                $name = $matches[1] . '-' . $fix . $matches[2];
-            } else {
-                $name = $name . '-' . $fix;
+        $fullPath = $collectionPath . DIRECTORY_SEPARATOR . $name;
+
+        if (is_file($fullPath)) {
+            $timestamp = date('YmdHis');
+            $pathInfo = pathinfo($name);
+
+            $name = $pathInfo['filename'] . '-' . $timestamp;
+            if (isset($pathInfo['extension'])) {
+                $name .= '.' . $pathInfo['extension'];
             }
         }
 

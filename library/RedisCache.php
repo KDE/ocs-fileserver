@@ -53,7 +53,7 @@ class RedisCache
         }
 
         if ($password) {
-            $this->redisCache->auth('password');
+            $this->redisCache->auth($password);
         }
 
         $resultPing = $this->redisCache->ping();

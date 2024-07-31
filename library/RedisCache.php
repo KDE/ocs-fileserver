@@ -26,17 +26,11 @@
 class RedisCache
 {
     const NAMESPACE_SEPARATOR = ':_';
-    /**
-     * @var int|mixed
-     */
+    /** @var int|mixed */
     private $ttl;
-    /**
-     * @var mixed|string
-     */
+    /** @var mixed|string */
     private $namespace;
-    /**
-     * @var Redis
-     */
+    /** @var Redis */
     private $redisCache;
 
     public function __construct($config = null)
@@ -45,11 +39,12 @@ class RedisCache
             throw new Exception("Redis extension is not loaded");
         }
 
-        $hostname = isset($config['host']) ? $config['host'] : '127.0.0.1';
-        $port = isset($config['port']) ? $config['port'] : 6379;
-        $this->ttl = isset($config['ttl']) ? $config['ttl'] : null;
+        $hostname = $config['host'] ?? '127.0.0.1';
+        $port = $config['port'] ?? 6379;
+        $this->ttl = $config['ttl'] ?? null;
         $this->namespace = isset($config['namespace']) ? $config['namespace'] . self::NAMESPACE_SEPARATOR : '';
-        $password = isset($config['password']) ? $config['password'] : null;
+        $password = $config['password'] ?? null;
+        $database = $config['database'] ?? null;
 
         $this->redisCache = new Redis();
         //Connecting to Redis
@@ -64,6 +59,9 @@ class RedisCache
         $resultPing = $this->redisCache->ping();
         if (!$resultPing) {
             throw new Exception("Redis connection is inaccessible: {$resultPing}");
+        }
+        if ($database) {
+            $this->redisCache->select($database);
         }
         //$this->redisCache->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_JSON);
     }

@@ -29,6 +29,7 @@ class Waveform extends BaseController
         if (!empty($this->request->id)) {
             $id = $this->request->id;
         }
+        $cache = $this->request->cache ?? true;
 
         $file = $this->models->files->getFile($id);
 
@@ -68,8 +69,10 @@ class Waveform extends BaseController
         $fileType = 'application/json';
         $fileJsonWaveform = $filePath . '.json';
 
-        if (file_exists($fileJsonWaveform)) {
-            $this->_sendFile($fileJsonWaveform, $fileName, $fileType, filesize($fileJsonWaveform), true, false);
+        if ($cache and file_exists($fileJsonWaveform)) {
+            if (time() - filemtime($fileJsonWaveform) < 86400) {
+                $this->_sendFile($fileJsonWaveform, $fileName, $fileType, filesize($fileJsonWaveform), true, false);
+            }
         }
 
         $this->_generateWaveForm($filePath, $fileJsonWaveform);

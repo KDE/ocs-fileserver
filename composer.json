@@ -29,9 +29,10 @@
     "ext-xml": "*",
     "ext-zip": "*",
     "ext-zlib": "*",
-    "aws/aws-sdk-php": "^3.1",
+    "aws/aws-sdk-php": "^3",
     "laminas/laminas-inputfilter": "^2",
-    "james-heinrich/getid3": "^1.9"
+    "james-heinrich/getid3": "^1.9",
+    "laminas/laminas-db": "^2"
   },
   "autoload": {
     "classmap": ["api_application/", "library/"],

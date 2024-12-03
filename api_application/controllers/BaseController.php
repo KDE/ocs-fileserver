@@ -1,4 +1,4 @@
-<?php /** @noinspection PhpUndefinedFieldInspection */
+<?php
 
 /**
  * ocs-fileserver
@@ -194,8 +194,7 @@ class BaseController extends Flooer_Controller
         return '';
     }
 
-    protected function _isAllowedAccess()
-    {
+    protected function _isAllowedAccess(): bool {
         $this->logWithRequestId(__METHOD__ . " - {$this->request->client_id}; {$this->request->secret}");
         if (!empty($this->request->client_id)
             && !empty($this->request->secret)
@@ -213,18 +212,15 @@ class BaseController extends Flooer_Controller
         return false;
     }
 
-    protected function _isValidUri($uri)
-    {
+    protected function _isValidUri($uri): bool {
         return Flooer_Utility_Validation::isUri($uri);
     }
 
-    protected function _isValidEmail($email)
-    {
+    protected function _isValidEmail($email): bool {
         return Flooer_Utility_Validation::isEmail($email);
     }
 
-    protected function _isValidPerpageNumber($number)
-    {
+    protected function _isValidPerpageNumber($number): bool {
         if (Flooer_Utility_Validation::isDigit($number)
             && $number > 0
             && $number <= $this->appConfig->general['perpageMax']
@@ -234,16 +230,14 @@ class BaseController extends Flooer_Controller
         return false;
     }
 
-    protected function _isValidPageNumber($number)
-    {
+    protected function _isValidPageNumber($number): bool {
         if (Flooer_Utility_Validation::isDigit($number) && $number > 0) {
             return true;
         }
         return false;
     }
 
-    protected function _getFavoriteIds($clientId, $userId)
-    {
+    protected function _getFavoriteIds($clientId, $userId): array {
         $ids = array();
 
         $favoriteOwners = $this->models->favorites->getFavoriteOwners(
@@ -299,8 +293,7 @@ class BaseController extends Flooer_Controller
         );
     }
 
-    protected function _detectLinkInTags($tagsString)
-    {
+    protected function _detectLinkInTags($tagsString): string {
         $link = '';
         $tags = explode(',', $tagsString);
         foreach ($tags as $tag) {
@@ -406,7 +399,7 @@ class BaseController extends Flooer_Controller
         return strlen(stream_get_contents($fp));
     }
 
-    protected function getRemoteFileInfo($url) {
+    protected function getRemoteFileInfo($url): array {
         $ch = curl_init($url);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
         curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
@@ -425,16 +418,14 @@ class BaseController extends Flooer_Controller
         ];
     }
 
-    protected function getHost()
-    {
+    protected function getHost(): string {
         $host = isset($_SERVER['HTTP_X_FORWARDED_HOST']) ? $_SERVER['HTTP_X_FORWARDED_HOST'] : (isset($_SERVER['HTTP_HOST']) ? $_SERVER['HTTP_HOST'] : null);
         $host = isset($host) ? $host : $_SERVER['SERVER_NAME'];
 
         return mb_strimwidth($host,0,255);
     }
 
-    protected function getScheme()
-    {
+    protected function getScheme(): string {
         $scheme = isset($_SERVER['HTTP_X_FORWARDED_PROTO']) ? $_SERVER['HTTP_X_FORWARDED_PROTO'] : null;
         $scheme = isset($scheme) ? $scheme : (isset($_SERVER['REQUEST_SCHEME']) ? $_SERVER['REQUEST_SCHEME'] : null);
         $scheme = isset($scheme) ? $scheme : (isset($_SERVER['HTTPS']) ? $_SERVER['HTTPS'] : null);
@@ -443,7 +434,7 @@ class BaseController extends Flooer_Controller
         return mb_strimwidth($scheme,0,5);
     }
 
-    protected function getIpAddress() {
+    protected function getIpAddress(): ?string {
         $ip = isset($_SERVER['HTTP_X_FORWARDED_FOR']) ? explode(',', $_SERVER['HTTP_X_FORWARDED_FOR']) : $_SERVER['REMOTE_ADDR'];
 
         if (is_array($ip)) {
@@ -456,23 +447,22 @@ class BaseController extends Flooer_Controller
         return mb_strimwidth($ip,0,39);
     }
 
-    protected function getRequestId() {
+    protected function getRequestId(): string {
         $request_id = $_SERVER['UNIQUE_ID'] ?? ($_SERVER['HTTP_X_REQUEST_ID'] ?? null);
 
         return mb_strimwidth($request_id, 0, 25);
     }
 
-    protected function logWithRequestId($message, $priority = null) {
+    protected function logWithRequestId($message, $priority = null): bool {
         return $this->log->log($message . "; request id: {$this->getRequestId()}", $priority);
     }
 
-    protected function _generateWaveForm($src, $target)
-    {
-        $output = array();
+    protected function _generateWaveForm($src, $target): int {
+        $output = [];
         $code = 0;
-        $this->log->log(__METHOD__ . ' :: system(\'' . '/usr/local/bin/audiowaveform -i "' . $src . '" -o "' . $target . '" --pixels-per-second 20 --bits 8\')');
-//        $output = system('/bin/bash -c \'/usr/local/bin/audiowaveform -i "' . $src . '" -o "' . $target . '" --pixels-per-second 20 --bits 8 2>&1\'', $code);
-        $output = system('/bin/bash -c \'/usr/local/bin/audiowaveform -i "' . $src . '" -o "' . $target . '" -z auto  2>&1\'', $code);
+        $command = "/bin/bash -c 'audiowaveform -i $src -o $target -z 256 -b 16'";
+        $this->log->log(__METHOD__ . " :: system($command)");
+        $output = system($command, $code);
         $this->log->log(__METHOD__ . ' :: ' . $output . '(' . $code . ')');
 
         return $code;

@@ -434,7 +434,7 @@ class BaseController extends Flooer_Controller
         return mb_strimwidth($scheme,0,5);
     }
 
-    protected function getIpAddress(): ?string {
+    protected function getRemoteIpAddress(): string {
         $ip = isset($_SERVER['HTTP_X_FORWARDED_FOR']) ? explode(',', $_SERVER['HTTP_X_FORWARDED_FOR']) : $_SERVER['REMOTE_ADDR'];
 
         if (is_array($ip)) {
@@ -442,7 +442,7 @@ class BaseController extends Flooer_Controller
         }
 
         if (false === filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4 | FILTER_FLAG_IPV6 | FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE)) {
-            return null;
+            return '0.0.0.0';
         }
         return mb_strimwidth($ip,0,39);
     }

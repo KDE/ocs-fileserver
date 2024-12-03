@@ -33,7 +33,7 @@ class Files extends BaseController
 
     const MIN_TIME = 60;
     const MAX_REQUEST_PER_MINUTE = 10;
-    const BLOCKING_PERIOD = 180;
+    const BAN_DURATION = 180;
 
     /**
      * @throws Flooer_Exception
@@ -1067,7 +1067,7 @@ class Files extends BaseController
         }
 
         // Log
-        $this->logWithRequestId("Prepare Download (collection: $file->collection_id; file: $file->id; isFilePreview: $isFilepreview; agent: $agent; remote ip: {$this->getIpAddress()};  request uri: {$_SERVER['REQUEST_URI']})", LOG_NOTICE);
+        $this->logWithRequestId("Prepare Download (collection: $file->collection_id; file: $file->id; isFilePreview: $isFilepreview; agent: $agent; remote ip: {$this->getRemoteIpAddress()};  request uri: {$_SERVER['REQUEST_URI']})", LOG_NOTICE);
 
         //Save all(!) download requests, but not for preview downloads
         //remark: I really don't understand why we keep all this shit (20210125 alex)
@@ -1108,15 +1108,15 @@ class Files extends BaseController
 
             return;
         }
-        if ($this->tooManyRequests($payloadHash, self::BLOCKING_PERIOD)) {
-            $this->logWithRequestId("Too many requests (file: $file->id; payload hash: $payloadHash;  )", LOG_NOTICE);
-            $remaining = $this->getRateLimitRemaining($payloadHash);
+        $ban = $this->tooManyRequests($this->getRemoteIpAddress(), self::BAN_DURATION);
+        if ($ban['blocked']) {
+            $this->logWithRequestId("Too many requests (file: $file->id; payload hash: $payloadHash; remote ip: " . $this->getRemoteIpAddress() . " )", LOG_NOTICE);
             $this->response->setStatus(429);
-            $this->response->setHeader('Retry-After', self::BLOCKING_PERIOD);
+            $this->response->setHeader('Retry-After', $ban['retry_after']);
             $this->response->setHeader('X-RateLimit-Limit', self::MAX_REQUEST_PER_MINUTE);
-            $this->response->setHeader('X-RateLimit-Remaining', $remaining);
-            $this->response->setHeader('X-RateLimit-Reset', self::BLOCKING_PERIOD);
-            $this->_setResponseContent('error', array('message' => 'too many requests', 'retry_after' => $remaining));
+            $this->response->setHeader('X-RateLimit-Remaining', $ban['retry_after']);
+            $this->response->setHeader('X-RateLimit-Reset', self::BAN_DURATION);
+            $this->_setResponseContent('error', array('message' => 'too many requests', 'retry_after' => $ban['retry_after']));
 
             return;
         }
@@ -1272,49 +1272,53 @@ class Files extends BaseController
      *
      * @return bool
      */
-    private function tooManyRequests(string $payloadHash, int $expires): bool {
-        $ttl = intval($this->appConfig->redis['ttl']);
-        if (0 < $expires) {
-            $ttl = $expires;
-        }
-        $request = array(
-            'count'     => 1,
-            'last_seen' => time(),
-            'first_seen' => time(),
-        );
-        if ($this->redisCache) {
-            if ($this->redisCache->has($payloadHash)) {
-                $request = $this->redisCache->get($payloadHash);
-                if ($request['count'] > self::MAX_REQUEST_PER_MINUTE) {
-                    return true;
-                }
-                // Count (only) new requests made in last minute
-                if ($request["last_seen"] >= time() - self::MIN_TIME) {
-                    $request['count'] += 1;
-                } else {
-                    // restart timer
-                    $request['last_seen'] = time();
-                    $request['count'] = 1;
-                }
-            }
-            $this->redisCache->set($payloadHash, $request, $ttl);
+    private function tooManyRequests(string $payloadHash, int $expires = 0): array {
+        $ttl = $expires > 0 ? $expires : intval($this->appConfig->redis['ttl']);
+        $currentTime = time();
+
+        if (!$this->redisCache) {
+            return ['blocked' => false, 'retry_after' => 0];
         }
 
-        return false;
-    }
-
-    private function getRateLimitRemaining(string $payloadHash): int {
-        if ($this->redisCache) {
-            if ($this->redisCache->has($payloadHash)) {
-                $request = $this->redisCache->get($payloadHash);
-                $remaining = ($request['last_seen'] + self::BLOCKING_PERIOD) - time();
-                if ($remaining > 0) {
-                    return (int)$remaining;
-                }
-            }
+        $request = $this->redisCache->get($payloadHash);
+        if (!$request) {
+            // Neuer Eintrag erstellen
+            $request = [
+                'count' => 1,
+                'start_time' => $currentTime,
+            ];
+            $this->redisCache->set($payloadHash, $request, self::MIN_TIME); // TTL = 1 Minute
+            return ['blocked' => false, 'retry_after' => 0];
         }
 
-        return 0;
+        // Prüfen, ob innerhalb der Blockzeit
+        if ($request['count'] > self::MAX_REQUEST_PER_MINUTE && $currentTime - $request['start_time'] < self::BAN_DURATION) {
+            $retryAfter = self::BAN_DURATION - ($currentTime - $request['start_time']);
+            return ['blocked' => true, 'retry_after' => $retryAfter];
+        }
+
+        // Prüfen, ob 1-Minuten-Zeitraum abgelaufen ist
+        if ($currentTime - $request['start_time'] > self::MIN_TIME) {
+            // Reset nach 1 Minute
+            $request = [
+                'count' => 1,
+                'start_time' => $currentTime,
+            ];
+            $this->redisCache->set($payloadHash, $request, self::MIN_TIME); // Neue TTL = 1 Minute
+            return ['blocked' => false, 'retry_after' => 0];
+        }
+
+        // Zähler erhöhen
+        $request['count']++;
+        $this->redisCache->set($payloadHash, $request, self::MIN_TIME);
+
+        // Wenn Anfragenlimit überschritten, Blockzeit starten
+        if ($request['count'] > self::MAX_REQUEST_PER_MINUTE) {
+            $this->redisCache->set($payloadHash, $request, self::BAN_DURATION); // Sperrzeit
+            return ['blocked' => true, 'retry_after' => self::BAN_DURATION];
+        }
+
+        return ['blocked' => false, 'retry_after' => 0];
     }
 
     /**

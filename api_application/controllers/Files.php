@@ -1100,14 +1100,6 @@ class Files extends BaseController
         }
 
         // check preconditions
-        if (0 >= $expires) {
-            // Log
-            $this->logWithRequestId("Download expired (file: $file->id; time-div: $expires;  )", LOG_NOTICE);
-            $this->response->setStatus(410);
-            $this->_setResponseContent('error', array('message' => 'link expired'));
-
-            return;
-        }
         if ($hashGiven != $hash) {
             // Log
             $this->logWithRequestId("Download hash invalid (file: $file->id; hash: $hash; hashGiven: $hashGiven; )", LOG_NOTICE);
@@ -1118,8 +1110,21 @@ class Files extends BaseController
         }
         if ($this->tooManyRequests($payloadHash, self::BLOCKING_PERIOD)) {
             $this->logWithRequestId("Too many requests (file: $file->id; payload hash: $payloadHash;  )", LOG_NOTICE);
+            $remaining = $this->getRateLimitRemaining($payloadHash);
             $this->response->setStatus(429);
-            $this->_setResponseContent('error', array('message' => 'too many requests'));
+            $this->response->setHeader('Retry-After', self::BLOCKING_PERIOD);
+            $this->response->setHeader('X-RateLimit-Limit', self::MAX_REQUEST_PER_MINUTE);
+            $this->response->setHeader('X-RateLimit-Remaining', $remaining);
+            $this->response->setHeader('X-RateLimit-Reset', self::BLOCKING_PERIOD);
+            $this->_setResponseContent('error', array('message' => 'too many requests', 'retry_after' => $remaining));
+
+            return;
+        }
+        if (0 >= $expires) {
+            // Log
+            $this->logWithRequestId("Download expired (file: $file->id; time-div: $expires;  )", LOG_NOTICE);
+            $this->response->setStatus(410);
+            $this->_setResponseContent('error', array('message' => 'link expired'));
 
             return;
         }
@@ -1275,6 +1280,7 @@ class Files extends BaseController
         $request = array(
             'count'     => 1,
             'last_seen' => time(),
+            'first_seen' => time(),
         );
         if ($this->redisCache) {
             if ($this->redisCache->has($payloadHash)) {
@@ -1295,6 +1301,20 @@ class Files extends BaseController
         }
 
         return false;
+    }
+
+    private function getRateLimitRemaining(string $payloadHash): int {
+        if ($this->redisCache) {
+            if ($this->redisCache->has($payloadHash)) {
+                $request = $this->redisCache->get($payloadHash);
+                $remaining = ($request['last_seen'] + self::BLOCKING_PERIOD) - time();
+                if ($remaining > 0) {
+                    return (int)$remaining;
+                }
+            }
+        }
+
+        return 0;
     }
 
     /**
@@ -1652,5 +1672,6 @@ class Files extends BaseController
 
         return rtrim($tags . ',' . $addSuggestedTags, ',');
     }
+
 
 }

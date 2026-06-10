@@ -1128,8 +1128,8 @@ class Files extends BaseController
 
             return;
         }
-        $uniqueDownload = $this->uniqueDownload($payloadHash, $expires);
-        if (!$uniqueDownload) {
+        $isUniqueDownload = $this->uniqueDownload($payloadHash, $expires);
+        if (!$isUniqueDownload) {
             $this->logWithRequestId("Too many downloads for one token (file: $file->id; time-div: $expires;  payload hash: $payloadHash;  )", LOG_NOTICE);
         }
 
@@ -1188,8 +1188,6 @@ class Files extends BaseController
         }
 
         if (!$isFilepreview && !$headeronly) {
-            $this->models->files->updateDownloadedStatus($file->id);
-
             try {
                 //$downloadedId = $this->models->files_downloaded->generateId();
                 $downloadedId = $this->models->files_downloaded->generateNewId();
@@ -1201,7 +1199,9 @@ class Files extends BaseController
                                                                        'referer'       => $ref,);
 
                 //save unique dataset
-                if ($uniqueDownload) {
+                if ($isUniqueDownload) {
+                    $this->models->files->updateDownloadedStatus($file->id);
+
                     $downloadedId = $this->models->files_downloaded_unique->generateNewId();
                     $this->models->files_downloaded_unique->$downloadedId = array('client_id'     => $file->client_id,
                                                                                   'owner_id'      => $file->owner_id,

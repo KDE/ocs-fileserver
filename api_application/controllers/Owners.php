@@ -63,7 +63,6 @@ class Owners extends BaseController
         );
 
         if ($collections) {
-            $fileSystemAdapter = new FilesystemAdapter($this->appConfig);
             foreach ($collections as $collection) {
                 // Delete thumbnail
                 $thumbnail = $this->appConfig->general['thumbnailsDir'] . '/collection_' . $collection->id . '.jpg';
@@ -71,10 +70,17 @@ class Owners extends BaseController
                     unlink($thumbnail);
                 }
 
-                // Permanently delete collection directory from disk
-                $collectionPath = $this->appConfig->general['filesDir'] . '/' . $collection->name;
-                if (is_dir($collectionPath)) {
-                    $this->_deleteDirectoryRecursive($collectionPath);
+                // Permanently delete collection directory from disk.
+                // Both paths are checked unconditionally to clean up any orphaned
+                // artifacts left by past s3fs inconsistencies.
+                $pathsToDelete = [
+                    $this->appConfig->general['filesDir'] . '/' . $collection->name,
+                    $this->appConfig->general['filesDir'] . '/.trash/' . $collection->id . '-' . $collection->name,
+                ];
+                foreach ($pathsToDelete as $path) {
+                    if (is_dir($path)) {
+                        $this->_deleteDirectoryRecursive($path);
+                    }
                 }
 
                 // Hard-delete file records and per-collection favorites/media
@@ -92,11 +98,11 @@ class Owners extends BaseController
 
         // 2. Anonymize all download/play log entries that reference this owner.
         //    Rows are kept for statistical integrity; personal references are removed.
-        $this->models->files_downloaded->anonymizeByOwnerId($ownerId, $deletedOwnerPlaceholder);
-        $this->models->files_downloaded_all->anonymizeByOwnerId($ownerId, $deletedOwnerPlaceholder);
-        $this->models->files_downloaded_unique->anonymizeByOwnerId($ownerId, $deletedOwnerPlaceholder);
-        $this->models->collections_downloaded->anonymizeByOwnerId($ownerId, $deletedOwnerPlaceholder);
-        $this->models->media_played->anonymizeByOwnerId($ownerId, $deletedOwnerPlaceholder);
+//        $this->models->files_downloaded->anonymizeByOwnerId($ownerId, $deletedOwnerPlaceholder);
+//        $this->models->files_downloaded_all->anonymizeByOwnerId($ownerId, $deletedOwnerPlaceholder);
+//        $this->models->files_downloaded_unique->anonymizeByOwnerId($ownerId, $deletedOwnerPlaceholder);
+//        $this->models->collections_downloaded->anonymizeByOwnerId($ownerId, $deletedOwnerPlaceholder);
+//        $this->models->media_played->anonymizeByOwnerId($ownerId, $deletedOwnerPlaceholder);
 
         // 3. Hard-delete the profile
         $profile = $this->models->profiles->getProfileByClientIdAndOwnerId($clientId, $ownerId);
@@ -122,18 +128,18 @@ class Owners extends BaseController
 
     /**
      * Recursively deletes a directory and all its contents.
-     * Uses SPL iterators to avoid shell injection risks.
+     *
+     * Uses exec('rm -rf') instead of SPL iterators because on s3fs (FUSE) mounts
+     * getRealPath() returns false, causing unlink/rmdir to silently do nothing.
+     * exec() with escapeshellarg is safe here: $dir is built server-side from
+     * appConfig paths and a database-stored collection name, never from raw user input.
      */
     private function _deleteDirectoryRecursive(string $dir): void
     {
-        $iterator = new RecursiveIteratorIterator(
-            new RecursiveDirectoryIterator($dir, RecursiveDirectoryIterator::SKIP_DOTS),
-            RecursiveIteratorIterator::CHILD_FIRST
-        );
-        foreach ($iterator as $item) {
-            $item->isDir() ? rmdir($item->getRealPath()) : unlink($item->getRealPath());
+        exec('rm -rf ' . escapeshellarg($dir), $output, $exitCode);
+        if ($exitCode !== 0) {
+            $this->log->log(__METHOD__ . " - rm -rf failed for '$dir' (exit $exitCode)", LOG_ALERT);
         }
-        rmdir($dir);
     }
 
 }

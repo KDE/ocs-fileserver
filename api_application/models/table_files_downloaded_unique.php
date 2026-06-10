@@ -63,7 +63,7 @@ class table_files_downloaded_unique extends BaseModel
     public function anonymizeByOwnerId(string $ownerId, string $deletedOwnerPlaceholder): void
     {
         $sql = "UPDATE {$this->getPrefix()}{$this->getName()}"
-            . " SET owner_id = :placeholder, downloaded_ip = NULL"
+            . " SET owner_id = :placeholder"
             . " WHERE owner_id = :owner_id";
         $statement = $this->getDb()->prepare($sql);
         $statement->execute(array(':placeholder' => $deletedOwnerPlaceholder, ':owner_id' => $ownerId));

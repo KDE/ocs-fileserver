@@ -49,4 +49,14 @@ class table_collections_downloaded extends BaseModel
         $this->setPrimary($primary);
     }
 
+    public function anonymizeByOwnerId(string $ownerId, string $deletedOwnerPlaceholder): void
+    {
+        $sql = "UPDATE {$this->getPrefix()}{$this->getName()}"
+            . " SET owner_id = :placeholder, downloaded_ip = NULL"
+            . " WHERE owner_id = :owner_id";
+        $statement = $this->getDb()->prepare($sql);
+        $statement->execute(array(':placeholder' => $deletedOwnerPlaceholder, ':owner_id' => $ownerId));
+        $statement->closeCursor();
+    }
+
 }

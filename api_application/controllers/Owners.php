@@ -26,15 +26,8 @@ class Owners extends BaseController
 {
 
     /**
-     * GDPR-compliant hard-delete of all data belonging to an owner (Art. 17 DSGVO).
-     *
-     * - Profile row is hard-deleted.
-     * - All files and collections are hard-deleted from the database.
-     * - Collection directories are permanently removed from disk.
-     * - Download/play log tables retain aggregate rows but owner_id is replaced
-     *   with the configured sentinel value and IP addresses are nullified so that
-     *   no personal reference remains.
-     * - Favorites referencing this owner/user are hard-deleted.
+     * GDPR delete identified by owner_id.
+     * Endpoint: DELETE /api/owners/{id}?client_id=X
      *
      * @throws Flooer_Exception
      */
@@ -50,10 +43,51 @@ class Owners extends BaseController
             throw new Flooer_Exception('Not found', LOG_NOTICE);
         }
 
-        $clientId = $this->request->client_id;
-        $ownerId  = $this->request->id;
-        $deletedOwnerPlaceholder = $this->appConfig->gdpr['deleted_owner_id'];
+        $this->_performGdprDelete((int)$this->request->client_id, $this->request->id);
+        $this->_setResponseContent('success');
+    }
 
+    /**
+     * GDPR delete identified by collection_id.
+     * Looks up owner_id and client_id from the collection record, then delegates.
+     * Endpoint: DELETE /api/owners/bycollection?client_id=X&id=x
+     *
+     * @throws Flooer_Exception
+     */
+    public function deleteBycollection(): void
+    {
+        if (!$this->_isAllowedAccess()) {
+            $this->response->setStatus(403);
+            throw new Flooer_Exception('Forbidden', LOG_NOTICE);
+        }
+
+        if (empty($this->request->client_id) || empty($this->request->id)) {
+            $this->response->setStatus(404);
+            throw new Flooer_Exception('Not found', LOG_NOTICE);
+        }
+
+        $collection = $this->models->collections->{$this->request->id};
+        if (!$collection) {
+            $this->response->setStatus(404);
+            throw new Flooer_Exception('Collection not found', LOG_NOTICE);
+        }
+
+        $this->_performGdprDelete((int)$this->request->client_id, $collection->owner_id);
+        $this->_setResponseContent('success');
+    }
+
+    /**
+     * GDPR-compliant hard-delete of all data belonging to an owner (Art. 17 DSGVO).
+     *
+     * - Profile row is hard-deleted.
+     * - All files and collections are hard-deleted from the database.
+     * - Collection directories are permanently removed from disk.
+     * - Favorites referencing this owner/user are hard-deleted.
+     *
+     * @throws Flooer_Exception
+     */
+    private function _performGdprDelete(int $clientId, string $ownerId): void
+    {
         $this->logWithRequestId(__METHOD__ . " GDPR delete started (client:$clientId; owner:$ownerId)");
 
         // 1. Remove collections, their files, and files on disk
@@ -98,11 +132,11 @@ class Owners extends BaseController
 
         // 2. Anonymize all download/play log entries that reference this owner.
         //    Rows are kept for statistical integrity; personal references are removed.
-//        $this->models->files_downloaded->anonymizeByOwnerId($ownerId, $deletedOwnerPlaceholder);
-//        $this->models->files_downloaded_all->anonymizeByOwnerId($ownerId, $deletedOwnerPlaceholder);
-//        $this->models->files_downloaded_unique->anonymizeByOwnerId($ownerId, $deletedOwnerPlaceholder);
-//        $this->models->collections_downloaded->anonymizeByOwnerId($ownerId, $deletedOwnerPlaceholder);
-//        $this->models->media_played->anonymizeByOwnerId($ownerId, $deletedOwnerPlaceholder);
+//        $this->models->files_downloaded->anonymizeByOwnerId($ownerId, $this->appConfig->gdpr['deleted_owner_id']);
+//        $this->models->files_downloaded_all->anonymizeByOwnerId($ownerId, $this->appConfig->gdpr['deleted_owner_id']);
+//        $this->models->files_downloaded_unique->anonymizeByOwnerId($ownerId, $this->appConfig->gdpr['deleted_owner_id']);
+//        $this->models->collections_downloaded->anonymizeByOwnerId($ownerId, $this->appConfig->gdpr['deleted_owner_id']);
+//        $this->models->media_played->anonymizeByOwnerId($ownerId, $this->appConfig->gdpr['deleted_owner_id']);
 
         // 3. Hard-delete the profile
         $profile = $this->models->profiles->getProfileByClientIdAndOwnerId($clientId, $ownerId);
@@ -122,8 +156,6 @@ class Owners extends BaseController
         }
 
         $this->logWithRequestId(__METHOD__ . " GDPR delete completed (client:$clientId; owner:$ownerId)");
-
-        $this->_setResponseContent('success');
     }
 
     /**

@@ -31,9 +31,14 @@ use Ocs\Url\UrlSigner;
 class Files extends BaseController
 {
 
-    const MIN_TIME = 60;
-    const MAX_REQUEST_PER_MINUTE = 10;
-    const BAN_DURATION = 180;
+    const MIN_TIME = 60; // window unit (1 min) for the coarse per-IP safety net
+
+    // --- Download link verification / rate limiting ---
+    // Defaults; override via the [download] section in application.ini.
+    const MAX_LINK_AGE = 172800;      // 48h – hard cap on token age (recency proof, kills old shared links)
+    const ACTIVATION_WINDOW = 900;    // 15 min – "click clock": starts on the FIRST click, not at render time
+    const MAX_SERVES_PER_TOKEN = 3;   // serves allowed per token within the window (resume/retry/mirror)
+    const IP_SAFETY_LIMIT = 60;       // coarse per-IP requests/min, NAT-tolerant net against bulk scraping
 
     /**
      * @throws Flooer_Exception
@@ -1004,6 +1009,11 @@ class Files extends BaseController
         $payload = null;
         $payloadHash = null;
 
+        $jti = null;     // unique token id (nonce) minted by the store; keys the server-side anti-replay state
+        $iat = null;     // token issued-at
+        $exp = null;     // token hard expiry (recency bound); falls back to legacy 't'
+        $storeIp = null; // IP the store saw at render time (soft binding only)
+
         if (!empty($this->request->j)) {
             require_once '../../library/JWT.php';
             $payload = JWT::decode($this->request->j, $this->appConfig->general['jwt_secret'], true);
@@ -1018,6 +1028,10 @@ class Files extends BaseController
             $ip = isset($payload->stip) ? $payload->stip : null; //TODO: set ip from request if null
             $as = isset($payload->as) ? $payload->as : null;
             $isFromOcsApi = (isset($payload->o) and ($payload->o == 1));
+            $jti = isset($payload->jti) ? $payload->jti : null;
+            $iat = isset($payload->iat) ? $payload->iat : null;
+            $exp = isset($payload->exp) ? $payload->exp : null;
+            $storeIp = isset($payload->stip) ? $payload->stip : null;
         }
         if (!empty($this->request->id)) {
             $id = $this->request->id;
@@ -1059,7 +1073,16 @@ class Files extends BaseController
 
         $salt = $this->_getDownloadSecret($file->client_id);
         $hash = hash('sha512', $salt . $collectionId . $validUntil);
-        $expires = $validUntil - time();
+
+        // Stable per-token identity for the server-side anti-replay state.
+        // Prefer the minted nonce 'jti'; fall back to sha1(jwt) for legacy JWT links,
+        // and to the signature+expiry for legacy query-parameter links.
+        $tokenId = $jti ?: $payloadHash;
+        if (!$tokenId) {
+            $tokenId = sha1(($hashGiven ?? '') . ':' . ($validUntil ?? ''));
+        }
+        // Token hard expiry: new 'exp' claim, fall back to legacy 't' (validUntil).
+        $linkExp = $exp ?: $validUntil;
 
         $agent = null;
         if (isset($_SERVER)) {
@@ -1108,30 +1131,75 @@ class Files extends BaseController
 
             return;
         }
-        $ban = $this->tooManyRequests($this->getRemoteIpAddress(), self::BAN_DURATION);
-        if ($ban['blocked']) {
-            $this->logWithRequestId("Too many requests (file: $file->id; payload hash: $payloadHash; remote ip: " . $this->getRemoteIpAddress() . " )", LOG_NOTICE);
-            $this->response->setStatus(429);
-            $this->response->setHeader('Retry-After', $ban['retry_after']);
-            $this->response->setHeader('X-RateLimit-Limit', self::MAX_REQUEST_PER_MINUTE);
-            $this->response->setHeader('X-RateLimit-Remaining', $ban['retry_after']);
-            $this->response->setHeader('X-RateLimit-Reset', self::BAN_DURATION);
-            $this->_setResponseContent('error', array('message' => 'too many requests', 'retry_after' => $ban['retry_after']));
+        $now = time();
+        $maxLinkAge = $this->_dlConfig('max_link_age', self::MAX_LINK_AGE);
 
-            return;
-        }
-        if (0 >= $expires) {
-            // Log
-            $this->logWithRequestId("Download expired (file: $file->id; time-div: $expires;  )", LOG_NOTICE);
+        // Hard recency/expiry: token must not be expired. This is the "was recently on the store"
+        // proof and kills old bookmarked/shared links.
+        if ($linkExp && $now > (int)$linkExp) {
+            $this->logWithRequestId("Download expired (file: $file->id; exp: $linkExp; now: $now; token: $tokenId)", LOG_NOTICE);
             $this->response->setStatus(410);
             $this->_setResponseContent('error', array('message' => 'link expired'));
 
             return;
         }
-        $isUniqueDownload = $this->uniqueDownload($payloadHash, $expires);
-        if (!$isUniqueDownload) {
-            $this->logWithRequestId("Too many downloads for one token (file: $file->id; time-div: $expires;  payload hash: $payloadHash;  )", LOG_NOTICE);
+        // Sanity cap against mis-issued (near-)eternal links (only when both iat and exp are present).
+        if ($iat && $linkExp && ((int)$linkExp - (int)$iat) > $maxLinkAge) {
+            $this->logWithRequestId("Download link lifetime exceeds allowed max (file: $file->id; iat: $iat; exp: $linkExp; max: $maxLinkAge)", LOG_NOTICE);
+            $this->response->setStatus(400);
+            $this->_setResponseContent('error', array('message' => 'link invalid'));
+
+            return;
         }
+
+        // Soft IP binding: never reject (mobile/NAT/roaming break hard binding), only flag mismatches.
+        if ($storeIp && $storeIp !== $this->getRemoteIpAddress()) {
+            $this->logWithRequestId("Download IP mismatch (soft) (file: $file->id; token: $tokenId; storeIp: $storeIp; remoteIp: {$this->getRemoteIpAddress()})", LOG_NOTICE);
+        }
+
+        // Coarse per-IP safety net against mass scraping (high limit, NAT-tolerant).
+        $ipBan = $this->_ipRateLimited($this->getRemoteIpAddress());
+        if ($ipBan['blocked']) {
+            $this->logWithRequestId("IP safety limit hit (file: $file->id; remote ip: {$this->getRemoteIpAddress()})", LOG_NOTICE);
+            $this->response->setStatus(429);
+            $this->response->setHeader('Retry-After', $ipBan['retry_after']);
+            $this->response->setHeader('X-RateLimit-Limit', $this->_dlConfig('ip_safety_limit', self::IP_SAFETY_LIMIT));
+            $this->response->setHeader('X-RateLimit-Remaining', 0);
+            $this->response->setHeader('X-RateLimit-Reset', $ipBan['retry_after']);
+            $this->_setResponseContent('error', array('message' => 'too many requests', 'retry_after' => $ipBan['retry_after']));
+
+            return;
+        }
+
+        // Click-clock: the download window starts on the FIRST click of this token, not at
+        // render time. A page left open for hours still works (bounded only by $linkExp),
+        // but once activated the link lives for a short window and is single-use-ish.
+        if (!$this->_withinActivationWindow($tokenId)) {
+            $this->logWithRequestId("Download link consumed - activation window elapsed (file: $file->id; token: $tokenId)", LOG_NOTICE);
+            $this->response->setStatus(410);
+            $this->_setResponseContent('error', array('message' => 'link expired'));
+
+            return;
+        }
+
+        // Per-token serve limit: allow a few serves (resume/retry/mirror) within the window,
+        // but block re-use to inflate download counts or bulk-fetch via one link.
+        $serveCount = $this->_registerServe($tokenId);
+        $maxServes = $this->_dlConfig('max_serves_per_token', self::MAX_SERVES_PER_TOKEN);
+        if ($serveCount > $maxServes) {
+            $retryAfter = $this->_dlConfig('activation_window', self::ACTIVATION_WINDOW);
+            $this->logWithRequestId("Too many serves for one token (file: $file->id; token: $tokenId; count: $serveCount)", LOG_NOTICE);
+            $this->response->setStatus(429);
+            $this->response->setHeader('Retry-After', $retryAfter);
+            $this->response->setHeader('X-RateLimit-Limit', $maxServes);
+            $this->response->setHeader('X-RateLimit-Remaining', 0);
+            $this->response->setHeader('X-RateLimit-Reset', $retryAfter);
+            $this->_setResponseContent('error', array('message' => 'too many requests', 'retry_after' => $retryAfter));
+
+            return;
+        }
+        // Only the first serve of a token counts as a unique download for public stats.
+        $isUniqueDownload = ($serveCount === 1);
 
 
         // incoming Link is ok, go on and check collection and file
@@ -1267,117 +1335,103 @@ class Files extends BaseController
     }
 
     /**
-     * @param string $payloadHash
-     * @param int    $expires
+     * Read an integer setting from the optional [download] section of application.ini,
+     * falling back to the given default when the section or key is absent/empty.
+     *
+     * @param string $key
+     * @param int    $default
+     *
+     * @return int
+     */
+    private function _dlConfig(string $key, int $default): int
+    {
+        $cfg = $this->appConfig->download ?? null;
+        if (is_array($cfg) && isset($cfg[$key]) && '' !== $cfg[$key]) {
+            return (int)$cfg[$key];
+        }
+
+        return $default;
+    }
+
+    /**
+     * Click-clock. The download window starts on the FIRST click of a token (recorded
+     * server-side in Redis), not when the link was rendered on the store page. Returns
+     * true while the token is still inside its activation window, false once elapsed.
+     *
+     * @param string $tokenId
      *
      * @return bool
      */
-    private function tooManyRequests(string $payloadHash, int $expires = 0): array {
-        $ttl = $expires > 0 ? $expires : intval($this->appConfig->redis['ttl']);
-        $currentTime = time();
+    private function _withinActivationWindow(string $tokenId): bool
+    {
+        if (!$this->redisCache) {
+            return true;
+        }
 
+        $window = $this->_dlConfig('activation_window', self::ACTIVATION_WINDOW);
+        $key = 'dl:act:' . $tokenId;
+
+        $firstSeen = $this->redisCache->get($key);
+        if (!$firstSeen) {
+            $this->redisCache->set($key, time(), $window + 60);
+
+            return true;
+        }
+
+        return (time() - (int)$firstSeen) <= $window;
+    }
+
+    /**
+     * Count serves per token within the activation window and return the new count.
+     * The first serve (count === 1) is the "unique" download that increments public stats.
+     * Not strictly atomic (read-modify-write), consistent with the existing cache usage.
+     *
+     * @param string $tokenId
+     *
+     * @return int
+     */
+    private function _registerServe(string $tokenId): int
+    {
+        if (!$this->redisCache) {
+            return 1;
+        }
+
+        $window = $this->_dlConfig('activation_window', self::ACTIVATION_WINDOW);
+        $key = 'dl:cnt:' . $tokenId;
+
+        $count = (int)$this->redisCache->get($key) + 1;
+        $this->redisCache->set($key, $count, $window + 60);
+
+        return $count;
+    }
+
+    /**
+     * Coarse per-IP safety net against mass scraping. Fixed 1-minute buckets (no drift),
+     * a high, NAT-tolerant limit. This is a last-resort guard, not the primary control.
+     *
+     * @param string $ip
+     *
+     * @return array{blocked: bool, retry_after: int}
+     */
+    private function _ipRateLimited(string $ip): array
+    {
         if (!$this->redisCache) {
             return ['blocked' => false, 'retry_after' => 0];
         }
 
-        $request = $this->redisCache->get($payloadHash);
-        if (!$request) {
-            // Neuer Eintrag erstellen
-            $request = [
-                'count' => 1,
-                'start_time' => $currentTime,
-            ];
-            $this->redisCache->set($payloadHash, $request, self::MIN_TIME); // TTL = 1 Minute
-            return ['blocked' => false, 'retry_after' => 0];
-        }
+        $limit = $this->_dlConfig('ip_safety_limit', self::IP_SAFETY_LIMIT);
+        $window = self::MIN_TIME;
+        $bucket = (int)floor(time() / $window);
+        $key = 'dl:ip:' . $ip . ':' . $bucket;
 
-        // Prüfen, ob innerhalb der Blockzeit
-        if ($request['count'] > self::MAX_REQUEST_PER_MINUTE && $currentTime - $request['start_time'] < self::BAN_DURATION) {
-            $retryAfter = self::BAN_DURATION - ($currentTime - $request['start_time']);
-            return ['blocked' => true, 'retry_after' => $retryAfter];
-        }
+        $count = (int)$this->redisCache->get($key) + 1;
+        $this->redisCache->set($key, $count, $window + 5);
 
-        // Prüfen, ob 1-Minuten-Zeitraum abgelaufen ist
-        if ($currentTime - $request['start_time'] > self::MIN_TIME) {
-            // Reset nach 1 Minute
-            $request = [
-                'count' => 1,
-                'start_time' => $currentTime,
-            ];
-            $this->redisCache->set($payloadHash, $request, self::MIN_TIME); // Neue TTL = 1 Minute
-            return ['blocked' => false, 'retry_after' => 0];
-        }
-
-        // Zähler erhöhen
-        $request['count']++;
-        $this->redisCache->set($payloadHash, $request, self::MIN_TIME);
-
-        // Wenn Anfragenlimit überschritten, Blockzeit starten
-        if ($request['count'] > self::MAX_REQUEST_PER_MINUTE) {
-            $this->redisCache->set($payloadHash, $request, self::BAN_DURATION); // Sperrzeit
-            return ['blocked' => true, 'retry_after' => self::BAN_DURATION];
+        if ($count > $limit) {
+            return ['blocked' => true, 'retry_after' => $window - (time() % $window)];
         }
 
         return ['blocked' => false, 'retry_after' => 0];
-    }
-
-    /**
-     * @param string $ip
-     * @param int    $expires
-     *
-     * @return bool
-     */
-    private function tooManyRequestsFromIP(string $ip, int $expires): bool {
-        $ttl = intval($this->appConfig->redis['ttl']);
-        if (0 < $expires) {
-            $ttl = $expires;
-        }
-        $request = array(
-            'count'     => 1,
-            'last_seen' => time(),
-        );
-        if ($this->redisCache) {
-            if ($this->redisCache->has($ip)) {
-                $request = $this->redisCache->get($ip);
-                if ($request['count'] > self::MAX_REQUEST_PER_MINUTE) {
-                    return true;
-                }
-                // Count (only) new requests made in last minute
-                if ($request["last_seen"] >= time() - self::MIN_TIME) {
-                    $request['count'] += 1;
-                } else {
-                    // restart timer
-                    $request['last_seen'] = time();
-                    $request['count'] = 1;
-                }
-            }
-            $this->redisCache->set($ip, $request, $ttl);
-        }
-
-        return false;
-    }
-
-    /**
-     * @param string $payloadHash
-     * @param int    $expires
-     *
-     * @return bool
-     */
-    private function uniqueDownload(string $payloadHash, int $expires): bool
-    {
-        $ttl = (0 < $expires) ? intval($expires) : intval($this->appConfig->redis['ttl']);
-        $keyName = __FUNCTION__ . ':' . $payloadHash;
-        $count = 1;
-
-        if ($this->redisCache) {
-            if ($this->redisCache->has($keyName)) {
-
-                return false;
-            }
-            $this->redisCache->set($keyName, $count, $ttl);
-        }
-
-        return true;
     }
 
     /**

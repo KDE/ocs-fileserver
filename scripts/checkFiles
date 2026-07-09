@@ -1,0 +1,98 @@
+#!/usr/bin/env php
+<?php
+
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
+
+$_SERVER['HTTP_HOST'] = 'localhost';
+
+defined('APPLICATION_ENV') || define('APPLICATION_ENV',
+    (getenv('APPLICATION_ENV') ? getenv('APPLICATION_ENV') : 'production'));
+defined('APPLICATION_LIB') || define('APPLICATION_LIB', realpath(dirname(__FILE__) . '/../library'));
+
+chdir(dirname(__DIR__));
+
+require_once __DIR__ . '/../vendor/autoload.php';
+
+// Pfad zur PID-Datei
+$pidFile = __DIR__ . '/../data/cache/checkFiles.pid';
+// Überprüfen, ob die PID-Datei existiert
+if (file_exists($pidFile)) {
+    $pid = file_get_contents($pidFile);
+
+    // Überprüfen, ob der Prozess noch läuft
+    if (posix_kill($pid, 0)) {
+        die("Das Skript läuft bereits (PID: $pid)." . PHP_EOL);
+    } else {
+        // Falls der Prozess nicht läuft, PID-Datei löschen und fortfahren
+        unlink($pidFile);
+    }
+}
+
+// PID-Datei erstellen
+file_put_contents($pidFile, getmypid());
+
+try {
+    $appConfig = (object)parse_ini_file('api_application/configs/application.ini', true);
+
+    $progressFile = __DIR__ . '/../data/cache/progress_file.txt';
+    $lastProcessedId = 0;
+    if (file_exists($progressFile)) {
+        $lastProcessedId = (int)file_get_contents($progressFile);
+    }
+
+    $logMissingFiles = __DIR__ . '/../data/logs/log_missing.txt';
+
+    $db = new Laminas\Db\Adapter\Adapter([
+                                             'driver'         => 'Pdo',
+                                             'dsn'            => 'mysql:host=10.135.246.17;dbname=ppload',
+                                             'username'       => 'ppload',
+                                             'password'       => 'pk35juh2',
+                                             'driver_options' => array(
+                                                 PDO::MYSQL_ATTR_INIT_COMMAND => 'SET NAMES \'UTF8\';SET time_zone = \'UTC\';',
+                                                 PDO::ATTR_PERSISTENT         => false
+                                             ),
+                                         ]);
+    $sql = "SELECT `pf`.`id`, `pf`.`active`, `pf`.`client_id`, `collection_id`, `pf`.`name`, `type`, `pc`.`active` AS 'collection_active', `pc`.`name` AS 'collection_name' FROM `ppload`.`ppload_files` `pf` JOIN `pling`.`project` `p` ON `p`.`ppload_collection_id` = `pf`.`collection_id` JOIN `ppload`.`ppload_collections` `pc` ON `pc`.`id` = `pf`.`collection_id` WHERE `pf`.`id` > $lastProcessedId AND INSTR(`pf`.`tags`, 'link##') IS NULL ORDER BY `pf`.`id` LIMIT 100";
+    $result = $db->query($sql, $db::QUERY_MODE_EXECUTE);
+
+    foreach ($result as $file) {
+        // important note: When a collection is inactive, it means it is archived.
+        if ($file->collection_active) {
+            $collectionDir = $appConfig->general['filesDir'] . '/' . $file->collection_name;
+        } else {
+            $collectionDir = $appConfig->general['filesDir'] . '/.trash/' . $file->collection_id . '-' . $file->collection_name;
+            //$this->logWithRequestId("Collection inactive take it from trash (collection: $file->collection_id; file: $file->id; )",LOG_NOTICE);
+        }
+
+        // important note: When a file is inactive, it means it is archived.
+        if ($file->active) {
+            $filePath = $collectionDir . '/' . $file->name;
+        } else {
+            $filePath = $collectionDir . '/.trash/' . $file->id . '-' . $file->name;
+            //$this->logWithRequestId("File inactive take it from trash (file: $file->id; )", LOG_NOTICE);
+        }
+
+        echo $filePath;
+
+        $file_exists = is_file($filePath);
+
+        echo ' => exists: ' . ($file_exists ? 'true' : 'false') . PHP_EOL;
+
+        if (!$file_exists) {
+            file_put_contents($logMissingFiles, json_encode($file) . PHP_EOL, FILE_APPEND);
+        }
+    }
+
+    if ($file) {
+        file_put_contents($progressFile, $file->id);
+    }
+} finally {
+    // PID-Datei beim Beenden löschen
+    if (file_exists($pidFile)) {
+        unlink($pidFile);
+    }
+}
+
+exit(0);

@@ -1,0 +1,108 @@
+#!/usr/bin/env php
+<?php
+/**
+ * Mint a signed download token for END-TO-END TESTING of Files::getDownload().
+ *
+ * Reads the SAME secrets the running app uses (api_application/configs/application.ini
+ * + clients.ini) and the SAME JWT implementation (library/JWT.php), so the produced
+ * token is accepted by the fileserver exactly like a real store-minted link.
+ *
+ * Run inside the app container so paths/configs match:
+ *   docker compose exec -T ocs_files_app php scripts/mintTestToken <client_id> <collection_id> <file_id> [mode]
+ *
+ * Output: "<jwt> <jti>"  (jti is empty for the legacy mode)
+ *
+ * Modes:
+ *   valid    - well-formed token, exp/iat/jti present, ~1h validity (default)
+ *   legacy   - only 's' + 't' (no jti/iat/exp) -> exercises backward-compat fallbacks
+ *   expired  - exp/t in the past                -> expect HTTP 410
+ *   eternal  - exp - iat > MAX_LINK_AGE          -> expect HTTP 400 (sanity cap)
+ *   badhash  - download hash 's' does not match  -> expect HTTP 400
+ *   anon     - no user id 'u'                     -> anonymous download, expect HTTP 200
+ *   ipbind   - sets stip to a foreign IP          -> soft mismatch, expect HTTP 200 + log
+ */
+
+error_reporting(E_ALL);
+ini_set('display_errors', 'stderr');
+
+$root = dirname(__DIR__);
+require_once $root . '/library/JWT.php';
+
+$client = $argv[1] ?? null;
+$cid    = $argv[2] ?? null;
+$fid    = $argv[3] ?? null;
+$mode   = $argv[4] ?? 'valid';
+
+if (!$client || !$cid || !$fid) {
+    fwrite(STDERR, "usage: mintTestToken <client_id> <collection_id> <file_id> [mode]\n");
+    exit(2);
+}
+
+$app = parse_ini_file($root . '/api_application/configs/application.ini', true);
+$cli = parse_ini_file($root . '/api_application/configs/clients.ini', true);
+
+if (!isset($app['general']['jwt_secret'])) {
+    fwrite(STDERR, "jwt_secret not found in application.ini\n");
+    exit(3);
+}
+if (!isset($cli[$client]['downloadSecret'])) {
+    fwrite(STDERR, "downloadSecret for client '$client' not found in clients.ini\n");
+    exit(3);
+}
+
+$jwtSecret = $app['general']['jwt_secret'];
+$dlSecret  = $cli[$client]['downloadSecret'];
+
+$now = time();
+$iat = $now;
+$t   = $now + 3600; // validUntil / exp
+$exp = $t;
+$hashCid = $cid;    // collection id used to build the download hash 's'
+
+switch ($mode) {
+    case 'expired':
+        $t = $exp = $now - 10;
+        break;
+    case 'eternal':
+        $exp = $now + (10 * 365 * 86400); // exp - iat far beyond MAX_LINK_AGE
+        break;
+    case 'badhash':
+        $hashCid = $cid . '-WRONG'; // signature stays valid, but 's' will not match
+        break;
+    case 'valid':
+    case 'legacy':
+    case 'anon':
+    case 'ipbind':
+        break;
+    default:
+        fwrite(STDERR, "unknown mode: $mode\n");
+        exit(2);
+}
+
+// s = sha512(downloadSecret + collection_id + validUntil), validUntil == 't'
+$s = hash('sha512', $dlSecret . $hashCid . $t);
+
+$payload = [
+    'id' => (string)$fid,
+    'u'  => '42',
+    's'  => $s,
+    't'  => $t,
+];
+
+$jti = '';
+if ($mode !== 'legacy') {
+    $jti = bin2hex(random_bytes(16));
+    $payload['jti'] = $jti;
+    $payload['iat'] = $iat;
+    $payload['exp'] = $exp;
+}
+if ($mode === 'anon') {
+    unset($payload['u']);
+}
+if ($mode === 'ipbind') {
+    $payload['stip'] = '10.99.99.99';
+}
+
+$jwt = JWT::encode($payload, $jwtSecret, 'HS256');
+
+echo $jwt . ' ' . $jti . "\n";

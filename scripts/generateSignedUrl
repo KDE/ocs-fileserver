@@ -1,0 +1,20 @@
+#!/usr/bin/env php
+<?php
+
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
+
+$_SERVER['HTTP_HOST'] = 'localhost';
+
+defined('APPLICATION_ENV') || define('APPLICATION_ENV', (getenv('APPLICATION_ENV') ? getenv('APPLICATION_ENV') : 'production'));
+
+defined('APPLICATION_LIB') || define('APPLICATION_LIB', realpath(dirname(__FILE__) . '/../library'));
+
+chdir(dirname(__DIR__));
+
+require_once __DIR__ . '/../vendor/autoload.php';
+
+echo \Ocs\Url\UrlSigner::getSignedUrl($argv[1], 'Hhbd69bkD65Smb/g&dhKaaQmvbh9bhD4801Nhdwl');
+
+exit();

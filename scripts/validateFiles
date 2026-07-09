@@ -1,0 +1,442 @@
+#!/usr/bin/env php
+<?php
+/**
+ * file server - part of Opendesktop.org platform project <https://www.opendesktop.org>.
+ *
+ * Copyright (c) 2016 pling GmbH.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
+$start_time = microtime(true);
+
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
+
+$_SERVER['HTTP_HOST'] = 'localhost';
+
+defined('APPLICATION_ENV') || define('APPLICATION_ENV',
+    (getenv('APPLICATION_ENV') ? getenv('APPLICATION_ENV') : 'production'));
+defined('APPLICATION_LIB') || define('APPLICATION_LIB', realpath(dirname(__FILE__) . '/../library'));
+
+chdir(dirname(__DIR__));
+
+require_once __DIR__ . '/../vendor/autoload.php';
+
+function dir_is_empty($path){ //$path is realpath or relative path
+
+    $d = scandir($path, SCANDIR_SORT_NONE ); // get dir, without sorting improve performance (see Comment below).
+
+    if ($d){
+
+        // avoid "count($d)", much faster on big array.
+        // Index 2 means that there is a third element after ".." and "."
+
+        return !isset($d[2]);
+    }
+
+    return false; // or throw an error
+}
+
+function copy_dir($quelle, $ziel) {
+    // rsync-Befehl erstellen mit --ignore-existing und --dry-run
+    //$command = "rsync -av --progress --ignore-existing --dry-run " . escapeshellarg($quelle) . " " . escapeshellarg($ziel);
+    $command = "rsync -av --progress --ignore-existing --dry-run $quelle $ziel";
+
+    // Ausführen des Systemaufrufs
+    exec($command, $output, $return_var);
+
+    // Ausgabe der Dateien, die kopiert würden
+    echo "<pre>";
+    print_r($output); // Zeigt die Liste der Dateien, die kopiert werden würden
+    echo "</pre>";
+
+    if ($return_var === 0) {
+        echo "Dry Run war erfolgreich. Es wurden keine Dateien kopiert." . PHP_EOL;
+    } else {
+        echo "Fehler beim Dry Run." . PHP_EOL;
+    }
+}
+
+function move_dir($quelle, $ziel) {
+    // mv-Befehl erstellen, um das Verzeichnis zu verschieben
+    //$command = "mv " . escapeshellarg($quelle) . " " . escapeshellarg($ziel);
+    $command = "mv $quelle $ziel";
+
+    // Ausführen des Systemaufrufs
+    exec($command, $output, $return_var);
+
+    if ($return_var === 0) {
+        echo " - successfully moved" . PHP_EOL;
+    } else {
+        echo " - move failed" . PHP_EOL;
+    }
+}
+
+// Stelle sicher, dass das Skript von der Kommandozeile aufgerufen wird
+if (php_sapi_name() !== 'cli') {
+    die("Dieses Skript kann nur von der Kommandozeile aus ausgeführt werden.\n");
+}
+
+// Dateipfad und optional Anzahl der Zeilen pro Paket als Argument übergeben
+if ($argc < 2) {
+    die("Verwendung: php script.php <dateipfad> [anzahl_zeilen]" . PHP_EOL);
+}
+
+$dateipfad = $argv[1];
+$anzahlZeilen = $argc >= 3 ? (int)$argv[2] : 25;
+
+// Prüfen, ob die Datei existiert
+if (!file_exists($dateipfad)) {
+    die("Die Datei '$dateipfad' wurde nicht gefunden." . PHP_EOL);
+}
+
+
+// Pfad zur PID-Datei
+$pidFile = __DIR__ . '/../data/cache/' .pathinfo(__FILE__, PATHINFO_FILENAME) . '.pid';
+// Überprüfen, ob die PID-Datei existiert
+if (file_exists($pidFile)) {
+    $pid = file_get_contents($pidFile);
+
+    // Überprüfen, ob der Prozess noch läuft
+    if (posix_kill($pid, 0)) {
+        die("Das Skript läuft bereits (PID: $pid)." . PHP_EOL);
+    } else {
+        // Falls der Prozess nicht läuft, PID-Datei löschen und fortfahren
+        unlink($pidFile);
+    }
+}
+
+// PID-Datei erstellen
+file_put_contents($pidFile, getmypid());
+
+try {
+    $appConfig = (object)parse_ini_file('api_application/configs/application.ini', true);
+
+
+    // Datei zeilenweise öffnen
+    $datei = fopen($dateipfad, "r");
+    if (!$datei) {
+        die("Die Datei `$dateipfad` konnte nicht geöffnet werden.\n");
+    }
+
+    // Startzeile aus Datei lesen, falls vorhanden
+    $startZeileDatei = "$dateipfad.start";
+    $startZeile = 0;
+    if (file_exists($startZeileDatei)) {
+        $startZeile = (int)file_get_contents($startZeileDatei);
+    }
+
+    echo PHP_EOL . "------------" . PHP_EOL . "jump to $startZeile" . PHP_EOL;
+    // Zur Startzeile springen
+    $aktuelleZeile = 0;
+    while ($aktuelleZeile < $startZeile && ($zeile = fgets($datei)) !== false) {
+        $aktuelleZeile++;
+    }
+
+    // Zeile für Zeile lesen und JSON-Daten in Paketen von definierter Anzahl Zeilen verarbeiten
+    $paket = [];
+    $zeilenZaehler = 0;
+    $db = new Laminas\Db\Adapter\Adapter([
+                                             'driver'         => 'Pdo',
+                                             'dsn'            => 'mysql:host=10.135.246.17;dbname=pling',
+                                             'username'       => 'ppload',
+                                             'password'       => 'pk35juh2',
+                                             'driver_options' => array(
+                                                 PDO::MYSQL_ATTR_INIT_COMMAND => 'SET NAMES \'UTF8mb4\';SET time_zone = \'UTC\';',
+                                                 PDO::ATTR_PERSISTENT         => false
+                                             ),
+                                         ]);
+
+    while (($zeile = fgets($datei)) !== false) {
+        // Aktuelle Position speichern
+        file_put_contents($startZeileDatei, $aktuelleZeile);
+
+        // Wenn das Paket die definierte Anzahl Zeilen erreicht hat, verarbeiten und ausgeben
+        if ($zeilenZaehler >= $anzahlZeilen) {
+            //print_r($paket);
+            $paket = [];
+            $zeilenZaehler = 0;
+
+            break;
+        }
+
+        echo "process " . rtrim($zeile) . PHP_EOL;
+        $jsonDaten = json_decode(trim($zeile));
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            echo "Fehler beim JSON-Dekodieren: " . json_last_error_msg() . "\n";
+            continue;
+        }
+
+        echo " - check project status ";
+        $sql = "SELECT `status` FROM `pling`.`project` WHERE `ppload_collection_id` = :collection_id";
+        // echo " - execute sql: " . $sql . PHP_EOL;
+        $project = $db->query($sql, ['collection_id' => $jsonDaten->collection_id]);
+
+        $doActiveCollectionDir = $appConfig->general['filesDir'] . '/' . $jsonDaten->collection_name;
+        $doDeletedCollectionDir = $appConfig->general['filesDir'] . '/.trash/' . $jsonDaten->collection_id . '-' . $jsonDaten->collection_name;
+        // check project status is deleted and collection status is active
+        $project_active = $project->current()->status == 100 ? 1 : 0;
+        $collection_active = (int)$jsonDaten->collection_active;
+        $filename = trim($jsonDaten->name);
+        $doActiveFilePath = $doActiveCollectionDir . DIRECTORY_SEPARATOR . $filename;
+        $doDeletedFilePath = $doDeletedCollectionDir . DIRECTORY_SEPARATOR . $filename;
+
+        if ($project_active != $collection_active) {
+            echo " -> doesn't match" . PHP_EOL;
+            // move on and set the correct collection status
+            $sql = "UPDATE ppload.ppload_collections SET `active` = :project_status WHERE `id` = :collection_id ";
+            $params = ['project_status' => $project_active,'collection_id' => $jsonDaten->collection_id];
+            echo " - process $sql " . json_encode($params) . PHP_EOL;
+            /** @var Laminas\Db\Adapter\Driver\Pdo\Result $result */
+            $result = $db->query($sql, $params);
+            echo " - result affected rows: " . $result->getAffectedRows() . PHP_EOL;
+            $jsonDaten->collection_active = $project_active;
+            $collection_active = $jsonDaten->collection_active;
+            echo " - process with new values " . json_encode($jsonDaten) . PHP_EOL;
+        } else {
+            echo " -> matches" . PHP_EOL;
+        }
+
+        if ($collection_active) {
+            echo " - check collection dir fits to active status";
+            if (file_exists($doActiveCollectionDir)) {
+                echo " -> matches" . PHP_EOL;
+            } else {
+                echo " -> fail" . PHP_EOL;
+                echo " - check directory exists in .trash folder";
+                if (file_exists($doDeletedCollectionDir)) {
+                    echo " -> found. going to move dir" . PHP_EOL;
+                    echo " - move_dir($doDeletedCollectionDir, $doActiveCollectionDir)" . PHP_EOL;
+                    move_dir($doDeletedCollectionDir, $doActiveCollectionDir);
+                    sleep(1);
+                } else {
+                    echo " -> fail. " . PHP_EOL;
+                }
+            }
+            echo " - check file exists in active folder";
+            if (file_exists($doActiveFilePath)) {
+                echo " -> matches" . PHP_EOL;
+                echo " - success" . PHP_EOL;
+                $paket[] = $jsonDaten;
+                $zeilenZaehler++;
+                $aktuelleZeile++;
+
+                continue;
+            } else {
+                echo " -> fail" . PHP_EOL;
+                echo " - additional check file exists in .trash folder";
+                if (file_exists($doDeletedFilePath)) {
+                    echo " -> matches" . PHP_EOL;
+                    echo " - rename($doDeletedFilePath,$doActiveFilePath)";
+                    $result = rename($doDeletedFilePath,$doActiveFilePath);
+                    if (!$result) {
+                        echo " -> fail" . PHP_EOL;
+                        echo " - stop processing" . PHP_EOL;
+                        break;
+                    }
+                    echo " -> success" . PHP_EOL;
+                    $paket[] = $jsonDaten;
+                    $zeilenZaehler++;
+                    $aktuelleZeile++;
+
+                    continue;
+                } else {
+                    echo " -> fail. " . PHP_EOL;
+                }
+            }
+
+        } else {
+            echo " - check collection dir fits to deleted status";
+            if (file_exists($doDeletedCollectionDir)) {
+                echo " -> matches" . PHP_EOL;
+            } else {
+                echo " -> fail" . PHP_EOL;
+                echo " - check directory exists in active folder";
+                if (file_exists($doActiveCollectionDir)) {
+                    echo " -> found. going to move dir" . PHP_EOL;
+                    echo " - move_dir($doActiveCollectionDir, $doDeletedCollectionDir)" . PHP_EOL;
+                    move_dir( $doActiveCollectionDir, $doDeletedCollectionDir);
+                    sleep(1);
+                } else {
+                    echo " -> fail. " . PHP_EOL;
+                }
+            }
+            echo " - check file exists in $doDeletedFilePath";
+            if (file_exists($doDeletedFilePath)) {
+                echo " -> matches" . PHP_EOL;
+                echo " - success" . PHP_EOL;
+                $paket[] = $jsonDaten;
+                $zeilenZaehler++;
+                $aktuelleZeile++;
+
+                continue;
+            } else {
+                echo " -> fail" . PHP_EOL;
+                echo " - additional check file exists in active folder";
+                if (file_exists($doActiveFilePath)) {
+                    echo " -> matches" . PHP_EOL;
+                    echo " - rename($doActiveFilePath,$doDeletedFilePath)";
+                    $result = rename($doActiveFilePath,$doDeletedFilePath);
+                    if (!$result) {
+                        echo " -> fail" . PHP_EOL;
+                        echo " - stop processing" . PHP_EOL;
+                        break;
+                    }
+                    echo " -> success" . PHP_EOL;
+                    $paket[] = $jsonDaten;
+                    $zeilenZaehler++;
+                    $aktuelleZeile++;
+
+                    continue;
+                } else {
+                    echo " -> fail. " . PHP_EOL;
+                }
+            }
+        }
+
+        // check file exists on old aws storage
+        $awsActiveCollectionDir = rtrim($appConfig->s3storage2['basePath'], '/') . '/data/files/' . $jsonDaten->collection_name;
+        $awsDeletedCollectionDir = rtrim($appConfig->s3storage2['basePath'],'/') . '/data/files/.trash/' . $jsonDaten->collection_id . '-' . $jsonDaten->collection_name;
+        $awsActiveFilePath = $awsActiveCollectionDir . DIRECTORY_SEPARATOR . $filename;
+        $awsDeletedFilePath = $awsDeletedCollectionDir . DIRECTORY_SEPARATOR . $filename;
+
+        echo " - check aws s3 storage in $awsActiveFilePath";
+        if (file_exists($awsActiveFilePath)) {
+            echo " -> found" . PHP_EOL;
+            echo " - going to copy file " . PHP_EOL;
+            if ($collection_active) {
+                echo " - copy($awsActiveFilePath, $doActiveFilePath)" . PHP_EOL;
+                copy($awsActiveFilePath, $doActiveFilePath);
+            } else {
+                echo " - copy($awsActiveFilePath, $doDeletedFilePath)" . PHP_EOL;
+                copy($awsActiveFilePath, $doDeletedFilePath);
+            }
+            sleep(2);
+            if ($collection_active) {
+                echo " - check file exists in active folder";
+                if (file_exists($doActiveFilePath)) {
+                    echo " -> matches" . PHP_EOL;
+                    echo " - success" . PHP_EOL;
+                    $paket[] = $jsonDaten;
+                    $zeilenZaehler++;
+                    $aktuelleZeile++;
+
+                    continue;
+                } else {
+                    echo " -> fail" . PHP_EOL;
+                }
+            } else {
+                echo " - check file exists in $doDeletedFilePath";
+                if (file_exists($doDeletedFilePath)) {
+                    echo " -> matches" . PHP_EOL;
+                    echo " - success" . PHP_EOL;
+                    $paket[] = $jsonDaten;
+                    $zeilenZaehler++;
+                    $aktuelleZeile++;
+
+                    continue;
+                } else {
+                    echo " -> fail" . PHP_EOL;
+                }
+            }
+            echo " - stop processing" . PHP_EOL;
+            break;
+        } else {
+            echo " -> file not found" . PHP_EOL;
+        }
+        echo " - check aws s3 storage in $awsDeletedFilePath";
+        if (file_exists($awsDeletedFilePath)) {
+            echo " -> found" . PHP_EOL;
+            echo " - going to copy file " . PHP_EOL;
+            if ($collection_active) {
+                echo " - copy($awsDeletedFilePath, $doActiveFilePath)" . PHP_EOL;
+                copy($awsDeletedFilePath, $doActiveFilePath);
+            } else {
+                echo " - copy($awsDeletedFilePath, $doDeletedFilePath)" . PHP_EOL;
+                copy($awsDeletedFilePath, $doDeletedFilePath);
+            }
+            sleep(2);
+            if ($collection_active) {
+                echo " - check file exists in active folder";
+                if (file_exists($doActiveFilePath)) {
+                    echo " -> matches" . PHP_EOL;
+                    echo " - success" . PHP_EOL;
+                    $paket[] = $jsonDaten;
+                    $zeilenZaehler++;
+                    $aktuelleZeile++;
+
+                    continue;
+                } else {
+                    echo " -> fail" . PHP_EOL;
+                }
+            } else {
+                echo " - check file exists in $doDeletedFilePath";
+                if (file_exists($doDeletedFilePath)) {
+                    echo " -> matches" . PHP_EOL;
+                    echo " - success" . PHP_EOL;
+                    $paket[] = $jsonDaten;
+                    $zeilenZaehler++;
+                    $aktuelleZeile++;
+
+                    continue;
+                } else {
+                    echo " -> fail" . PHP_EOL;
+                }
+            }
+            echo " - stop processing" . PHP_EOL;
+            break;
+        } else {
+            echo " -> file not found" . PHP_EOL;
+        }
+
+
+        $paket[] = $jsonDaten;
+        $zeilenZaehler++;
+        $aktuelleZeile++;
+
+        echo PHP_EOL;
+    }
+
+    // Verbleibende Zeilen im letzten Paket verarbeiten
+    if (!empty($paket)) {
+        echo __LINE__ . PHP_EOL;
+        //print_r($paket);
+        // Aktuelle Position speichern
+        file_put_contents($startZeileDatei, $aktuelleZeile);
+    }
+
+    fclose($datei);
+
+} finally {
+    // PID-Datei beim Beenden löschen
+    if (file_exists($pidFile)) {
+        unlink($pidFile);
+    }
+
+    $end_time = microtime(true);
+
+    $memory_usage = memory_get_usage();
+    $peak_memory_usage = memory_get_peak_usage();
+
+    $execution_time = $end_time - $start_time;
+
+    echo PHP_EOL . "--------" . PHP_EOL;
+    echo "Runtime: " . round($execution_time, 4) . " sec\n";
+    echo "memory usage: " . round($memory_usage / 1024 / 1024, 2) . " MB\n";
+    echo "memory peak: " . round($peak_memory_usage / 1024 / 1024, 2) . " MB\n";
+}
+
+exit(0);

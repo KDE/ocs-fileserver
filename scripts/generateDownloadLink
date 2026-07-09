@@ -1,0 +1,42 @@
+#!/usr/bin/env php
+<?php
+
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
+
+$_SERVER['HTTP_HOST'] = 'localhost';
+
+defined('APPLICATION_ENV') || define('APPLICATION_ENV', (getenv('APPLICATION_ENV') ? getenv('APPLICATION_ENV') : 'production'));
+
+defined('APPLICATION_LIB') || define('APPLICATION_LIB', realpath(dirname(__FILE__) . '/../library'));
+
+chdir(dirname(__DIR__));
+
+require_once __DIR__ . '/../vendor/autoload.php';
+
+function createDownloadHash($collection_id, $valid_until)
+{
+    // order isn't important at all... just do the same when verifying
+    return hash('sha512', '7Hncfk9Snd48gmJkdns34mAllkfiMh98shNdhs0oPlsd2mfVbwn' . $collection_id . $valid_until);
+}
+
+function createDownloadUrlJwt($collection_id, $file_name, array $payload, $valid_seconds = 3600)
+{
+    $issued_at = time();
+    $valid_until = $issued_at + (int)$valid_seconds; // by default one hour valid
+    $hash = createDownloadHash($collection_id, $valid_until);
+    $payload['s'] = $hash;
+    $payload['t'] = $valid_until;                     // legacy expiry (kept for backward compat)
+    $payload['jti'] = bin2hex(random_bytes(16));      // unique nonce → keys server-side anti-replay state
+    $payload['iat'] = $issued_at;
+    $payload['exp'] = $valid_until;                   // hard recency bound (fileserver enforces this)
+    require_once __DIR__ . "/../library/JWT.php";
+    $jwt = JWT::encode($payload, '208e04fd50129433b17ca189698398d825a4738e', $algo = 'HS256');
+
+    return 'http://localhost:8084/api/' . 'files/download/j/' . $jwt . '/' . $file_name;
+}
+
+echo createDownloadUrlJwt($argv[1],$argv[2],array('id' => $argv[3], 'u' => $argv[4]));
+
+exit();

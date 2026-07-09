@@ -22,3 +22,4 @@ docker-compose.yml
 .deployment
 .docker
 s3fs-fuse/
+/docs/download-verification.md
